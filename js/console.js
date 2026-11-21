@@ -12,12 +12,21 @@ let open=false, prevPaused=false, history=[], histIdx=-1;
 
 export function consoleIsOpen(){return open}
 
+export function openConsole(){
+ if(!state.gameRunning||state.finished)return;
+ open=true;prevPaused=state.paused;state.paused=true;
+ $('commandBar').style.display='flex';$('commandInput').value='';
+ requestAnimationFrame(()=>$('commandInput').focus())
+}
+
 export function attachConsole(startGame){
  const bar=$('commandBar'), input=$('commandInput');
+ const cmdBtn=$('cmdBtn');
+ cmdBtn.addEventListener('pointerdown',e=>{e.preventDefault();openConsole()});
  window.addEventListener('keydown', e=>{
   if(e.target===input)return;
   if(e.code!=='Enter')return;
-  if(!state.gameRunning||state.finished)return;
+  if(!state.gameRunning||state.finished||!state.isAdmin)return;
   e.preventDefault();
   open=true;prevPaused=state.paused;state.paused=true;
   bar.style.display='flex';input.value='';
@@ -114,6 +123,7 @@ function cmdClass(name){
  const s=state, c=classes[name];
  if(!s.player)return;
  const ratio=s.player.hp/s.player.maxHp;
+ s.adminBaseClass=name;
  s.selected=name;
  s.player.maxHp=c.hp;s.player.hp=Math.max(1,Math.round(c.hp*ratio));
  s.gunnerAmmo=5;s.gunnerReload=0;s.gunnerShotTimer=0;

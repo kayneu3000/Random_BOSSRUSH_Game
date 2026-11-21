@@ -222,3 +222,22 @@ test('console: spawn, duel, boss rush and time freeze work', async () => {
   update(1 / 60);
   assert.ok(state.elapsed > t0, 'time flows again');
 });
+
+test('admin class persists across restarts and console is admin-only by design', async () => {
+  const { runCommand } = await import('../js/console.js');
+  state.unlocks.admin = true;
+  state.selected = 'admin';
+  state.adminBaseClass = 'gunner';
+  startGame();
+  assert.equal(state.isAdmin, true, 'admin session active');
+  assert.equal(state.selected, 'gunner', 'admin plays with the stored base class');
+  assert.equal(state.player.maxHp, 200);
+  runCommand('hp 300');
+  assert.equal(state.player.maxHp, 300);
+  for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
+  startGame();
+  assert.equal(state.isAdmin, true, 'admin persists on restart');
+  assert.equal(state.selected, 'gunner', 'base class survives restart');
+  runCommand('sword');
+  assert.equal(state.adminBaseClass, 'sword', 'console class switch updates base class');
+});

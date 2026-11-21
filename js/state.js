@@ -46,6 +46,8 @@ export const state = {
 
  message: { text: '', until: Infinity },
 
+ isAdmin: false,
+ adminBaseClass: 'archer',
  peace: false,
  brutal: false,
  friendlyFire: false,

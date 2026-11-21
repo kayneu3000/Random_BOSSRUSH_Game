@@ -1,5 +1,7 @@
 export const MAP = { w: 2300, h: 1650 };
 
+export const ADMIN_UNLOCK_CODE = 'HUGO';
+
 export const classes = {
  archer:{name:'BOGENSCHÜTZE',hp:100,damage:25,cool:2,range:510,speed:245,icon:'🏹'},
  tank:{name:'TANK',hp:350,damage:65,cool:2.5,range:105,speed:145,icon:'🔨'},

@@ -21,7 +21,10 @@ attachInput();
 attachConsole(startGame);
 
 function startGame() {
- const s = state, c = classes[s.selected];
+ const s = state;
+ s.isAdmin = s.selected === 'admin' || s.isAdmin;
+ if (s.selected === 'admin') s.selected = s.adminBaseClass;
+ const c = classes[s.selected];
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
@@ -53,11 +56,12 @@ function startGame() {
 
  if (s.selected === 'healer') createHealerSlimes();
 
- $('className').textContent = c.name;
+ $('className').textContent = (s.isAdmin ? 'ADMIN · ' : '') + c.name;
  $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : c.icon;
  $('attackLabel').textContent = s.selected === 'ember' ? 'FEUERSTRAHL' : s.selected === 'gunner' ? 'SCHUSS' : 'ANGRIFF';
  $('attackBtn').style.display = s.selected === 'healer' ? 'none' : 'flex';
  $('healBtn').style.display = s.selected === 'healer' ? 'flex' : 'none';
+ $('cmdBtn').style.display = s.isAdmin ? 'flex' : 'none';
  $('overlay').style.display = 'none'; $('resume').style.display = 'block'; $('game').style.display = 'block';
  document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
 

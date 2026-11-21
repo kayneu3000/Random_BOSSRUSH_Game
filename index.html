@@ -22,7 +22,9 @@
   </div>
   <button class="mainButton" id="selectDragon">DRAGON FIGHT AUSWÄHLEN →</button>
 
-  <div class="bossCard" style="margin-top:20px">
+  <div class="classCard locked" data-class="admin" id="adminCard" style="margin-top:16px"><div class="classIcon">🖥️</div><h3>Admin 🔒</h3><p class="stats">KONSOLE · CHEATS · ARENA</p><p>Geheimer Code nötig. Enthält die Kommandokonsole: Bosse beschwören, `slime vs dragon`, `time freeze`, `bossrush` u.v.m.</p></div>
+
+ <div class="bossCard" style="margin-top:20px">
    <div class="gunballPreview"></div>
    <div class="bossInfo"><h3>GUNBALL</h3><p>1.000 HP. Eine rotierende silberne Roboterkugel mit vier Waffen. Nutzt 15 verschiedene Patronen und wird regelmäßig verwundbar.</p><p style="color:#c5a2ff;margin-top:7px">BOSS · 1.000 HP · WAFFENARSENAL</p></div>
   </div>
@@ -55,12 +57,12 @@
  </div>
  <div id="bossHUD"><div class="name" id="bossName">SLIME</div><div id="bossHP"><div id="bossHPFill"></div></div><div id="bossCount">1 Schleim verbleibend</div></div>
  <div id="gameMessage"></div>
- <div id="commandHint">ENTER = KONSOLE</div>
+ <div id="commandHint">ENTER / CMD = KONSOLE</div>
  <div id="commandBar"><span id="commandPrompt">CMD&gt;</span><input id="commandInput" autocomplete="off" spellcheck="false" placeholder="help"></div>
  <button id="pauseBtn">Ⅱ PAUSE</button>
  <div id="controls">
   <div id="stickArea"><div id="stickBase"></div><div id="stickKnob"></div></div>
-  <div class="actionButtons"><button class="action" id="healBtn"><strong>🧪</strong>HEILEN</button><button class="action" id="dashBtn"><strong>➤</strong>DASH</button><button class="action" id="attackBtn"><strong id="attackIcon">⚔</strong><span id="attackLabel">ANGRIFF</span></button></div>
+  <div class="actionButtons"><button class="action" id="cmdBtn"><strong>💻</strong>CMD</button><button class="action" id="healBtn"><strong>🧪</strong>HEILEN</button><button class="action" id="dashBtn"><strong>➤</strong>DASH</button><button class="action" id="attackBtn"><strong id="attackIcon">⚔</strong><span id="attackLabel">ANGRIFF</span></button></div>
  </div>
  <div id="overlay"><div class="panel"><h2 id="overlayTitle">PAUSE</h2><p id="overlayText">Der Kampf ist pausiert.</p><button class="mainButton" id="resume">WEITERSPIELEN</button><button style="width:100%;margin-top:9px" id="restart">NEU STARTEN</button><button style="width:100%;margin-top:9px" id="toLobby">ZUR LOBBY</button></div></div>
 </div>
