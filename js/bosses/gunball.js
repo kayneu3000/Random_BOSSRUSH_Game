@@ -1,6 +1,6 @@
 import { state } from "../state.js";
 import { BULLET_STATS, GUNBALL_HP, gunballMedium, gunballStrong, gunballWeak, MAP } from "../config.js";
-import { damagePlayer, particle } from "../entities.js";
+import { damageBoss, damagePlayer, duelTargetOf, particle } from "../entities.js";
 import { showGameMessage } from "../ui.js";
 
 export function createGunball(x,y){
@@ -14,13 +14,14 @@ function chooseGunballBullet(){
 }
 
 function fireGunballBullet(b,type){
- const a=Math.atan2(state.player.y-b.y,state.player.x-b.x);
+ const T=duelTargetOf(b);
+ const a=Math.atan2(T.y-b.y,T.x-b.x);
  const s=BULLET_STATS[type],spread=(Math.random()-.5)*.32;
  const angle=a+spread;
  if(type==='rain'){
   const side=Math.floor(Math.random()*4),x=side===0?Math.random()*MAP.w:side===1?Math.random()*MAP.w:side===2?0:MAP.w;
   const y=side===0?0:side===1?MAP.h:Math.random()*MAP.h;
-  const tx=state.player.x,ty=state.player.y;
+  const tx=T.x,ty=T.y;
   const aa=Math.atan2(ty-y,tx-x);
   state.enemyProjectiles.push({x,y,vx:Math.cos(aa)*390,vy:Math.sin(aa)*390,r:s.r,life:s.life,damage:s.damage,type,age:0});
   return
@@ -43,13 +44,14 @@ function fireGunballBullet(b,type){
 
 export function updateGunball(b,dt){
  b.rotation+=dt*2.8;b.wobble+=dt*3;b.flash=Math.max(0,b.flash-dt);
- b.angle=Math.atan2(state.player.y-b.y,state.player.x-b.x);
+ const T=duelTargetOf(b);
+ b.angle=Math.atan2(T.y-b.y,T.x-b.x);
  b.phaseTimer-=dt;
  if(b.mode==='attacking'){
   b.weaponTimer-=dt;
   if(b.weaponTimer<=0){b.weaponIndex=(b.weaponIndex+1)%4;b.weaponTimer=2.5}
   b.fireTimer-=dt;
-  if(b.fireTimer<=0){
+  if(b.fireTimer<=0&&!state.peace){
    const type=chooseGunballBullet();
    fireGunballBullet(b,type);
    b.attackName=type;
@@ -67,10 +69,10 @@ export function updateGunball(b,dt){
   }
  }
  const targetDistance=b.mode==='attacking'?320:250;
- const dx=state.player.x-b.x,dy=state.player.y-b.y,d=Math.hypot(dx,dy)||1;
+ const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1;
  if(d>targetDistance+50){b.x+=dx/d*90*dt;b.y+=dy/d*90*dt}
  else if(d<targetDistance-50){b.x-=dx/d*75*dt;b.y-=dy/d*75*dt}
  b.x=Math.max(130,Math.min(MAP.w-130,b.x));b.y=Math.max(130,Math.min(MAP.h-130,b.y));
- if(d<state.player.r+b.r*.7&&b.attackCooldown<=0){damagePlayer(22);b.attackCooldown=1.1}
+ if(d<(T===state.player?state.player.r:T.r)+b.r*.7&&b.attackCooldown<=0){T===state.player?damagePlayer(22):damageBoss(T,22,true);b.attackCooldown=1.1}
  b.attackCooldown=Math.max(0,b.attackCooldown-dt)
 }
