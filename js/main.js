@@ -4,7 +4,7 @@ import { $ } from "./utils.js";
 import { loadUnlocks, applyUnlocksToUI, attachUI, showGameMessage, endGame, updateHUD } from "./ui.js";
 import { attachInput, getInput } from "./input.js";
 import { attack, updateEmber } from "./combat.js";
-import { createHealerSlimes, updateCompanions, damagePlayer } from "./entities.js";
+import { createHealerSlimes, updateCompanions, damagePlayer, updateVisualEffects } from "./entities.js";
 import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
 import { createGunball, updateGunball } from "./bosses/gunball.js";
@@ -98,6 +98,7 @@ function update(dt) {
  updatePlayerProjectiles(dt);
  updateEnemyProjectiles(dt);
  updateFireTrails(dt);
+ updateVisualEffects(dt);
 
  s.camera.x = Math.max(0, Math.min(MAP.w-s.W, s.player.x-s.W/2));
  s.camera.y = Math.max(0, Math.min(MAP.h-s.H, s.player.y-s.H/2));
