@@ -22,8 +22,8 @@ attachConsole(startGame);
 
 function startGame() {
  const s = state;
- s.isAdmin = s.selected === 'admin' || s.isAdmin;
- if (s.selected === 'admin') s.selected = s.adminBaseClass;
+ s.isAdmin = s.selected === 'admin' || s.adminMode;
+ if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = [];

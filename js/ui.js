@@ -34,7 +34,8 @@ export function showScreen(id) {
  if (id === 'classScreen') {
   $('classScreen').classList.toggle('slimeTheme', state.selectedBoss === 'slime');
   $('classScreen').classList.toggle('dragonTheme', state.selectedBoss === 'dragon');
-  $('classScreen').classList.toggle('gunballTheme', state.selectedBoss === 'gunball')
+  $('classScreen').classList.toggle('gunballTheme', state.selectedBoss === 'gunball');
+  document.querySelectorAll('.classCard').forEach(c => c.classList.toggle('selected', c.dataset.class === (state.adminMode ? 'admin' : state.selected)))
  }
 }
 
@@ -119,7 +120,8 @@ export function attachUI({ startGame }) {
    state.unlocks.admin = true;
    saveUnlocks(); applyUnlocksToUI()
   }
-  if (dc !== 'admin') { state.adminBaseClass = dc; state.isAdmin = false }
+  if (dc === 'admin') state.adminMode = true;
+  else { state.adminMode = false; state.adminBaseClass = dc; state.isAdmin = false }
   state.selected = dc;
   document.querySelectorAll('.classCard').forEach(c => c.classList.toggle('selected', c === card))
  });
