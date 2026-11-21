@@ -1,4 +1,5 @@
 import { $ } from "./utils.js";
+import { ADMIN_UNLOCK_CODE } from "./config.js";
 import { state } from "./state.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
@@ -15,7 +16,7 @@ export function loadUnlocks() {
 }
 
 export function applyUnlocksToUI() {
- const labels = { healer: ['healerCard', 'Healer 💚'], ember: ['emberCard', 'Ember 🐲🔥'], gunner: ['gunnerCard', 'Gunner 🔫'] };
+ const labels = { healer: ['healerCard', 'Healer ' + String.fromCodePoint(0x1F49A)], ember: ['emberCard', 'Ember ' + String.fromCodePoint(0x1F432,0x1F525)], gunner: ['gunnerCard', 'Gunner ' + String.fromCodePoint(0x1F52B)], admin: ['adminCard', 'ADMIN ' + String.fromCodePoint(0x1F5A5,0xFE0F)] };
  for (const cls of Object.keys(labels)) {
   if (!state.unlocks[cls]) continue;
   const card = $(labels[cls][0]);
@@ -108,10 +109,18 @@ export function attachUI({ startGame }) {
  $('backLobby').onclick = () => showScreen('lobby');
 
  document.querySelectorAll('.classCard').forEach(card => card.onclick = () => {
-  if (card.dataset.class === 'healer' && !state.unlocks.healer) return;
-  if (card.dataset.class === 'ember' && !state.unlocks.ember) return;
-  if (card.dataset.class === 'gunner' && !state.unlocks.gunner) return;
-  state.selected = card.dataset.class;
+  const dc = card.dataset.class;
+  if (dc === 'healer' && !state.unlocks.healer) return;
+  if (dc === 'ember' && !state.unlocks.ember) return;
+  if (dc === 'gunner' && !state.unlocks.gunner) return;
+  if (dc === 'admin' && !state.unlocks.admin) {
+   const code = prompt("ADMIN-CODE EINGEBEN:");
+   if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;
+   state.unlocks.admin = true;
+   saveUnlocks(); applyUnlocksToUI()
+  }
+  if (dc !== 'admin') { state.adminBaseClass = dc; state.isAdmin = false }
+  state.selected = dc;
   document.querySelectorAll('.classCard').forEach(c => c.classList.toggle('selected', c === card))
  });
 
