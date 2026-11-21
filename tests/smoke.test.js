@@ -121,3 +121,28 @@ test('winning the fight persists the healer unlock', () => {
   const saved = JSON.parse(store.get('bossrushUnlocks'));
   assert.equal(saved.healer, true);
 });
+
+test('dragon and gunball rendering paths run without throwing', async () => {
+  const { draw } = await import('../js/render.js');
+  state.selected = 'archer';
+  state.selectedBoss = 'gunball';
+  startGame();
+  for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
+  state.bosses = [];
+  state.bosses.push({ id: 1, type: 'gunball', x: 400, y: 300, r: 82, hp: 1000, maxHp: 1000, alive: true, angle: 0, rotation: 1.3, flash: 0.2, mode: 'attacking', phaseTimer: 5, weaponIndex: 0, weaponTimer: 0, fireTimer: 0, attackCooldown: 0, attackName: '', wobble: 0 });
+  state.player.x = 500;
+  state.player.y = 320;
+  draw();
+  state.bosses[0].mode = 'vulnerable';
+  draw();
+  state.selectedBoss = 'dragon';
+  state.bosses[0] = { id: 2, type: 'dragon', x: 400, y: 300, r: 78, hp: 750, maxHp: 750, alive: true, angle: -0.6, rotation: 0, flash: 0.5, wobble: 0.5, mode: 'beamCharge', beamAngle: -0.6, beamCharge: 1 };
+  draw();
+  state.bosses[0].mode = 'beamActive';
+  draw();
+  state.bosses[0].mode = 'exhausted';
+  draw();
+  state.bosses[0].mode = 'guarded';
+  draw();
+  assert.ok(state.bosses[0].alive);
+});
