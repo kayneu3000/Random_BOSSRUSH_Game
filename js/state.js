@@ -1,0 +1,48 @@
+export const state = {
+ selected: 'archer',
+ selectedBoss: 'slime',
+ unlocks: { healer: false, ember: false, gunner: false },
+
+ player: null,
+ bosses: [],
+ projectiles: [],
+ enemyProjectiles: [],
+ particles: [],
+ effects: [],
+ companions: [],
+ infernoTowers: [],
+ fireTrails: [],
+
+ camera: { x: 0, y: 0 },
+ keys: {},
+ stick: { x: 0, y: 0 },
+
+ W: 0,
+ H: 0,
+ dpr: 1,
+ last: 0,
+ elapsed: 0,
+ kills: 0,
+ paused: false,
+ finished: false,
+ gameRunning: false,
+
+ attackTimer: 0,
+ dashTimer: 0,
+ dashDuration: 0,
+ invuln: 0,
+ screenShake: 0,
+ spawnId: 0,
+
+ emberBeamTimer: 0,
+ emberCooldown: 0,
+ emberTick: 0,
+ emberBeamAngle: 0,
+
+ healerHealCooldown: 0,
+ gunnerAmmo: 5,
+ gunnerReload: 0,
+ gunnerShotTimer: 0,
+
+ message: { text: '', until: Infinity },
+};
