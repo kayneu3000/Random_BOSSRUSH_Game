@@ -1,38 +1,53 @@
-# Random BOSSRUSH Game 🎮
+# Random BOSSRUSH Game
 
-Ein Boss-Rush-Spiel von Hugo – gebaut mit reinem HTML, CSS und JavaScript auf dem Canvas.
-Kein Framework, keine Assets: alle Bosse sind vollständig im Code gezeichnet.
-
-## Spielen
-
-Einfach die Spiel-URL öffnen – läuft am PC (Tastatur) und am Handy (Touch):
-
-**https://kayneu3000.github.io/Random_BOSSRUSH_Game/**
+Ein selbst programmiertes Boss-Rush-Spiel (HTML5 Canvas) von Hugo: Kämpfe gegen drei Bosse, schalte sieben Klassen frei, spiele am PC oder mobil.
 
 ## Bosse
 
-| Boss | HP | Besonderheit |
-|------|-----|--------------|
-| SLIME | 1.600 | Teilt sich beim Besiegen in kleinere Formen |
-| FEUERDRACHE | 750 | Unverwundbar, bis alle 4 Inferno-Türme zerstört sind |
-| GUNBALL | 1.000 | 15 verschiedene Patronen, wird in Phasen verwundbar |
+| Boss | Mechanik |
+|------|----------|
+| **Slime** | Teilt sich bei jedem Besiegwerden in immer kleinere Schleime (5 Stufen) |
+| **Feuerdrache** | 4 Inferno-Türme schützen ihn — zerstöre sie alle, um ihn 10 Sekunden verwundbar zu machen |
+| **Gunball** | 15 verschiedene Projektil-Typen in 3 Angriffsstufen, alle 2,5 Sekunden eine neue Waffe |
 
 ## Klassen
 
-Bogenschütze, Tank, Schwertkämpfer, Assassin – sowie drei Klassen, die durch
-Besiegen der Bosse freigeschaltet werden: Healer, Ember und Gunner.
+Archer, Tank, Schwertkämpfer, Assassin, **Healer** (Siegespreis: Slime), **Ember** (Siegespreis: Drache), **Gunner** (Siegespreis: Gunball).
 
-## Steurerung
+Freischaltungen werden automatisch im Browser (`localStorage`) gespeichert und bleiben beim nächsten Start erhalten.
 
-- **PC:** WASD / Pfeiltasten bewegen · `Space` / `J` Angreifen · `Shift` / `K` Dash
-- **Handy:** Joystick links · Knöpfe rechts für Angriff, Dash, Heilung
+## Steuerung
 
-## Roadmap / Ideen
+- **Bewegen:** WASD / Pfeiltasten oder Joystick (Touch)
+- **Angreifen:** Leertaste / J / Angriffs-Button
+- **Dash:** Shift / K / Dash-Button
+- **Heilen (Healer):** Heil-Button
+- **Pause:** Pause-Button oben rechts
 
-- Fortschritt (freigeschaltete Klassen) per `localStorage` speichern
-- Spiellogik, Rendering und Eingaben in separate Dateien aufteilen
-- Neuer 4. Boss
+## Projektstruktur
 
----
+Das Spiel läuft als statische Seite ohne Build-Tools — einfach `index.html` öffnen oder via GitHub Pages ausliefern.
 
-*Der Fortschritt (Freischaltungen) wird aktuell noch nicht gespeichert – jeder Neuladen startet bei null.*
+```
+index.html          Markup + Module-Einbindung
+css/style.css       alle Styles
+js/main.js          Spielstart, Loop, Verdrahtung
+js/config.js        Balancing-Daten (Klassen, HP, Projektile …)
+js/state.js         zentraler Spielzustand
+js/utils.js         Mathe-/DOM-Helfer
+js/canvas.js        Canvas-Setup
+js/ui.js            HUD, Menüs, Freischaltungen (localStorage)
+js/input.js         Tastatur, Joystick, Buttons
+js/combat.js        Angriffe, Dash, Ember-Strahl
+js/projectiles.js   Spieler- & Gegner-Projektile
+js/entities.js      Schaden, Partikel, Begleiter, Slime-Split
+js/bosses/          Slime, Feuerdrache, Gunball
+js/render.js        zeichnet die Spielszene
+tests/              Node-Tests (`npm test`)
+```
+
+## Entwicklung
+
+```bash
+npm test   # Unit-Tests + Smoke-Tests (Node, keine Abhängigkeiten)
+```
