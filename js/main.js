@@ -11,12 +11,14 @@ import { createGunball, updateGunball } from "./bosses/gunball.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
+import { attachConsole, spawnNextBossRush } from "./console.js";
 
 window.addEventListener('resize', resizeCanvas);
 loadUnlocks();
 applyUnlocksToUI();
 attachUI({ startGame });
 attachInput();
+attachConsole(startGame);
 
 function startGame() {
  const s = state, c = classes[s.selected];
@@ -25,6 +27,7 @@ function startGame() {
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
+ s.peace = false; s.brutal = false; s.friendlyFire = false; s.invincible = false; s.timeFreeze = false; s.dmgMultiplier = 1; s.bossRushQueue = []; s.arena = { w: MAP.w, h: MAP.h };
  s.emberBeamTimer = 0; s.emberCooldown = 0; s.emberTick = 0; s.emberBeamAngle = s.player.angle;
  s.healerHealCooldown = 0; s.gunnerAmmo = 5; s.gunnerReload = 0; s.gunnerShotTimer = 0;
  s.message = { text: '', until: Infinity };
@@ -63,9 +66,36 @@ function startGame() {
  requestAnimationFrame(loop)
 }
 
+function movePlayer(dt) {
+ const s = state, c = classes[s.selected];
+ if (s.dashDuration > 0) {
+  const dv = s.selected === 'sword' ? 1275 : 850;
+  s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
+ } else {
+  const v = getInput();
+  s.player.x += v.x*c.speed*dt; s.player.y += v.y*c.speed*dt;
+  if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x)
+ }
+ s.player.x = Math.max(30, Math.min(s.arena.w-30, s.player.x));
+ s.player.y = Math.max(30, Math.min(s.arena.h-30, s.player.y))
+}
+
+function updateCamera() {
+ const s = state;
+ s.camera.x = s.arena.w >= s.W ? Math.max(0, Math.min(s.arena.w-s.W, s.player.x-s.W/2)) : (s.arena.w-s.W)/2;
+ s.camera.y = s.arena.h >= s.H ? Math.max(0, Math.min(s.arena.h-s.H, s.player.y-s.H/2)) : (s.arena.h-s.H)/2
+}
+
 function update(dt) {
  const s = state;
  if (s.paused || s.finished) return;
+ if (s.timeFreeze) {
+  movePlayer(dt);
+  if (s.keys.KeyJ || s.keys.Space) attack();
+  updateCamera();
+  updateHUD();
+  return
+ }
  s.elapsed += dt;
  s.attackTimer = Math.max(0, s.attackTimer-dt); s.dashTimer = Math.max(0, s.dashTimer-dt);
  s.dashDuration = Math.max(0, s.dashDuration-dt); s.invuln = Math.max(0, s.invuln-dt);
@@ -73,16 +103,7 @@ function update(dt) {
  s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
  if (s.selected === 'gunner' && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER — GELADEN') }
 
- const v = getInput(), c = classes[s.selected];
- if (s.dashDuration > 0) {
-  const dv = s.selected === 'sword' ? 1275 : 850;
-  s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
- } else {
-  s.player.x += v.x*c.speed*dt; s.player.y += v.y*c.speed*dt
- }
- s.player.x = Math.max(30, Math.min(MAP.w-30, s.player.x));
- s.player.y = Math.max(30, Math.min(MAP.h-30, s.player.y));
- if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x);
+ movePlayer(dt);
  if (s.keys.KeyJ || s.keys.Space) attack();
  if (s.selected === 'ember') updateEmber(dt);
  updateCompanions(dt);
@@ -100,12 +121,13 @@ function update(dt) {
  updateFireTrails(dt);
  updateVisualEffects(dt);
 
- s.camera.x = Math.max(0, Math.min(MAP.w-s.W, s.player.x-s.W/2));
- s.camera.y = Math.max(0, Math.min(MAP.h-s.H, s.player.y-s.H/2));
+ updateCamera();
  s.screenShake = Math.max(0, s.screenShake-dt*25);
  updateHUD();
 
- if (s.bosses.filter(b => b.alive).length === 0) endGame(true)
+ if (s.bossRushQueue.length > 0) {
+  if (s.bosses.every(b => !b.alive)) spawnNextBossRush()
+ } else if (s.bosses.filter(b => b.alive).length === 0) endGame(true)
 }
 
 function loop(now) {

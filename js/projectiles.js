@@ -49,6 +49,9 @@ export function updateEnemyProjectiles(dt){
   if(p.type==='fireball'||!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
   else moveEnemyProjectile(p,dt);
   if(p.life>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){damagePlayer(p.damage);p.life=0}
+  if(p.life>0&&state.friendlyFire&&(p.age||0)>.35){
+   for(const b of state.bosses){if(!b.alive)continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage,true);p.life=0;break}}
+  }
  }
  state.enemyProjectiles=state.enemyProjectiles.filter(p=>p.life>0)
 }

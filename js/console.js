@@ -1,0 +1,193 @@
+import { state } from "./state.js";
+import { MAP, classes } from "./config.js";
+import { $ } from "./utils.js";
+import { showGameMessage } from "./ui.js";
+import { createSlime } from "./bosses/slime.js";
+import { createDragon, createTowers } from "./bosses/dragon.js";
+import { createGunball } from "./bosses/gunball.js";
+
+const ARENA_MIN_W=600, ARENA_MIN_H=450, ARENA_MAX_W=5000, ARENA_MAX_H=3600;
+
+let open=false, prevPaused=false, history=[], histIdx=-1;
+
+export function consoleIsOpen(){return open}
+
+export function attachConsole(startGame){
+ const bar=$('commandBar'), input=$('commandInput');
+ window.addEventListener('keydown', e=>{
+  if(e.target===input)return;
+  if(e.code!=='Enter')return;
+  if(!state.gameRunning||state.finished)return;
+  e.preventDefault();
+  open=true;prevPaused=state.paused;state.paused=true;
+  bar.style.display='flex';input.value='';
+  requestAnimationFrame(()=>input.focus())
+ });
+ input.addEventListener('keydown', e=>{
+  e.stopPropagation();
+  if(e.code==='Enter'){
+   e.preventDefault();
+   const cmd=input.value.trim();
+   input.value='';
+   if(cmd){history.unshift(cmd);histIdx=-1;runCommand(cmd,startGame)}
+   closeConsole()
+  }else if(e.code==='Escape'){closeConsole()}
+  else if(e.code==='ArrowUp'){if(history.length){histIdx=Math.min(histIdx+1,history.length-1);input.value=history[histIdx];e.preventDefault()}}
+  else if(e.code==='ArrowDown'){histIdx=Math.max(histIdx-1,-1);input.value=histIdx<0?'':history[histIdx];e.preventDefault()}
+ })
+}
+
+export function closeConsole(){
+ open=false;
+ $('commandBar').style.display='none';
+ state.paused=prevPaused;
+ $('commandInput').blur()
+}
+
+function fmt(n){return Number.isInteger(n)?n:n.toFixed(1)}
+
+export function runCommand(text, startGame){
+ const s=state, cmd=text.trim().toLowerCase();
+ if(!cmd){showGameMessage('KONSOLE \u2014 TIPPE "HELP"',1.6);return}
+ if(cmd.includes(' vs ')){
+  const [left,right]=cmd.split(' vs ').map(x=>x.trim());
+  return cmdDuel(left,right,startGame)
+ }
+ if(cmd==='friendly fire'){s.friendlyFire=!s.friendlyFire;showGameMessage('FRIENDLY FIRE '+(s.friendlyFire?'AN':'AUS'));return}
+ const parts=cmd.split(/\s+/), c=parts[0], a1=parts[1];
+ if(classes[c])return cmdClass(c);
+ if(c==='help')return cmdHelp(a1);
+ if(c==='hp'){
+  const n=Number(a1);
+  if(n>0){s.player.maxHp=Math.round(n);s.player.hp=Math.round(n);showGameMessage('HP AUF '+Math.round(n)+' GESETZT')}
+  else showGameMessage('HP: '+Math.ceil(s.player.hp)+' / '+s.player.maxHp);
+  return
+ }
+ if(c==='dmg'){
+  const n=Number(a1);
+  if(n>0){s.dmgMultiplier=n;showGameMessage('SCHADEN \u00d7'+fmt(n))}
+  else showGameMessage('SCHADEN: \u00d7'+fmt(s.dmgMultiplier));
+  return
+ }
+ if(c==='peace'){
+  s.peace=!s.peace;
+  if(s.peace)s.brutal=false;
+  showGameMessage(s.peace?'PEACE \u2014 NIEMAND GREIFT DICH AN':'KAMPF WIEDER AKTIV');
+  return
+ }
+ if(c==='brutal'){
+  s.brutal=!s.brutal;
+  if(s.brutal){s.peace=false;s.friendlyFire=true}
+  showGameMessage(s.brutal?'BRUTAL \u2014 ALLE GREIFEN ALLE AN (+50% SCHADEN)':'BRUTAL AUS');
+  return
+ }
+ if(c==='invincible'){
+  s.invincible=!s.invincible;
+  showGameMessage(s.invincible?'UNSTERBLICH':'WIEDER STERBLICH');
+  return
+ }
+ if(c==='time'){
+  if(a1==='freeze'){s.timeFreeze=true;showGameMessage('ZEIT EINGEFROREN')}
+  else if(a1==='normal'){s.timeFreeze=false;showGameMessage('ZEIT L\u00c4UFT WIEDER')}
+  else showGameMessage('USAGE: time freeze / time normal');
+  return
+ }
+ if(c==='arena')return cmdArena(a1,startGame);
+ if(c==='slime')return cmdSpawn('slime');
+ if(c==='dragon'){cmdSpawn('dragon');return}
+ if(c==='gunball')return cmdSpawn('gunball');
+ if(c==='bossrush')return cmdBossRush(startGame);
+ showGameMessage('UNBEKANNT: "'+cmd+'" \u2014 TIPPE "HELP"',2.2)
+}
+
+function cmdHelp(page){
+ const pages=[
+  'KOMMANDOS: slime dragon gunball  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: ember gunner sword archer tank assassin healer  \u00b7  help 2',
+  'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  help 3',
+  'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
+ ];
+ const p=Math.max(0,Math.min(pages.length-1,(Number(page)||1)-1));
+ showGameMessage(pages[p],2.6)
+}
+
+function cmdClass(name){
+ const s=state, c=classes[name];
+ if(!s.player)return;
+ const ratio=s.player.hp/s.player.maxHp;
+ s.selected=name;
+ s.player.maxHp=c.hp;s.player.hp=Math.max(1,Math.round(c.hp*ratio));
+ s.gunnerAmmo=5;s.gunnerReload=0;s.gunnerShotTimer=0;
+ s.attackTimer=0;
+ $('className').textContent=c.name;
+ $('attackIcon').textContent=name==='ember'?'\ud83d\udc32':name==='gunner'?'\ud83d\udd2b':c.icon;
+ $('attackLabel').textContent=name==='ember'?'FEUERSTRAHL':name==='gunner'?'SCHUSS':'ANGRIFF';
+ $('attackBtn').style.display=name==='healer'?'none':'flex';
+ $('healBtn').style.display=name==='healer'?'flex':'none';
+ showGameMessage('KLASSE: '+c.name.toUpperCase())
+}
+
+function cmdArena(arg,startGame){
+ const s=state;
+ if(arg==='slime'||arg==='dragon'||arg==='gunball'){s.selectedBoss=arg;startGame();return}
+ if(arg==='reset'||arg==='normal'){s.arena={w:MAP.w,h:MAP.h};s.player.x=Math.min(s.player.x,s.arena.w-30);s.player.y=Math.min(s.player.y,s.arena.h-30);showGameMessage('ARENA ZUR\u00dcCKGESETZT');return}
+ if(arg==='shrink'){s.arena={w:Math.max(ARENA_MIN_W,Math.round(s.arena.w*.65)),h:Math.max(ARENA_MIN_H,Math.round(s.arena.h*.65))};s.player.x=Math.min(s.player.x,s.arena.w-30);s.player.y=Math.min(s.player.y,s.arena.h-30);showGameMessage('ARENA SCHRUMPFEN: '+s.arena.w+'\u00d7'+s.arena.h);return}
+ if(arg==='grow'){s.arena={w:Math.min(ARENA_MAX_W,Math.round(s.arena.w/.65)),h:Math.min(ARENA_MAX_H,Math.round(s.arena.h/.65))};showGameMessage('ARENA W\u00c4CHST: '+s.arena.w+'\u00d7'+s.arena.h);return}
+ if(arg==='infinite'){s.arena={w:ARENA_MAX_W,h:ARENA_MAX_H};showGameMessage('UNENDLICHE ARENA');return}
+ showGameMessage('USAGE: arena slime|dragon|gunball|shrink|grow|infinite|reset',2.4)
+}
+
+function spawnSpot(){
+ const s=state;
+ const a=Math.random()*Math.PI*2;
+ let x=s.player.x+Math.cos(a)*520,y=s.player.y+Math.sin(a)*520;
+ x=Math.max(160,Math.min(s.arena.w-160,x));y=Math.max(160,Math.min(s.arena.h-160,y));
+ if(Math.hypot(x-s.player.x,y-s.player.y)<240){x=s.arena.w/2;y=Math.max(160,s.player.y-520)}
+ return {x,y}
+}
+
+function cmdSpawn(kind){
+ const s=state, spot=spawnSpot();
+ if(kind==='slime')createSlime(spot.x,spot.y,0);
+ else if(kind==='dragon')createDragon(spot.x,spot.y);
+ else if(kind==='gunball')createGunball(spot.x,spot.y);
+ showGameMessage('BOSS BESCHWOREN: '+kind.toUpperCase())
+}
+
+function spawnRushBoss(kind){
+ const s=state, x=s.arena.w/2, y=Math.max(200,s.player.y-420);
+ if(kind==='slime')createSlime(x,y,0);
+ else if(kind==='dragon'){createDragon(x,y);createTowers()}
+ else if(kind==='gunball')createGunball(x,y);
+ showGameMessage('BOSS RUSH: '+kind.toUpperCase()+'!')
+}
+
+export function spawnNextBossRush(){
+ const kind=state.bossRushQueue.shift();
+ if(kind)spawnRushBoss(kind)
+}
+
+function cmdBossRush(startGame){
+ const s=state;
+ s.selectedBoss='slime';
+ startGame();
+ s.bossRushQueue=['slime','dragon','gunball'];
+ s.bosses=[];s.enemyProjectiles=[];s.fireTrails=[];s.infernoTowers=[];
+ spawnNextBossRush()
+}
+
+function cmdDuel(left,right,startGame){
+ const s=state, kinds=['slime','dragon','gunball'];
+ if(!kinds.includes(left)||!kinds.includes(right)){showGameMessage('VS: z.B. "slime vs dragon"',2.2);return}
+ if(left===right){showGameMessage('VS: ZWEI VERSCHIEDENE BOSSE!',1.8);return}
+ s.selectedBoss=right;
+ startGame();
+ let x=s.arena.w/2, y=s.arena.h-220;
+ if(left==='slime')createSlime(x,y,0);
+ else if(left==='dragon')createDragon(x,y);
+ else createGunball(x,y);
+ const A=s.bosses[s.bosses.length-1], B=s.bosses[0];
+ A.duelTarget=B;B.duelTarget=A;
+ s.player.x=170;s.player.y=s.arena.h/2;
+ s.peace=true;s.friendlyFire=true;
+ showGameMessage(left.toUpperCase()+' VS '+right.toUpperCase(),2.4)
+}

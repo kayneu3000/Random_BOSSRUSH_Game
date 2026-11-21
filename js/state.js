@@ -45,4 +45,13 @@ export const state = {
  gunnerShotTimer: 0,
 
  message: { text: '', until: Infinity },
+
+ peace: false,
+ brutal: false,
+ friendlyFire: false,
+ invincible: false,
+ timeFreeze: false,
+ dmgMultiplier: 1,
+ arena: { w: 2300, h: 1650 },
+ bossRushQueue: [],
 };

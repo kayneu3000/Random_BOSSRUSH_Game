@@ -30,19 +30,24 @@ export function updateCompanions(dt){
 export function splitSlime(b){
  if(b.tier>=4)return;
  for(let i=0;i<2;i++){const a=Math.PI*i+Math.random()*.3;createSlime(b.x+Math.cos(a)*b.r*.65,b.y+Math.sin(a)*b.r*.65,b.tier+1)}
+ if(b.duelTarget)for(const kid of state.bosses.slice(-2))kid.duelTarget=b.duelTarget;
  for(let i=0;i<30;i++)particle(b.x,b.y,'#55dfff',Math.random()*5+2);
  state.screenShake=8
+}
+
+export function duelTargetOf(b){
+ const t=b.duelTarget;
+ return t&&t.alive?t:state.player
 }
 
 export function particle(x,y,color,size){
  state.particles.push({x,y,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*240,life:.4+Math.random()*.6,max:.8,color,size})
 }
 
-export function damageBoss(b,amount){
+export function damageBoss(b,amount,ignoreGuard){
  if(!b.alive)return;
- if(b.type==='dragon'&&b.mode!=='exhausted')return;
- if(b.type==='gunball'&&b.mode!=='vulnerable')return;
- b.hp-=amount;b.flash=.13;
+ if(!ignoreGuard){if(b.type==='dragon'&&b.mode!=='exhausted')return;if(b.type==='gunball'&&b.mode!=='vulnerable')return}
+ b.hp-=amount*(state.dmgMultiplier||1);b.flash=.13;
  for(let i=0;i<3;i++)particle(b.x,b.y,b.type==='dragon'?'#ffad55':b.type==='gunball'?'#c7a2ff':'#a7f7ff',3+Math.random()*3);
  if(b.hp<=0){
   b.hp=0;b.alive=false;state.kills++;
@@ -52,13 +57,14 @@ export function damageBoss(b,amount){
 }
 
 export function damageTower(t,amount){
- if(t.destroyed)return;t.hp-=amount;
+ if(t.destroyed)return;t.hp-=amount*(state.dmgMultiplier||1);
  for(let i=0;i<5;i++)particle(t.x,t.y,'#ff4d24',4+Math.random()*4);
  if(t.hp<=0){t.hp=0;t.destroyed=true;t.eyeOn=false;state.screenShake=10;for(let i=0;i<30;i++)particle(t.x,t.y,'#ff632d',Math.random()*8+2);state.effects.push({type:'towerDestroy',x:t.x,y:t.y,life:1});if(state.infernoTowers.every(q=>q.destroyed))exhaustDragon()}
 }
 
 export function damagePlayer(amount){
- if(state.invuln>0||state.finished)return;
+ if(state.invincible||state.peace||state.invuln>0||state.finished)return;
+ if(state.brutal)amount*=1.5;
  if(state.selected==='tank')amount*=.5;
  state.player.hp-=amount;state.invuln=.65;state.screenShake=9;
  for(let i=0;i<12;i++)particle(state.player.x,state.player.y,'#ff725f',4);
