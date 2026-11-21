@@ -235,9 +235,32 @@ test('admin class persists across restarts and console is admin-only by design',
   runCommand('hp 300');
   assert.equal(state.player.maxHp, 300);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
+  state.selected = 'gunner';
+  state.adminMode = true;
   startGame();
   assert.equal(state.isAdmin, true, 'admin persists on restart');
   assert.equal(state.selected, 'gunner', 'base class survives restart');
   runCommand('sword');
   assert.equal(state.adminBaseClass, 'sword', 'console class switch updates base class');
+});
+
+test('admin mode sticks across lobby/restart until a normal class is picked', async () => {
+  state.unlocks.admin = true;
+  state.adminMode = true;
+  state.isAdmin = false;
+  state.selected = 'admin';
+  state.adminBaseClass = 'tank';
+  startGame();
+  assert.equal(state.isAdmin, true);
+  assert.equal(state.selected, 'tank');
+  for (let i = 0; i < 5 && !state.finished; i++) update(1 / 60);
+  state.selected = 'archer';
+  startGame();
+  assert.equal(state.isAdmin, true, 'admin mode survives second start');
+  assert.equal(state.selected, 'tank');
+  state.adminMode = false;
+  state.isAdmin = false;
+  state.selected = 'archer';
+  startGame();
+  assert.equal(state.isAdmin, false, 'normal class pick disables admin');
 });
