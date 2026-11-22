@@ -22,7 +22,14 @@ export const SLIME_DMG=[32,26,21,17,13];
 export const DRAGON_HP=750;
 export const SHADOW_HP=500;
 export const GUNBALL_HP=1000;
+export const SNAKE_START_SEGMENTS=8;
+export const SNAKE_MAX_SEGMENTS=10;
+export const SNAKE_SEGMENT_HP=100;
+export const APPLE_HP=60;
+export const APPLE_MAX=2;
 export const TOWER_HP=75;
+
+export const VENOM={speed:260,r:10,damage:12,life:5};
 
 export const gunballWeak=['snake','boomerang','growth','mirror','teleport'];
 export const gunballMedium=['giant','splitter','planet','chain','time','rain'];

@@ -19,7 +19,7 @@ export function updateCompanions(dt){
   comp.x+=dx*Math.min(1,dt*5.5);comp.y+=dy*Math.min(1,dt*5.5);
   comp.attackCooldown-=dt;if(comp.attackCooldown>0)continue;
   let target=null,dist=Infinity;
-  for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded')))continue;const td=Math.hypot(b.x-comp.x,b.y-comp.y);if(td<dist){dist=td;target=b}}
+  for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;const td=Math.hypot(b.x-comp.x,b.y-comp.y);if(td<dist){dist=td;target=b}}
   for(const t of state.infernoTowers){if(t.destroyed)continue;const td=Math.hypot(t.x-comp.x,t.y-comp.y);if(td<dist){dist=td;target=t}}
   if(target&&dist<650){
    if(target.type==='dragon'||target.type==='slime'||target.type==='gunball'||target.type==='shadow')damageBoss(target,10);else damageTower(target,10);
@@ -54,7 +54,7 @@ export function particle(x,y,color,size){
 
 export function damageBoss(b,amount,ignoreGuard){
  if(!b.alive)return;
- if(!ignoreGuard){if(b.type==='dragon'&&b.mode!=='exhausted')return;if(b.type==='gunball'&&b.mode!=='vulnerable')return;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))return}
+ if(!ignoreGuard){if(b.type==='dragon'&&b.mode!=='exhausted')return;if(b.type==='gunball'&&b.mode!=='vulnerable')return;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))return;if(b.type==='snake')return}
  b.hp-=amount*(state.dmgMultiplier||1);b.flash=.13;
  for(let i=0;i<3;i++)particle(b.x,b.y,b.type==='dragon'?'#ffad55':b.type==='gunball'?'#c7a2ff':'#a7f7ff',3+Math.random()*3);
  if(b.hp<=0){
