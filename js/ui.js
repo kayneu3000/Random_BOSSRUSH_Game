@@ -5,7 +5,11 @@ import { state } from "./state.js";
 const SAVE_KEY = 'bossrushUnlocks';
 
 function saveUnlocks() {
- try { localStorage.setItem(SAVE_KEY, JSON.stringify(state.unlocks)) } catch (e) { /* Speicher nicht verfügbar */ }
+ try {
+  const persist = { ...state.unlocks };
+  delete persist.admin;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(persist))
+ } catch (e) { /* Speicher nicht verfügbar */ }
 }
 
 export function loadUnlocks() {
@@ -13,6 +17,7 @@ export function loadUnlocks() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) Object.assign(state.unlocks, JSON.parse(raw))
  } catch (e) { /* kaputte Daten ignorieren */ }
+ state.unlocks.admin = false
 }
 
 export function applyUnlocksToUI() {
@@ -118,7 +123,7 @@ export function attachUI({ startGame }) {
    const code = prompt("ADMIN-CODE EINGEBEN:");
    if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;
    state.unlocks.admin = true;
-   saveUnlocks(); applyUnlocksToUI()
+   applyUnlocksToUI()
   }
   if (dc === 'admin') state.adminMode = true;
   else { state.adminMode = false; state.adminBaseClass = dc; state.isAdmin = false }
