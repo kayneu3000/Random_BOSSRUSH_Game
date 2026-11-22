@@ -35,9 +35,16 @@ export function splitSlime(b){
  state.screenShake=8
 }
 
+let dummyTarget = null;
 export function duelTargetOf(b){
  const t=b.duelTarget;
- return t&&t.alive?t:state.player
+ if(t&&t.alive)return t;
+ if(state.notMe){
+  if(!dummyTarget)dummyTarget={type:'dummy',r:60,hp:999999,maxHp:999999,alive:true,x:0,y:0};
+  dummyTarget.x=state.arena.w/2;dummyTarget.y=state.arena.h/2;
+  return dummyTarget
+ }
+ return state.player
 }
 
 export function particle(x,y,color,size){

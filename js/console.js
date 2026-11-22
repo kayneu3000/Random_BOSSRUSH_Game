@@ -67,6 +67,7 @@ export function runCommand(text, startGame){
   return cmdDuel(left,right,startGame)
  }
  if(cmd==='friendly fire'){s.friendlyFire=!s.friendlyFire;showGameMessage('FRIENDLY FIRE '+(s.friendlyFire?'AN':'AUS'));return}
+ if(cmd==='not me'){s.notMe=!s.notMe;showGameMessage(s.notMe?'NOT ME \u2014 DIE GEGNER ZIELEN NICHT MEHR AUF DICH':'DICH WIEDER IM VISIER');return}
  const parts=cmd.split(/\s+/), c=parts[0], a1=parts[1];
  if(classes[c])return cmdClass(c);
  if(c==='help')return cmdHelp(a1);
@@ -80,6 +81,18 @@ export function runCommand(text, startGame){
   const n=Number(a1);
   if(n>0){s.dmgMultiplier=n;showGameMessage('SCHADEN \u00d7'+fmt(n))}
   else showGameMessage('SCHADEN: \u00d7'+fmt(s.dmgMultiplier));
+  return
+ }
+ if(c==='speed'){
+  const n=Number(a1);
+  if(n>0&&s.player){s.player.speed=n;showGameMessage('TEMPO: '+n)}
+  else showGameMessage(s.player&&s.player.speed?'TEMPO: '+Math.round(s.player.speed):'USAGE: speed 300');
+  return
+ }
+ if(c==='cooldown'){
+  const n=Number(a1);
+  if(n>0){s.cooldownOverride=n;showGameMessage('COOLDOWN: '+n+'s')}
+  else {s.cooldownOverride=0;showGameMessage('COOLDOWN: KLASSEN-STANDARD ('+(classes[s.selected]?classes[s.selected].cool+'s':'-')+')')}
   return
  }
  if(c==='peace'){
@@ -116,8 +129,8 @@ export function runCommand(text, startGame){
 function cmdHelp(page){
  const pages=[
   'KOMMANDOS: slime dragon gunball  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: ember gunner sword archer tank assassin healer  \u00b7  help 2',
-  'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  help 3',
-  'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
+  'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  speed 300  \u00b7  cooldown 0.5  \u00b7  help 3',
+  'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  not me  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
  ];
  const p=Math.max(0,Math.min(pages.length-1,(Number(page)||1)-1));
  showGameMessage(pages[p],2.6)

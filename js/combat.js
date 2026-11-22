@@ -45,7 +45,7 @@ export function attack(){
  if(state.selected==='healer')return;
  if(state.selected==='gunner'){shootGunner();return}
  if(state.attackTimer>0)return;
- const c=classes[state.selected];state.attackTimer=c.cool;
+ const c=classes[state.selected];state.attackTimer=state.cooldownOverride>0?state.cooldownOverride:c.cool;
  if(state.selected==='archer'){
   const target=pickRangedTarget();
   if(!target)return;

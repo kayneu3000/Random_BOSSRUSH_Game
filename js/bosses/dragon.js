@@ -48,14 +48,14 @@ export function updateDragon(b,dt){
  if(b.mode==='guarded'){
   const T=duelTargetOf(b);
   b.angle=Math.atan2(T.y-b.y,T.x-b.x);
-  const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1,desiredDistance=310,movementSpeed=125;
+  const noAttack=state.peace&&T===state.player, dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1,desiredDistance=310,movementSpeed=125;
   if(d>desiredDistance+35){b.x+=dx/d*movementSpeed*dt;b.y+=dy/d*movementSpeed*dt}
   else if(d<desiredDistance-35){b.x-=dx/d*movementSpeed*.65*dt;b.y-=dy/d*movementSpeed*.65*dt}
   else{const orbit=Math.sin(state.elapsed*1.1)*.45;b.x+=Math.cos(b.angle+Math.PI/2)*movementSpeed*.45*orbit*dt;b.y+=Math.sin(b.angle+Math.PI/2)*movementSpeed*.45*orbit*dt}
   b.x=Math.max(100,Math.min(MAP.w-100,b.x));b.y=Math.max(100,Math.min(MAP.h-100,b.y));
-  if(!state.peace&&b.infernoCooldown<=0){startInfernoBeam(b);b.infernoCooldown=9;return}
-  if(!state.peace&&b.fireCooldown<=0){dragonFireball(b);b.fireCooldown=1.65}
-  if(!state.peace&&Math.random()<dt*.15)startDragonDash(b);return
+  if(!noAttack&&b.infernoCooldown<=0){startInfernoBeam(b);b.infernoCooldown=9;return}
+  if(!noAttack&&b.fireCooldown<=0){dragonFireball(b);b.fireCooldown=1.65}
+  if(!noAttack&&Math.random()<dt*.15)startDragonDash(b);return
  }
  if(b.mode==='beamCharge'){b.beamCharge-=dt;b.angle=b.beamAngle;if(b.beamCharge<=0){b.mode='beamActive';b.beamTimer=2.1;showGameMessage('INFERNO STRAHL!')}return}
  if(b.mode==='beamActive'){
