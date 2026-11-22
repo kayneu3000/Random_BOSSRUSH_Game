@@ -8,7 +8,7 @@ import { pointSegmentDistance, rayMapLength } from "./utils.js";
 function pickRangedTarget(){
  let target=null,dist=Infinity;
  for(const t of state.infernoTowers){if(t.destroyed)continue;const d=Math.hypot(t.x-state.player.x,t.y-state.player.y);if(d<dist){dist=d;target=t}}
- for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable'))continue;const d=Math.hypot(b.x-state.player.x,b.y-state.player.y);if(d<dist){dist=d;target=b}}
+ for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded')))continue;const d=Math.hypot(b.x-state.player.x,b.y-state.player.y);if(d<dist){dist=d;target=b}}
  return target
 }
 
@@ -20,7 +20,7 @@ function pickMeleeTarget(c){
   if(Math.abs(diff)>.85||d>c.range+t.r)continue;if(d<dist){dist=d;target=t;isTower=true}
  }
  for(const b of state.bosses){
-  if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable'))continue;
+  if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded')))continue;
   const dx=b.x-state.player.x,dy=b.y-state.player.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(a-state.player.angle),Math.cos(a-state.player.angle));
   if(Math.abs(diff)>.85||d>c.range+b.r)continue;if(d<dist){dist=d;target=b;isTower=false}
  }
@@ -70,7 +70,7 @@ export function updateEmber(dt){
   if(state.emberTick<=0){
    state.emberTick+=.3;const length=rayMapLength(state.player.x,state.player.y,state.emberBeamAngle),ex=state.player.x+Math.cos(state.emberBeamAngle)*length,ey=state.player.y+Math.sin(state.emberBeamAngle)*length;
    for(const t of state.infernoTowers){if(!t.destroyed&&pointSegmentDistance(t.x,t.y,state.player.x,state.player.y,ex,ey)<t.r+22)damageTower(t,20)}
-   for(const b of state.bosses){if(!b.alive)continue;if(b.type==='dragon'&&b.mode!=='exhausted')continue;if(b.type==='gunball'&&b.mode!=='vulnerable')continue;if(pointSegmentDistance(b.x,b.y,state.player.x,state.player.y,ex,ey)<b.r+25)damageBoss(b,20)}
+   for(const b of state.bosses){if(!b.alive)continue;if(b.type==='dragon'&&b.mode!=='exhausted')continue;if(b.type==='gunball'&&b.mode!=='vulnerable')continue;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))continue;if(pointSegmentDistance(b.x,b.y,state.player.x,state.player.y,ex,ey)<b.r+25)damageBoss(b,20)}
    for(let i=0;i<7;i++){const distance=Math.random()*Math.min(length,500),px=state.player.x+Math.cos(state.emberBeamAngle)*distance,py=state.player.y+Math.sin(state.emberBeamAngle)*distance;particle(px,py,Math.random()<.5?'#ffb52e':'#ff4b12',3+Math.random()*6)}
   }
   if(state.emberBeamTimer<=0){state.emberBeamTimer=0;state.emberCooldown=4;showGameMessage('EMBER — AUFLADEN')}

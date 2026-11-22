@@ -207,13 +207,13 @@ test('console: spawn, duel, boss rush and time freeze work', async () => {
   assert.equal(state.friendlyFire, true);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
   runCommand('bossrush', startGame);
-  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball']);
+  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball', 'shadow']);
   assert.ok(state.bosses.some(b => b.type === 'slime' && b.alive));
   for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
   for (const b of state.bosses) b.alive = false;
   update(1 / 60);
   assert.ok(state.bosses.some(b => b.type === 'dragon' && b.alive), 'next boss rush boss spawns');
-  assert.equal(state.bossRushQueue.length, 1);
+  assert.equal(state.bossRushQueue.length, 2);
   runCommand('time freeze');
   const t0 = state.elapsed;
   update(1 / 60);
@@ -312,6 +312,56 @@ test('boss HUD shows console-spawned bosses and time freeze keeps cooldowns runn
   update(0.5);
   assert.equal(state.attackTimer, 1.5, 'attack cooldown runs during time freeze');
   state.timeFreeze = false;
+});
+
+test('faust class exists with tutorial stats', async () => {
+  const { classes } = await import('../js/config.js');
+  assert.equal(classes.faust.hp, 100);
+  assert.equal(classes.faust.damage, 10);
+  assert.equal(classes.faust.cool, .5);
+  assert.equal(classes.faust.range, 70);
+});
+
+test('tutorial: shadow fight spawns with 500 hp and faust class', async () => {
+  const { runCommand } = await import('../js/console.js');
+  state.gameRunning = true; state.paused = false; state.finished = false; state.peace = false; state.notMe = false;
+  state.selected = 'faust'; state.selectedBoss = 'shadow';
+  state.adminMode = false; state.adminBaseClass = 'archer';
+  startGame();
+  assert.ok(state.bosses.some(b => b.type === 'shadow' && b.alive), 'tutorial boss spawns');
+  assert.equal(state.bosses.find(b => b.type === 'shadow').maxHp, 500);
+  runCommand('shadow');
+  assert.equal(state.bosses.filter(b => b.type === 'shadow').length, 2, 'console can spawn extra shadow');
+  runCommand('shadow vs gunball', startGame);
+  assert.ok(state.bosses.some(b => b.type === 'shadow') && state.bosses.some(b => b.type === 'gunball'), 'duel supports shadow');
+  state.bosses = []; state.infernoTowers = []; state.enemyProjectiles = [];
+});
+
+test('shadow phases: invulnerable while throwing and tower-guarded', async () => {
+  const { createShadow, updateShadow, exhaustShadow } = await import('../js/bosses/shadow.js');
+  const { damageBoss } = await import('../js/entities.js');
+  state.gameRunning = true; state.paused = false; state.finished = false; state.notMe = false;
+  state.bosses = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createShadow(500, 400);
+  const sh = state.bosses[0];
+  const hp0 = sh.hp;
+  sh.hp = 300; updateShadow(sh, 1 / 60);
+  assert.equal(sh.phase, 2);
+  assert.equal(sh.mode, 'throwing', 'phase 2 starts throwing');
+  sh.throwTimer = .01; updateShadow(sh, 1 / 60);
+  assert.equal(sh.mode, 'vulnerable');
+  damageBoss(sh, 40);
+  assert.ok(sh.hp < 300, 'shadow vulnerable after throwing window');
+  sh.hp = 150; updateShadow(sh, 1 / 60);
+  assert.equal(sh.phase, 3);
+  assert.equal(state.infernoTowers.filter(t => !t.destroyed).length, 4, 'phase 3 spawns 4 towers');
+  const hpGuarded = sh.hp;
+  damageBoss(sh, 50);
+  assert.equal(sh.hp, hpGuarded, 'shadow invulnerable while guarded by towers');
+  exhaustShadow();
+  damageBoss(sh, 60);
+  assert.ok(sh.hp < hpGuarded, 'shadow vulnerable 15s after towers fall');
+  state.bosses = []; state.infernoTowers = []; state.enemyProjectiles = [];
 });
 
 test('admin unlock is never persisted and uses the new code', async () => {
