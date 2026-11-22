@@ -1,6 +1,6 @@
 export const state = {
  selected: 'faust',
- selectedBoss: 'slime',
+ selectedBoss: 'shadow',
  unlocks: { healer: false, ember: false, gunner: false },
 
  player: null,
