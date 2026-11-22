@@ -370,6 +370,24 @@ test('shadow phases: invulnerable while throwing and tower-guarded', async () =>
   state.peace = false;
 });
 
+test('shadow attacks in bursts with a 2s pause', async () => {
+  const { createShadow, updateShadow } = await import('../js/bosses/shadow.js');
+  state.gameRunning = true; state.paused = false; state.finished = false; state.notMe = false; state.peace = false;
+  state.bosses = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createShadow(500, 400);
+  const sh = state.bosses[0];
+  sh.mode = 'stalking';
+  state.player = { x: sh.x + 120, y: sh.y, r: 17, speed: 260 };
+  sh.pauseTimer = 2; sh.fireCooldown = 0; sh.sprintTimer = 0;
+  const n0 = state.enemyProjectiles.length;
+  let threwDuringPause = false;
+  for (let i = 0; i < 60; i++) { updateShadow(sh, 1 / 60); if (state.enemyProjectiles.length > n0) { threwDuringPause = true; break } }
+  assert.ok(!threwDuringPause, 'boss rests 2s after attacking');
+  for (let i = 0; i < 600 && state.enemyProjectiles.length <= n0; i++) updateShadow(sh, 1 / 60);
+  assert.ok(state.enemyProjectiles.length > n0, 'boss attacks again after the pause');
+  state.bosses = []; state.infernoTowers = []; state.enemyProjectiles = [];
+});
+
 test('admin unlock is never persisted and uses the new code', async () => {
   const { loadUnlocks } = await import('../js/ui.js');
   const { ADMIN_UNLOCK_CODE } = await import('../js/config.js');
