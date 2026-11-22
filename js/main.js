@@ -9,6 +9,7 @@ import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
 import { createGunball, updateGunball } from "./bosses/gunball.js";
 import { createShadow, updateShadow } from "./bosses/shadow.js";
+import { createSnake, updateSnake } from "./bosses/snake.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
@@ -27,7 +28,7 @@ function startGame() {
  if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
- s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = [];
+ s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.apples = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
@@ -40,6 +41,7 @@ function startGame() {
  $('game').classList.toggle('slimeTheme', s.selectedBoss === 'slime');
  $('game').classList.toggle('gunballTheme', s.selectedBoss === 'gunball');
  $('game').classList.toggle('shadowTheme', s.selectedBoss === 'shadow');
+ $('game').classList.toggle('snakeTheme', s.selectedBoss === 'snake');
  $('game').classList.toggle('emberTheme', s.selected === 'ember');
 
  if (s.selectedBoss === 'dragon') {
@@ -54,6 +56,10 @@ function startGame() {
   createGunball(MAP.w/2, MAP.h/2-200);
   $('bossName').textContent = 'GUNBALL'; $('huntTitle').textContent = 'GUNBALL HUNT';
   showGameMessage('GUNBALL AKTIVIERT!', 2.2)
+ } else if (s.selectedBoss === 'snake') {
+  createSnake(MAP.w/2, MAP.h/2-200);
+  $('bossName').textContent = 'SNAKE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 SNAKE';
+  showGameMessage('ZERST\u00d6RE SEINE \u00c4PFEL \u2014 DANN HUNGERT SNAKE UND SCHRUMPFT!', 3.2)
  } else {
   createSlime(MAP.w/2, MAP.h/2-200, 0);
   $('bossName').textContent = 'SLIME'; $('huntTitle').textContent = 'SLIME HUNT';
@@ -128,6 +134,7 @@ function update(dt) {
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   if (b.type === 'shadow') { updateShadow(b, dt); continue }
+  if (b.type === 'snake') { updateSnake(b, dt); continue }
   updateSlime(b, dt)
  }
 
@@ -135,6 +142,7 @@ function update(dt) {
   for (let i = 0; i < s.bosses.length; i++) for (let j = i+1; j < s.bosses.length; j++) {
    const A = s.bosses[i], B = s.bosses[j];
    if (!A.alive || !B.alive) continue;
+   if (A.type === 'snake' || B.type === 'snake') continue;
    if (Math.hypot(A.x-B.x, A.y-B.y) < A.r + B.r*.7 && A.attackCooldown <= 0) {
     damageBoss(A, 20, true); damageBoss(B, 20, true);
     A.attackCooldown = 1; B.attackCooldown = 1

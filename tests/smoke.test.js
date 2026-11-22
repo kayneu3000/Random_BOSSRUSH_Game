@@ -208,13 +208,13 @@ test('console: spawn, duel, boss rush and time freeze work', async () => {
   assert.equal(state.friendlyFire, true);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
   runCommand('bossrush', startGame);
-  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball', 'shadow']);
+  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball', 'shadow', 'snake']);
   assert.ok(state.bosses.some(b => b.type === 'slime' && b.alive));
   for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
   for (const b of state.bosses) b.alive = false;
   update(1 / 60);
   assert.ok(state.bosses.some(b => b.type === 'dragon' && b.alive), 'next boss rush boss spawns');
-  assert.equal(state.bossRushQueue.length, 2);
+  assert.equal(state.bossRushQueue.length, 3);
   runCommand('time freeze');
   const t0 = state.elapsed;
   update(1 / 60);
@@ -418,4 +418,111 @@ test('admin mode sticks across lobby/restart until a normal class is picked', as
   state.selected = 'archer';
   startGame();
   assert.equal(state.isAdmin, false, 'normal class pick disables admin');
+});
+
+test('snake: hunger via apple destruction shrinks segments to victory', async () => {
+  const { createSnake, updateSnake, damageApple } = await import('../js/bosses/snake.js');
+  const { damageBoss } = await import('../js/entities.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.dmgMultiplier = 1;
+  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  assert.equal(sn.segments, 8, 'snake starts with 8 segments');
+  assert.equal(sn.maxHp, 800);
+  damageBoss(sn, 50);
+  assert.equal(sn.hp, 800, 'snake is immune to direct hits');
+  state.player = { x: sn.x + 400, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  sn.venomCooldown = 0; sn.appleTimer = 0;
+  updateSnake(sn, 1 / 60);
+  assert.ok(state.enemyProjectiles.some(p => p.type === 'venom'), 'snake spits venom projectiles');
+  assert.ok(state.apples.length === 1, 'apples appear on the map');
+  const a = state.apples[0];
+  damageApple(a, 999);
+  assert.equal(sn.segments, 7, 'one destroyed apple removes one segment');
+  assert.equal(sn.maxHp, 700, 'snake loses max hp while starving');
+  for (let i = 0; i < 7; i++) {
+    sn.appleTimer = 0;
+    updateSnake(sn, 1 / 60);
+    damageApple(state.apples[0], 999);
+  }
+  assert.equal(sn.segments, 0);
+  assert.equal(sn.alive, false, 'snake is defeated when only the head remains');
+  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+});
+
+test('snake eats apples to grow', async () => {
+  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = true; state.dmgMultiplier = 1;
+  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  state.apples.push({ x: sn.x, y: sn.y, r: 26, hp: 60, maxHp: 60, wobble: 0, destroyed: false });
+  const segs0 = sn.segments, hp0 = sn.hp;
+  updateSnake(sn, 1 / 60);
+  assert.equal(sn.segments, segs0 + 1, 'eating an apple adds a segment');
+  assert.ok(sn.hp > hp0, 'eating an apple heals the snake');
+  assert.equal(state.apples.some(a => a.destroyed), true, 'the apple was eaten');
+  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+});
+
+test('snake body contact damages the player', async () => {
+  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.invincible = false;
+  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  state.player = { x: sn.x, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  state.invuln = 0; sn.attackCooldown = 0; sn.peace = undefined;
+  const hp0 = state.player.hp;
+  updateSnake(sn, 1 / 60);
+  assert.ok(state.player.hp < hp0, 'head/body contact hurts');
+  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+});
+
+test('snake fight boots via lobby data and shows the segment HUD', async () => {
+  state.selected = 'archer'; state.selectedBoss = 'snake';
+  state.unlocks = { healer: true, ember: true, gunner: true, admin: false };
+  state.adminMode = false; state.isAdmin = false;
+  startGame();
+  assert.ok(state.bosses.some(b => b.type === 'snake' && b.alive), 'snake fight spawns');
+  const { updateHUD } = await import('../js/ui.js');
+  updateHUD();
+  assert.equal(document.getElementById('bossName').textContent, 'SNAKE');
+  assert.ok(document.getElementById('bossCount').textContent.includes('SEGMENTE'), 'segment hud is shown');
+  state.bosses = []; state.apples = [];
+});
+
+test('snake stays locked until slime, dragon and gunball are defeated', () => {
+  state.unlocks.healer = true; state.unlocks.ember = true; state.unlocks.gunner = true;
+  const el = document.getElementById('selectSnake');
+  state.selectedBoss = 'shadow';
+  el.onclick();
+  assert.equal(state.selectedBoss, 'snake', 'unlocked after three wins');
+  state.unlocks.gunner = false;
+  state.selectedBoss = 'shadow';
+  el.onclick();
+  assert.equal(state.selectedBoss, 'shadow', 'locked without all three wins');
+  state.unlocks.gunner = true;
+  state.bosses = []; state.apples = [];
+});
+
+test('snake and apple rendering paths run without throwing', async () => {
+  const { draw } = await import('../js/render.js');
+  const { createSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false; state.notMe = false;
+  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  state.selected = 'archer'; state.selectedBoss = 'snake'; state.peace = false;
+  createSnake(400, 300);
+  state.apples.push({ x: 520, y: 260, r: 26, hp: 60, maxHp: 60, wobble: 1, destroyed: false });
+  state.bosses[0].trail = [{ x: 380, y: 300 }, { x: 360, y: 300 }];
+  state.player = { x: 640, y: 420, r: 17, speed: 260, angle: 0 };
+  for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
+  draw();
+  state.bosses[0].whipTimer = .5;
+  draw();
+  assert.ok(state.bosses[0].alive);
+  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
 });

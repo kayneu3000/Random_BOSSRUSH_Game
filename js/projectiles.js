@@ -1,12 +1,15 @@
 import { state } from "./state.js";
 import { damageBoss, damagePlayer, damageTower } from "./entities.js";
+import { damageApple } from "./bosses/snake.js";
 
 export function updatePlayerProjectiles(dt){
  for(const p of state.projectiles){
   p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)continue;
   for(const t of state.infernoTowers){if(!t.destroyed&&Math.hypot(p.x-t.x,p.y-t.y)<p.r+t.r){damageTower(t,p.damage);p.life=0;break}}
   if(p.life<=0)continue;
-  for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded')))continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage);p.life=0;break}}
+  for(const a of state.apples){if(!a.destroyed&&Math.hypot(p.x-a.x,p.y-a.y)<p.r+a.r){damageApple(a,p.damage);p.life=0;break}}
+  if(p.life<=0)continue;
+  for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage);p.life=0;break}}
  }
  state.projectiles=state.projectiles.filter(p=>p.life>0)
 }

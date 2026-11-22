@@ -29,7 +29,8 @@ export function applyUnlocksToUI() {
   card.querySelector('h3').textContent = labels[cls][1]
  }
  if (state.unlocks.ember) $('emberCard').classList.add('emberUnlocked');
- if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked')
+ if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked');
+ $('selectSnake').classList.toggle('snakeLocked', !(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner));
 }
 
 export function showScreen(id) {
@@ -71,6 +72,8 @@ export function endGame(win) {
  } else if (win && state.selectedBoss === 'gunball') {
   state.unlocks.gunner = true;
   $('overlayText').textContent = 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.'
+ } else if (win && state.selectedBoss === 'snake') {
+  $('overlayText').textContent = 'SNAKE ist besiegt! Du hast ihn mit seinen eigenen Äpfeln ausgetrickst — Hunger! Level 2 geschafft!'
  } else $('overlayText').textContent = win ? 'Der Boss wurde besiegt!' : 'Der Boss hat dich besiegt. Versuche es erneut!';
  applyUnlocksToUI();
  saveUnlocks();
@@ -100,17 +103,18 @@ export function updateHUD() {
 
  const living = s.bosses.filter(b => b.alive), total = living.reduce((sum, b) => sum + b.hp, 0), max = living.reduce((sum, b) => sum + b.maxHp, 0);
  $('bossHPFill').style.width = (max ? total / max * 100 : 0) + '%';
- const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN' };
+ const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'SNAKE' };
  const bossTypes = [...new Set(living.map(b => b.type))];
  if (bossTypes.length > 1) {
   $('bossName').textContent = bossTypes.map(t => BOSS_NAMES[t]).join(' + ');
   $('bossCount').textContent = living.length + ' BOSSE AKTIV'
  } else if (bossTypes.length === 1) {
   $('bossName').textContent = BOSS_NAMES[bossTypes[0]];
-  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow');
+  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow'), sn = living.find(q => q.type === 'snake');
   if (d) $('bossCount').textContent = d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV';
   else if (g) $('bossCount').textContent = g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`;
   else if (sh) $('bossCount').textContent = sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase;
+  else if (sn) $('bossCount').textContent = sn.segments + (sn.segments === 1 ? ' SEGMENT ÜBRIG' : ' SEGMENTE ÜBRIG');
  else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
  }
 }
@@ -120,6 +124,10 @@ export function attachUI({ startGame }) {
  $('selectDragon').onclick = () => { state.selectedBoss = 'dragon'; showScreen('classScreen') };
  $('selectGunball').onclick = () => { state.selectedBoss = 'gunball'; showScreen('classScreen') };
  $('selectShadow').onclick = () => { state.selectedBoss = 'shadow'; showScreen('classScreen') };
+ $('selectSnake').onclick = () => {
+  if (!(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner)) return;
+  state.selectedBoss = 'snake'; showScreen('classScreen')
+ };
  $('tutStart').onclick = () => { state.selectedBoss = 'shadow'; state.selected = 'faust'; state.adminMode = false; state.isAdmin = false; startGame() };
  $('tutSkip').onclick = () => { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } showScreen('lobby') };
  $('backLobby').onclick = () => showScreen('lobby');
