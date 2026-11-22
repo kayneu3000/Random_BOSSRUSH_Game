@@ -5,7 +5,7 @@ import { showGameMessage } from "../ui.js";
 import { createTowers } from "./dragon.js";
 
 export function createShadow(x,y){
- state.bosses.push({id:++state.spawnId,type:'shadow',x,y,r:66,hp:SHADOW_HP,maxHp:SHADOW_HP,alive:true,flash:0,wobble:0,mode:'stalking',phase:1,sprintTimer:0,sprintDx:0,sprintDy:0,fireCooldown:1.2,throwTimer:0,vulnerTimer:0,attackCooldown:0})
+ state.bosses.push({id:++state.spawnId,type:'shadow',x,y,r:66,hp:SHADOW_HP,maxHp:SHADOW_HP,alive:true,flash:0,wobble:0,mode:'stalking',phase:1,sprintTimer:0,sprintDx:0,sprintDy:0,fireCooldown:1.2,throwTimer:0,vulnerTimer:0,attackCooldown:0,pauseTimer:0})
 }
 
 function shadowPhaseOf(b){
@@ -42,7 +42,7 @@ function clampArena(b){
 
 export function updateShadow(b,dt){
  b.wobble+=dt*3;b.flash=Math.max(0,b.flash-dt);
- b.fireCooldown=Math.max(0,b.fireCooldown-dt);b.attackCooldown=Math.max(0,b.attackCooldown-dt);
+ b.fireCooldown=Math.max(0,b.fireCooldown-dt);b.attackCooldown=Math.max(0,b.attackCooldown-dt);b.pauseTimer=Math.max(0,b.pauseTimer-dt);
  const phase=shadowPhaseOf(b);
  if(phase!==b.phase){
   b.phase=phase;
@@ -53,13 +53,15 @@ export function updateShadow(b,dt){
  b.angle=Math.atan2(T.y-b.y,T.x-b.x);
  if(b.mode==='stalking'){
   const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1;
-  if(b.sprintTimer>0){
+  if(b.pauseTimer>0){
+   b.x+=dx/d*60*dt;b.y+=dy/d*60*dt
+  }else if(b.sprintTimer>0){
    b.sprintTimer-=dt;b.x+=b.sprintDx*540*dt;b.y+=b.sprintDy*540*dt;
-   if(b.fireCooldown<=0){throwShurikens(b,1);b.fireCooldown=2}
+   if(b.sprintTimer<=0)b.pauseTimer=2
   }else{
    b.x+=dx/d*135*dt;b.y+=dy/d*135*dt;
-   if(Math.random()<dt*.28&&d>140){b.sprintDx=dx/d;b.sprintDy=dy/d;b.sprintTimer=1.05;b.fireCooldown=2.2}
-   else if(b.fireCooldown<=0&&d<640){throwShurikens(b,1);b.fireCooldown=2.4}
+   if(Math.random()<dt*.28&&d>140){b.sprintDx=dx/d;b.sprintDy=dy/d;b.sprintTimer=1.05}
+   else if(b.fireCooldown<=0&&d<640){throwShurikens(b,1);b.fireCooldown=2.4;b.pauseTimer=2}
   }
   clampArena(b)
  }else if(b.mode==='throwing'){
@@ -71,7 +73,7 @@ export function updateShadow(b,dt){
  }else if(b.mode==='guarded'){
   const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1;
   if(d>420){b.x+=dx/d*110*dt;b.y+=dy/d*110*dt}
-  if(b.fireCooldown<=0){throwShurikens(b,5);b.fireCooldown=.4}
+  if(b.pauseTimer<=0&&b.fireCooldown<=0){throwShurikens(b,5);b.fireCooldown=.4;b.pauseTimer=2}
   clampArena(b);
   return
  }else if(b.mode==='vulnerable'){
