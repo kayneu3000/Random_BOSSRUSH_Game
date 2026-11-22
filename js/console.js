@@ -21,8 +21,15 @@ export function openConsole(){
 
 export function attachConsole(startGame){
  const bar=$('commandBar'), input=$('commandInput');
- const cmdBtn=$('cmdBtn');
+ const cmdBtn=$('cmdBtn'), sendBtn=$('commandSend');
  cmdBtn.addEventListener('pointerdown',e=>{e.preventDefault();openConsole()});
+ const submit=()=>{
+  const cmd=input.value.trim();
+  input.value='';histIdx=-1;
+  if(cmd){history.unshift(cmd);runCommand(cmd,startGame)}
+  closeConsole()
+ };
+ sendBtn.addEventListener('pointerdown',e=>{e.preventDefault();submit()});
  window.addEventListener('keydown', e=>{
   if(e.target===input)return;
   if(e.code!=='Enter')return;
@@ -36,10 +43,7 @@ export function attachConsole(startGame){
   e.stopPropagation();
   if(e.code==='Enter'){
    e.preventDefault();
-   const cmd=input.value.trim();
-   input.value='';
-   if(cmd){history.unshift(cmd);histIdx=-1;runCommand(cmd,startGame)}
-   closeConsole()
+   submit()
   }else if(e.code==='Escape'){closeConsole()}
   else if(e.code==='ArrowUp'){if(history.length){histIdx=Math.min(histIdx+1,history.length-1);input.value=history[histIdx];e.preventDefault()}}
   else if(e.code==='ArrowDown'){histIdx=Math.max(histIdx-1,-1);input.value=histIdx<0?'':history[histIdx];e.preventDefault()}

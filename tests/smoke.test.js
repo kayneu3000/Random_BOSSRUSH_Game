@@ -244,6 +244,17 @@ test('admin class persists across restarts and console is admin-only by design',
   assert.equal(state.adminBaseClass, 'sword', 'console class switch updates base class');
 });
 
+test('admin unlock is never persisted and uses the new code', async () => {
+  const { loadUnlocks } = await import('../js/ui.js');
+  const { ADMIN_UNLOCK_CODE } = await import('../js/config.js');
+  assert.equal(ADMIN_UNLOCK_CODE, 'GH0163XYZ', 'new admin code is active');
+  localStorage.setItem('bossrushUnlocks', JSON.stringify({ healer: true, admin: true }));
+  state.unlocks.admin = true;
+  loadUnlocks();
+  assert.equal(state.unlocks.admin, false, 'admin unlock is session-only');
+  assert.equal(state.unlocks.healer, true, 'boss unlocks still persist');
+});
+
 test('admin mode sticks across lobby/restart until a normal class is picked', async () => {
   state.unlocks.admin = true;
   state.adminMode = true;
