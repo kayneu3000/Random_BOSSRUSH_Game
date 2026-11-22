@@ -349,6 +349,10 @@ test('shadow phases: invulnerable while throwing and tower-guarded', async () =>
   sh.hp = 300; updateShadow(sh, 1 / 60);
   assert.equal(sh.phase, 2);
   assert.equal(sh.mode, 'throwing', 'phase 2 starts throwing');
+  sh.fireCooldown = 0; updateShadow(sh, 1 / 60);
+  const shurikens = state.enemyProjectiles.filter(p => p.type === 'shuriken');
+  assert.ok(shurikens.length > 0, 'shadow throws shurikens');
+  assert.ok(shurikens.every(p => p.damage === 5), 'shurikens are easy for beginners');
   sh.throwTimer = .01; updateShadow(sh, 1 / 60);
   assert.equal(sh.mode, 'vulnerable');
   damageBoss(sh, 40);
@@ -363,6 +367,7 @@ test('shadow phases: invulnerable while throwing and tower-guarded', async () =>
   damageBoss(sh, 60);
   assert.ok(sh.hp < hpGuarded, 'shadow vulnerable 15s after towers fall');
   state.bosses = []; state.infernoTowers = []; state.enemyProjectiles = [];
+  state.peace = false;
 });
 
 test('admin unlock is never persisted and uses the new code', async () => {

@@ -81,6 +81,6 @@ export function updateTowerBeams(dt){
   if(t.destroyed)continue;
   t.wobble+=dt*2;t.beamTimer-=dt;t.hitCooldown-=dt;if(t.beamTimer<=0)t.beamTimer=.08;
   const d=pointSegmentDistance(state.player.x,state.player.y,t.x,t.y,hero.x,hero.y);
-  if(d<13+state.player.r&&t.hitCooldown<=0){damagePlayer(12);t.hitCooldown=.65}
+  if(d<13+state.player.r&&t.hitCooldown<=0){damagePlayer(hero.type==='shadow'?8:12);t.hitCooldown=.65}
  }
 }
