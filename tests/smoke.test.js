@@ -526,3 +526,28 @@ test('snake and apple rendering paths run without throwing', async () => {
   assert.ok(state.bosses[0].alive);
   state.bosses = []; state.apples = []; state.enemyProjectiles = [];
 });
+
+test('snake looks around instead of staring at the player constantly', async () => {
+  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = true; state.dmgMultiplier = 1;
+  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  state.player = { x: sn.x, y: sn.y - 500, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  sn.faceAngle = 0; sn.faceTarget = 0; sn.faceTimer = 99;
+  updateSnake(sn, 1 / 60);
+  assert.equal(sn.faceAngle, 0, 'no re-lock while the look timer runs');
+  const realRandom = Math.random;
+  Math.random = () => 0.9;
+  try {
+    sn.faceTimer = 0;
+    updateSnake(sn, 1 / 60);
+    assert.ok(Math.abs(sn.faceTarget - (-Math.PI / 2)) < 0.01, 're-lock aims along the travel direction');
+    for (let i = 0; i < 120; i++) updateSnake(sn, 1 / 60);
+    assert.ok(Math.abs(Math.atan2(Math.sin(sn.faceAngle + Math.PI / 2), Math.cos(sn.faceAngle + Math.PI / 2))) < .3, 'face angle rotates toward the look target');
+  } finally {
+    Math.random = realRandom;
+  }
+  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+});
