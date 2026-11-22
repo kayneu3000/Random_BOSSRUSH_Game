@@ -27,6 +27,11 @@
    <div class="bossInfo"><h3>GUNBALL</h3><p>1.000 HP. Eine rotierende silberne Roboterkugel mit vier Waffen. Nutzt 15 verschiedene Patronen und wird regelmäßig verwundbar.</p><p style="color:#c5a2ff;margin-top:7px">BOSS · 1.000 HP · WAFFENARSENAL</p></div>
   </div>
   <button class="mainButton" id="selectGunball">GUNBALL AUSWÄHLEN →</button>
+ <div class="bossCard" style="margin-top:20px">
+   <div class="shadowPreview"></div>
+   <div class="bossInfo"><h3>DER UNBEKANNTE DES SCHATTENS</h3><p>500 HP. 3 Phasen: Sprint-Attacken und Wurfsterne, eine Wurf-Fontäne (danach verwundbar) und 4 Schattentürme. Der Tutorial-Boss!</p><p style="color:#9a8cff;margin-top:7px">TUTORIAL · 500 HP · 3 PHASEN</p></div>
+  </div>
+  <button class="mainButton" id="selectShadow">TUTORIAL STARTEN →</button>
  </div>
 </div>
 
@@ -41,10 +46,22 @@
    <div class="classCard locked" data-class="healer" id="healerCard"><div class="classIcon">💚</div><h3>Healer 🔒</h3><p class="stats">100 HP · Heiltrank +75 HP</p><p>Besiege den Slime zum Freischalten. Heilung alle 30 Sekunden.</p></div>
    <div class="classCard locked" data-class="ember" id="emberCard"><div class="classIcon">🐲🔥</div><h3>Ember 🔒</h3><p class="stats">200 HP · Feuerstrahl</p><p>Ein Drachenkopf als Hand. 5 Sekunden Feuerstrahl, danach 4 Sekunden Aufladung. Besiege den Drachen!</p></div>
    <div class="classCard locked" data-class="gunner" id="gunnerCard"><div class="classIcon">🔫</div><h3>Gunner 🔒</h3><p class="stats">200 HP · 40 Schaden</p><p>5 Patronen im Magazin. Schießt in Blickrichtung. 5 Sekunden Nachladen. Besiege Gunball!</p></div>
+   <div class="classCard" data-class="faust"><div class="classIcon">👊</div><h3>Faustkämpfer</h3><p class="stats">100 HP · 10 Schaden</p><p>Pure Fäuste. 0,5 Sekunden Cooldown.</p></div>
    <div class="classCard locked" data-class="admin" id="adminCard"><div class="classIcon">🖥️</div><h3>Admin 🔒</h3><p class="stats">KONSOLE · CHEATS · ARENA</p><p>Geheimer Code nötig (jede Sitzung). Kommandokonsole: Bosse beschwören, `slime vs dragon`, `time freeze`, `bossrush` u.v.m.</p></div>
   </div>
   <button class="mainButton" id="startGame">KAMPF BEGINNEN ⚔</button>
   <button style="width:100%;margin-top:9px" id="backLobby">← ZURÜCK</button>
+ </div>
+</div>
+
+<div id="tutScreen" class="screen">
+ <div class="logo" style="font-size:clamp(30px,6vw,53px)">TUTORIAL</div>
+ <div class="panel">
+  <h2>DIE STEUERUNG</h2>
+  <p><b>Bewegung:</b> WASD / linker Stick · <b>Angriff:</b> J / Leertaste / ANGRIFF-Button · <b>Dash:</b> ➤</p>
+  <p>Du kämpfst mit <b>Fäusten</b> gegen <b>DER UNBEKANNTE DES SCHATTENS</b> (500 HP). Achte in <b>Phase 2</b> genau auf: Während er wirft, ist er unverwundbar — danach 10 Sekunden lang angreifen! <b>Phase 3</b>: Zerstöre alle 4 Türme!</p>
+  <button class="mainButton" id="tutStart">TUTORIAL FIGHT STARTEN →</button>
+  <button style="width:100%;margin-top:9px" id="tutSkip">ICH KENNE SCHON DAS SPIEL</button>
  </div>
 </div>
 

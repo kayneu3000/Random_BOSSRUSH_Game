@@ -8,6 +8,7 @@ import { createHealerSlimes, updateCompanions, damagePlayer, damageBoss, updateV
 import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
 import { createGunball, updateGunball } from "./bosses/gunball.js";
+import { createShadow, updateShadow } from "./bosses/shadow.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
@@ -38,12 +39,17 @@ function startGame() {
  $('game').classList.toggle('dragonTheme', s.selectedBoss === 'dragon');
  $('game').classList.toggle('slimeTheme', s.selectedBoss === 'slime');
  $('game').classList.toggle('gunballTheme', s.selectedBoss === 'gunball');
+ $('game').classList.toggle('shadowTheme', s.selectedBoss === 'shadow');
  $('game').classList.toggle('emberTheme', s.selected === 'ember');
 
  if (s.selectedBoss === 'dragon') {
   createDragon(MAP.w/2, MAP.h/2-200); createTowers();
   $('bossName').textContent = 'FEUERDRACHE'; $('huntTitle').textContent = 'DRAGON FIGHT';
   showGameMessage('DIE INFERNO-TÜRME ERWACHEN', 2.2)
+ } else if (s.selectedBoss === 'shadow') {
+  createShadow(MAP.w/2, MAP.h/2-200);
+  $('bossName').textContent = 'DER UNBEKANNTE DES SCHATTENS'; $('huntTitle').textContent = 'TUTORIAL';
+  showGameMessage('DER UNBEKANNTE DES SCHATTENS', 2.4)
  } else if (s.selectedBoss === 'gunball') {
   createGunball(MAP.w/2, MAP.h/2-200);
   $('bossName').textContent = 'GUNBALL'; $('huntTitle').textContent = 'GUNBALL HUNT';
@@ -121,6 +127,7 @@ function update(dt) {
   if (!b.alive) continue;
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
+  if (b.type === 'shadow') { updateShadow(b, dt); continue }
   updateSlime(b, dt)
  }
 

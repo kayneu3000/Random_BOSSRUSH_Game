@@ -7,6 +7,7 @@ export const classes = {
  tank:{name:'TANK',hp:350,damage:65,cool:2.5,range:105,speed:145,icon:'🔨'},
  sword:{name:'SCHWERTKÄMPFER',hp:200,damage:30,cool:1,range:100,speed:235,icon:'⚔'},
  assassin:{name:'ASSASSIN',hp:200,damage:10,cool:.2,range:47,speed:345,icon:'🗡'},
+ faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
  healer:{name:'HEALER',hp:100,damage:0,cool:0,range:0,speed:235,icon:'💚'},
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},
  gunner:{name:'GUNNER',hp:200,damage:40,cool:0,range:900,speed:235,icon:'🔫'}
@@ -19,6 +20,7 @@ export const SLIME_DASH=[1.25,1.15,1.05,.95,.85];
 export const SLIME_DMG=[32,26,21,17,13];
 
 export const DRAGON_HP=750;
+export const SHADOW_HP=500;
 export const GUNBALL_HP=1000;
 export const TOWER_HP=75;
 

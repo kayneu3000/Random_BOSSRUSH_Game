@@ -61,6 +61,7 @@ export function endGame(win) {
  state.finished = true; state.paused = true; $('overlay').style.display = 'flex';
  $('overlayTitle').textContent = win ? 'SIEG!' : 'BESIEGT';
  state.kills = 0; $('kills').textContent = '0 besiegt';
+ if (win && state.selectedBoss === 'shadow') { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } $('overlayText').textContent = 'Tutorial geschafft! Ab jetzt warten alle Bosse in der Lobby auf dich!' }
  if (win && state.selectedBoss === 'slime') {
   state.unlocks.healer = true;
   $('overlayText').textContent = 'Alle Slime-Formen besiegt! Healer freigeschaltet!'
@@ -99,17 +100,18 @@ export function updateHUD() {
 
  const living = s.bosses.filter(b => b.alive), total = living.reduce((sum, b) => sum + b.hp, 0), max = living.reduce((sum, b) => sum + b.maxHp, 0);
  $('bossHPFill').style.width = (max ? total / max * 100 : 0) + '%';
- const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL' };
+ const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN' };
  const bossTypes = [...new Set(living.map(b => b.type))];
  if (bossTypes.length > 1) {
   $('bossName').textContent = bossTypes.map(t => BOSS_NAMES[t]).join(' + ');
   $('bossCount').textContent = living.length + ' BOSSE AKTIV'
  } else if (bossTypes.length === 1) {
   $('bossName').textContent = BOSS_NAMES[bossTypes[0]];
-  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball');
+  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow');
   if (d) $('bossCount').textContent = d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV';
   else if (g) $('bossCount').textContent = g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`;
-  else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
+  else if (sh) $('bossCount').textContent = sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase;
+ else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
  }
 }
 
@@ -117,6 +119,9 @@ export function attachUI({ startGame }) {
  $('selectBoss').onclick = () => { state.selectedBoss = 'slime'; showScreen('classScreen') };
  $('selectDragon').onclick = () => { state.selectedBoss = 'dragon'; showScreen('classScreen') };
  $('selectGunball').onclick = () => { state.selectedBoss = 'gunball'; showScreen('classScreen') };
+ $('selectShadow').onclick = () => { state.selectedBoss = 'shadow'; showScreen('classScreen') };
+ $('tutStart').onclick = () => { state.selectedBoss = 'shadow'; state.selected = 'faust'; state.adminMode = false; state.isAdmin = false; startGame() };
+ $('tutSkip').onclick = () => { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } showScreen('lobby') };
  $('backLobby').onclick = () => showScreen('lobby');
 
  document.querySelectorAll('.classCard').forEach(card => card.onclick = () => {
@@ -141,4 +146,6 @@ export function attachUI({ startGame }) {
  $('resume').onclick = () => setPause(false);
  $('restart').onclick = startGame;
  $('toLobby').onclick = backToLobby;
+
+ if (!localStorage.getItem('bossrushTutorial')) showScreen('tutScreen');
 }

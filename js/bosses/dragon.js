@@ -75,12 +75,12 @@ export function updateDragon(b,dt){
 }
 
 export function updateTowerBeams(dt){
- const dragon=state.bosses.find(b=>b.type==='dragon'&&b.alive);
- if(!dragon)return;
+ const dragon=state.bosses.find(b=>b.type==='dragon'&&b.alive), shadowB=state.bosses.find(b=>b.type==='shadow'&&b.alive), hero=dragon||shadowB;
+ if(!hero)return;
  for(const t of state.infernoTowers){
   if(t.destroyed)continue;
   t.wobble+=dt*2;t.beamTimer-=dt;t.hitCooldown-=dt;if(t.beamTimer<=0)t.beamTimer=.08;
-  const d=pointSegmentDistance(state.player.x,state.player.y,t.x,t.y,dragon.x,dragon.y);
+  const d=pointSegmentDistance(state.player.x,state.player.y,t.x,t.y,hero.x,hero.y);
   if(d<13+state.player.r&&t.hitCooldown<=0){damagePlayer(12);t.hitCooldown=.65}
  }
 }
