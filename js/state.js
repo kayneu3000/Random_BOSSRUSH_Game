@@ -1,5 +1,5 @@
 export const state = {
- selected: 'archer',
+ selected: 'faust',
  selectedBoss: 'slime',
  unlocks: { healer: false, ember: false, gunner: false },
 
