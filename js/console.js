@@ -130,7 +130,7 @@ export function runCommand(text, startGame){
 
 function cmdHelp(page){
  const pages=[
-  'KOMMANDOS: slime dragon gunball shadow  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: ember gunner sword archer tank assassin healer  \u00b7  help 2',
+  'KOMMANDOS: slime dragon gunball shadow  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: faust ember gunner sword archer tank assassin healer  \u00b7  help 2',
   'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  speed 300  \u00b7  cooldown 0.5  \u00b7  help 3',
   'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  not me  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
  ];
