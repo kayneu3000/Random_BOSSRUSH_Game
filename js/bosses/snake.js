@@ -10,8 +10,10 @@ export function headRadiusOf(snake){
 
 export function createSnake(x,y){
  const segments=SNAKE_START_SEGMENTS, maxHp=segments*SNAKE_SEGMENT_HP;
- state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:maxHp,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],venomCooldown:1,whipCooldown:3.5,whipTimer:0,whipDx:0,whipDy:0,appleTimer:.5,attackCooldown:0})
+ state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:maxHp,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],venomCooldown:1,whipCooldown:3.5,whipTimer:0,whipDx:0,whipDy:0,appleTimer:.5,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1})
 }
+
+function normAng(a){return Math.atan2(Math.sin(a),Math.cos(a))}
 
 function clampArena(b){
  b.x=Math.max(120,Math.min(MAP.w-120,b.x));b.y=Math.max(120,Math.min(MAP.h-120,b.y))
@@ -134,6 +136,17 @@ export function updateSnake(b,dt){
  if(b.trail.length>(b.segments+2)*3)b.trail.length=(b.segments+2)*3;
 
  if(b.venomCooldown<=0){fireVenom(b);b.venomCooldown=1.1}
+
+ b.faceTimer-=dt;
+ if(b.faceTimer<=0){
+  if(Math.random()<.32)b.faceTarget=Math.random()*Math.PI*2;
+  else if(target)b.faceTarget=Math.atan2(target.y-b.y,target.x-b.x);
+  else b.faceTarget=Math.atan2(T.y-b.y,T.x-b.x);
+  b.faceTimer=1.6+Math.random()*2.4
+ }
+ if(b.whipTimer>0&&(b.whipDx||b.whipDy))b.faceTarget=Math.atan2(b.whipDy,b.whipDx);
+ const dAng=normAng(b.faceTarget-b.faceAngle);
+ b.faceAngle+=Math.max(-3*dt,Math.min(3*dt,dAng))
 
  const pts=trailPoints(b).slice(0,b.segments+1);
  for(let i=0;i<b.segments;i++){
