@@ -151,6 +151,7 @@ test('slash effects and particles fade out over time', () => {
   state.selected = 'sword';
   state.selectedBoss = 'slime';
   startGame();
+  state.peace = true;
   state.bosses[0].hp = 999999;
   state.effects.push({ type: 'slash', x: 0, y: 0, angle: 0, life: 0.2, r: 50, weapon: 'sword' });
   state.particles.push({ x: 0, y: 0, vx: 0, vy: 0, life: 0.3, max: 0.3, size: 3, color: '#fff' });
