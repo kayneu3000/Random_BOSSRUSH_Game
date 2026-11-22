@@ -54,6 +54,8 @@ export const state = {
  friendlyFire: false,
  invincible: false,
  timeFreeze: false,
+ notMe: false,
+ cooldownOverride: 0,
  dmgMultiplier: 1,
  arena: { w: 2300, h: 1650 },
  bossRushQueue: [],

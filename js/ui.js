@@ -99,13 +99,18 @@ export function updateHUD() {
 
  const living = s.bosses.filter(b => b.alive), total = living.reduce((sum, b) => sum + b.hp, 0), max = living.reduce((sum, b) => sum + b.maxHp, 0);
  $('bossHPFill').style.width = (max ? total / max * 100 : 0) + '%';
- if (s.selectedBoss === 'dragon') {
-  const d = living.find(b => b.type === 'dragon');
-  if (d) $('bossCount').textContent = d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV'
- } else if (s.selectedBoss === 'gunball') {
-  const b = living.find(q => q.type === 'gunball');
-  if (b) $('bossCount').textContent = b.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(b.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(b.phaseTimer)}s · ${b.attackName || 'WAFFEN BEREIT'}`
- } else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
+ const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL' };
+ const bossTypes = [...new Set(living.map(b => b.type))];
+ if (bossTypes.length > 1) {
+  $('bossName').textContent = bossTypes.map(t => BOSS_NAMES[t]).join(' + ');
+  $('bossCount').textContent = living.length + ' BOSSE AKTIV'
+ } else if (bossTypes.length === 1) {
+  $('bossName').textContent = BOSS_NAMES[bossTypes[0]];
+  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball');
+  if (d) $('bossCount').textContent = d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV';
+  else if (g) $('bossCount').textContent = g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`;
+  else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
+ }
 }
 
 export function attachUI({ startGame }) {

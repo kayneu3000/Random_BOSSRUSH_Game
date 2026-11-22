@@ -244,6 +244,76 @@ test('admin class persists across restarts and console is admin-only by design',
   assert.equal(state.adminBaseClass, 'sword', 'console class switch updates base class');
 });
 
+test('duel: dragon and gunball attack despite peace gating', async () => {
+  const { createDragon, updateDragon } = await import('../js/bosses/dragon.js');
+  const { createGunball, updateGunball } = await import('../js/bosses/gunball.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.bosses = []; state.enemyProjectiles = []; state.fireTrails = []; state.infernoTowers = [];
+  state.peace = true; state.friendlyFire = true; state.brutal = false;
+  createDragon(400, 300); createGunball(220, 160);
+  const d = state.bosses.find(b => b.type === 'dragon'), g = state.bosses.find(b => b.type === 'gunball');
+  d.duelTarget = g; g.duelTarget = d;
+  d.fireCooldown = 0; d.infernoCooldown = 5; d.attackCooldown = 0;
+  updateDragon(d, 1 / 60);
+  assert.ok(state.enemyProjectiles.length > 0, 'dragon fires at duel target despite peace');
+  g.fireTimer = 0;
+  updateGunball(g, 1 / 60);
+  assert.ok(state.enemyProjectiles.length > 1, 'gunball fires at duel target despite peace');
+  state.peace = false; state.friendlyFire = false; state.bosses = [];
+});
+
+test('console commands: speed, cooldown and not me', async () => {
+  const { runCommand } = await import('../js/console.js');
+  const { attack } = await import('../js/combat.js');
+  const { createSlime } = await import('../js/bosses/slime.js');
+  const { duelTargetOf } = await import('../js/entities.js');
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  state.adminMode = false; state.adminBaseClass = 'archer';
+  startGame();
+  runCommand('speed 480');
+  assert.equal(state.player.speed, 480, 'speed command sets player speed');
+  runCommand('cooldown 0.5');
+  assert.equal(state.cooldownOverride, 0.5);
+  state.bosses = []; createSlime(state.player.x + 120, state.player.y, 0);
+  state.projectiles = []; state.attackTimer = 0;
+  attack();
+  assert.equal(state.attackTimer, 0.5, 'attack uses the cooldown override');
+  runCommand('cooldown');
+  assert.equal(state.cooldownOverride, 0, 'cooldown without number resets to class default');
+  runCommand('not me');
+  assert.equal(state.notMe, true);
+  const t = duelTargetOf(state.bosses[0]);
+  assert.notEqual(t, state.player, 'bosses no longer target the player');
+  assert.equal(t.x, state.arena.w / 2, 'bosses aim at the arena center instead');
+  runCommand('not me');
+  assert.equal(duelTargetOf(state.bosses[0]), state.player);
+});
+
+test('boss HUD shows console-spawned bosses and time freeze keeps cooldowns running', async () => {
+  const { runCommand } = await import('../js/console.js');
+  const { updateHUD } = await import('../js/ui.js');
+  const { createDragon } = await import('../js/bosses/dragon.js');
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  state.adminMode = false; state.adminBaseClass = 'archer';
+  startGame();
+  createDragon(state.player.x + 400, state.player.y - 300);
+  updateHUD();
+  assert.ok(document.getElementById('bossName').textContent.includes('DRACHE'), 'spawned dragon appears in the boss bar');
+  assert.ok(document.getElementById('bossCount').textContent.includes('BOSSE AKTIV'), 'combined boss count shown');
+  state.friendlyFire = true;
+  const d = state.bosses.find(b => b.type === 'dragon');
+  const A = state.bosses.find(b => b.type === 'slime');
+  A.x = d.x + d.r * 0.6; A.y = d.y; A.attackCooldown = 0; d.attackCooldown = 0;
+  const hpA = A.hp, hpD = d.hp;
+  update(1 / 60);
+  assert.ok(A.hp < hpA && d.hp < hpD, 'bosses damage each other under friendly fire');
+  state.friendlyFire = false;
+  state.timeFreeze = true; state.attackTimer = 2;
+  update(0.5);
+  assert.equal(state.attackTimer, 1.5, 'attack cooldown runs during time freeze');
+  state.timeFreeze = false;
+});
+
 test('admin unlock is never persisted and uses the new code', async () => {
   const { loadUnlocks } = await import('../js/ui.js');
   const { ADMIN_UNLOCK_CODE } = await import('../js/config.js');

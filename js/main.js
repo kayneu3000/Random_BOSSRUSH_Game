@@ -4,7 +4,7 @@ import { $ } from "./utils.js";
 import { loadUnlocks, applyUnlocksToUI, attachUI, showGameMessage, endGame, updateHUD } from "./ui.js";
 import { attachInput, getInput } from "./input.js";
 import { attack, updateEmber } from "./combat.js";
-import { createHealerSlimes, updateCompanions, damagePlayer, updateVisualEffects } from "./entities.js";
+import { createHealerSlimes, updateCompanions, damagePlayer, damageBoss, updateVisualEffects } from "./entities.js";
 import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
 import { createGunball, updateGunball } from "./bosses/gunball.js";
@@ -30,7 +30,7 @@ function startGame() {
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
- s.peace = false; s.brutal = false; s.friendlyFire = false; s.invincible = false; s.timeFreeze = false; s.dmgMultiplier = 1; s.bossRushQueue = []; s.arena = { w: MAP.w, h: MAP.h };
+ s.peace = false; s.brutal = false; s.friendlyFire = false; s.invincible = false; s.timeFreeze = false; s.dmgMultiplier = 1; s.notMe = false; s.cooldownOverride = 0; s.bossRushQueue = []; s.arena = { w: MAP.w, h: MAP.h };
  s.emberBeamTimer = 0; s.emberCooldown = 0; s.emberTick = 0; s.emberBeamAngle = s.player.angle;
  s.healerHealCooldown = 0; s.gunnerAmmo = 5; s.gunnerReload = 0; s.gunnerShotTimer = 0;
  s.message = { text: '', until: Infinity };
@@ -71,13 +71,13 @@ function startGame() {
 }
 
 function movePlayer(dt) {
- const s = state, c = classes[s.selected];
+ const s = state;
  if (s.dashDuration > 0) {
   const dv = s.selected === 'sword' ? 1275 : 850;
   s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
  } else {
   const v = getInput();
-  s.player.x += v.x*c.speed*dt; s.player.y += v.y*c.speed*dt;
+  s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
   if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x)
  }
  s.player.x = Math.max(30, Math.min(s.arena.w-30, s.player.x));
@@ -96,6 +96,11 @@ function update(dt) {
  if (s.timeFreeze) {
   movePlayer(dt);
   if (s.keys.KeyJ || s.keys.Space) attack();
+  s.attackTimer = Math.max(0, s.attackTimer-dt);
+  s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
+  s.healerHealCooldown = Math.max(0, s.healerHealCooldown-dt);
+  if (s.emberBeamTimer <= 0) s.emberCooldown = Math.max(0, s.emberCooldown-dt);
+  if (s.selected === 'gunner' && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER \u2014 GELADEN') }
   updateCamera();
   updateHUD();
   return
@@ -117,6 +122,17 @@ function update(dt) {
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   updateSlime(b, dt)
+ }
+
+ if (s.friendlyFire || s.brutal) {
+  for (let i = 0; i < s.bosses.length; i++) for (let j = i+1; j < s.bosses.length; j++) {
+   const A = s.bosses[i], B = s.bosses[j];
+   if (!A.alive || !B.alive) continue;
+   if (Math.hypot(A.x-B.x, A.y-B.y) < A.r + B.r*.7 && A.attackCooldown <= 0) {
+    damageBoss(A, 20, true); damageBoss(B, 20, true);
+    A.attackCooldown = 1; B.attackCooldown = 1
+   }
+  }
  }
 
  updateTowerBeams(dt);

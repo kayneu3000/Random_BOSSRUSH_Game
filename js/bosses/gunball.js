@@ -51,7 +51,7 @@ export function updateGunball(b,dt){
   b.weaponTimer-=dt;
   if(b.weaponTimer<=0){b.weaponIndex=(b.weaponIndex+1)%4;b.weaponTimer=2.5}
   b.fireTimer-=dt;
-  if(b.fireTimer<=0&&!state.peace){
+  if(b.fireTimer<=0&&!(state.peace&&T===state.player)){
    const type=chooseGunballBullet();
    fireGunballBullet(b,type);
    b.attackName=type;
