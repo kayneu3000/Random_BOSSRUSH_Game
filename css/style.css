@@ -26,9 +26,10 @@ button:active{transform:scale(.96)}
 #selectBoss{background:linear-gradient(110deg,#07558a,#0aa8d6,#06436c);border:1px solid #52e9ff;box-shadow:0 0 18px #00cfff55,inset 0 0 12px #67eaff22;color:#d8fbff}
 #selectDragon{background:linear-gradient(110deg,#3a0805,#9b210c,#3b0805);border:1px solid #ff572a;box-shadow:0 0 18px #ff320055,inset 0 0 12px #ff782222;color:#ffb18a}
 #selectGunball{background:linear-gradient(110deg,#170d2e,#7043a8,#28134d);border:1px solid #c3a1ff;box-shadow:0 0 18px #9b5cff66,inset 0 0 12px #c7a2ff33;color:#e6d5ff}
-#lobby .bossCard:first-of-type{background:linear-gradient(110deg,#062c48,#075c85,#092239);border-color:#18bfe8;box-shadow:inset 0 0 18px #08bfe822}
-#lobby .bossCard:nth-of-type(2){background:linear-gradient(110deg,#2b0805,#671609,#1b0504);border-color:#a82b17;box-shadow:inset 0 0 18px #ff321522}
-#lobby .bossCard:nth-of-type(3){background:linear-gradient(110deg,#170d2e,#38205d,#10091f);border-color:#a77aff;box-shadow:inset 0 0 18px #9d65ff33}
+#lobby .slimeCard{background:linear-gradient(110deg,#062c48,#075c85,#092239);border-color:#18bfe8;box-shadow:inset 0 0 18px #08bfe822}
+#lobby .dragonCard{background:linear-gradient(110deg,#2b0805,#671609,#1b0504);border-color:#a82b17;box-shadow:inset 0 0 18px #ff321522}
+#lobby .gunballCard{background:linear-gradient(110deg,#170d2e,#38205d,#10091f);border-color:#a77aff;box-shadow:inset 0 0 18px #9d65ff33}
+#lobby .shadowCard{background:linear-gradient(110deg,#141024,#1e1740,#0b0817);border-color:#6a55b8;box-shadow:inset 0 0 18px #7b4dff33}
 
 /* Klassenwahl-Themes */
 #classScreen.slimeTheme{background:radial-gradient(ellipse at 50% 20%,#075a86,#062d4a 55%,#02111f)}
