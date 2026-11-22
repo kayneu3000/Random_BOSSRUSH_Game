@@ -10,7 +10,7 @@ export function headRadiusOf(snake){
 
 export function createSnake(x,y){
  const segments=SNAKE_START_SEGMENTS, maxHp=segments*SNAKE_SEGMENT_HP;
- state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:maxHp,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],venomCooldown:1,whipCooldown:3.5,whipTimer:0,whipDx:0,whipDy:0,appleTimer:.5,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1})
+ state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:maxHp,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],venomCooldown:.8,whipCooldown:2.5,whipTimer:0,whipDx:0,whipDy:0,appleTimer:.5,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1})
 }
 
 function normAng(a){return Math.atan2(Math.sin(a),Math.cos(a))}
@@ -110,11 +110,11 @@ export function updateSnake(b,dt){
 
  let target=null,dist=Infinity;
  for(const a of state.apples){if(a.destroyed)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<dist){dist=d;target=a}}
- const speed=target?105:130;
+ const speed=target?170:200;
 
  if(b.whipTimer>0){
   b.whipTimer-=dt;
-  b.x+=b.whipDx*500*dt;b.y+=b.whipDy*500*dt;
+  b.x+=b.whipDx*580*dt;b.y+=b.whipDy*580*dt;
   if(b.whipTimer<=0)clampArena(b)
  }else{
   if(target){
@@ -124,7 +124,7 @@ export function updateSnake(b,dt){
    const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1;
    b.x+=dx/d*speed*dt;b.y+=dy/d*speed*dt;
    if(b.whipCooldown<=0&&d>150){
-    b.whipDx=dx/d;b.whipDy=dy/d;b.whipTimer=.6;b.whipCooldown=4;
+    b.whipDx=dx/d;b.whipDy=dy/d;b.whipTimer=.55;b.whipCooldown=2.6;
     if(TisPlayer)showGameMessage('SNAKE PEITSCHT MIT SEINEM K\u00d6RPER ZU!',1.4)
    }
   }
@@ -135,7 +135,7 @@ export function updateSnake(b,dt){
  if(!last||Math.hypot(b.x-last.x,b.y-last.y)>22)b.trail.unshift({x:b.x,y:b.y});
  if(b.trail.length>(b.segments+2)*3)b.trail.length=(b.segments+2)*3;
 
- if(b.venomCooldown<=0){fireVenom(b);b.venomCooldown=1.1}
+ if(b.venomCooldown<=0){fireVenom(b);b.venomCooldown=.75}
 
  b.faceTimer-=dt;
  if(b.faceTimer<=0){
@@ -156,14 +156,14 @@ export function updateSnake(b,dt){
   if(TisPlayer){
    if(Math.hypot(T.x-p.x,T.y-p.y)<T.r+sr*.75&&b.attackCooldown<=0){
     damagePlayer(b.whipTimer>0?30:25);
-    b.attackCooldown=1.2;break
+    b.attackCooldown=1;break
    }
   }else if(T.alive&&Math.hypot(T.x-p.x,T.y-p.y)<T.r+sr*.75&&b.attackCooldown<=0){
-   b.attackCooldown=1.2;break
+   b.attackCooldown=1;break
   }
  }
  if(TisPlayer&&Math.hypot(T.x-b.x,T.y-b.y)<T.r+b.r*.7&&b.attackCooldown<=0){
   damagePlayer(b.whipTimer>0?30:25);
-  b.attackCooldown=1.2
+  b.attackCooldown=1
  }
 }
