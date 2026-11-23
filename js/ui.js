@@ -105,7 +105,7 @@ export function updateHUD() {
  const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'SNAKE', snakeSkin: 'DIE HAUT' };
  const barsArea = $('bossBars');
  const barBosses = living.filter(b => b.type !== 'snakeSkin');
- barsArea.replaceChildren();
+ while (barsArea.firstChild) barsArea.removeChild(barsArea.firstChild);
  for (const b of barBosses) {
   const row = document.createElement('div'); row.className = 'bossBarRow';
   const label = document.createElement('div'); label.className = 'bossBarLabel'; label.textContent = BOSS_NAMES[b.type] || b.type.toUpperCase();

@@ -17,6 +17,8 @@ import { draw } from "./render.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('error', e => { try { showGameMessage('FEHLER: ' + (e && e.message ? e.message : 'unbekannt'), 99) } catch (err) {} });
+window.addEventListener('unhandledrejection', e => { try { showGameMessage('FEHLER: ' + (e.reason && e.reason.message ? e.reason.message : 'unbekannt'), 99) } catch (err) {} });
 loadUnlocks();
 applyUnlocksToUI();
 attachUI({ startGame });
@@ -170,7 +172,12 @@ function loop(now) {
  const s = state;
  if (!s.gameRunning) return;
  const dt = Math.min((now-s.last)/1000, .035); s.last = now;
- if (!s.paused) { update(dt); draw() }
+ try {
+  if (!s.paused) { update(dt); draw() }
+ } catch (err) {
+  console.error(err);
+  showGameMessage('FEHLER: ' + (err && err.message ? err.message : String(err)), 99)
+ }
  requestAnimationFrame(loop)
 }
 
