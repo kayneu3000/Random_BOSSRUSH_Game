@@ -225,3 +225,17 @@ canvas{width:100%;height:100%;display:block}
 #adminCard .classIcon{filter:drop-shadow(0 0 8px #ff8b2888)}
 
 .levelDivider{margin:26px 0 2px;font-size:13px;letter-spacing:4px;color:#8cf838;text-align:center;font-weight:bold}
+
+#game.snakeTheme{background:#030d05}
+#game.snakeTheme .hudBox{background:linear-gradient(145deg,#0d2410ee,#031508ee);border-color:#58c94799;box-shadow:0 0 17px #3fae4a33}
+#game.snakeTheme .hudTitle,#game.snakeTheme #playerHPText,#game.snakeTheme #attackCooldownText,#game.snakeTheme #bossHUD .name,#game.snakeTheme #bossCount,#game.snakeTheme #gameMessage{color:#a7e77a;text-shadow:0 0 12px #4fae3a}
+#game.snakeTheme .hpOuter{background:#08210e;border:1px solid #3f8c33}
+#game.snakeTheme .hpInner{background:linear-gradient(90deg,#1c5c1a,#2e8f2a,#a8e060)}
+#game.snakeTheme .bossHP{background:#0a1f0c;border-color:#5fce47;box-shadow:0 0 15px #3fae4a88}
+#game.snakeTheme .bossHPFill{background:linear-gradient(90deg,#1c5c1a,#2e8f2a,#5fc947,#a8e060)}
+#game.snakeTheme #stickBase{background:#3fae4a22;border-color:#58c947}
+#game.snakeTheme #stickKnob{background:#3fae4a99;border-color:#a7e77a}
+#game.snakeTheme .action{background:linear-gradient(145deg,#1c4a1e,#051510);border-color:#58c947;color:#a7e77a}
+#game.snakeTheme #attackBtn{background:linear-gradient(145deg,#2e8f2a,#0d2410);border-color:#a8e060}
+#game.snakeTheme #dashBtn{background:linear-gradient(145deg,#245c22,#0a1f0c);border-color:#5fc947}
+#game.snakeTheme #healBtn{background:linear-gradient(145deg,#1c4a1e,#051510);border-color:#58c947}
