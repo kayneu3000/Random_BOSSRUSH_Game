@@ -5,7 +5,7 @@ export const state = {
 
  player: null,
  bosses: [],
- apples: [],
+ smallSnakes: [],
  projectiles: [],
  enemyProjectiles: [],
  particles: [],
