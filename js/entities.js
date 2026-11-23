@@ -60,6 +60,7 @@ export function damageBoss(b,amount,ignoreGuard){
  if(b.hp<=0){
   b.hp=0;b.alive=false;state.kills++;
   if(b.type==='slime')splitSlime(b);
+  if(b.type==='snakeSkin'){const sn=state.bosses.find(s=>s.type==='snake'&&s.alive);if(sn)sn.skinRespawn=15;state.effects.push({type:'towerDestroy',x:b.x,y:b.y,life:1})}
   $('kills').textContent=state.kills+' besiegt'
  }
 }

@@ -10,6 +10,7 @@ import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bo
 import { createGunball, updateGunball } from "./bosses/gunball.js";
 import { createShadow, updateShadow } from "./bosses/shadow.js";
 import { createSnake, updateSnake } from "./bosses/snake.js";
+import { createSnakeSkin, updateSnakeSkin } from "./bosses/snakeSkin.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
@@ -28,7 +29,7 @@ function startGame() {
  if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
- s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.apples = [];
+ s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
@@ -58,8 +59,7 @@ function startGame() {
   showGameMessage('GUNBALL AKTIVIERT!', 2.2)
  } else if (s.selectedBoss === 'snake') {
   createSnake(MAP.w/2, MAP.h/2-200);
-  $('bossName').textContent = 'SNAKE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 SNAKE';
-  showGameMessage('ZERST\u00d6RE SEINE \u00c4PFEL \u2014 DANN HUNGERT SNAKE UND SCHRUMPFT!', 3.2)
+  $('bossName').textContent = 'SNAKE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 SNAKE'
  } else {
   createSlime(MAP.w/2, MAP.h/2-200, 0);
   $('bossName').textContent = 'SLIME'; $('huntTitle').textContent = 'SLIME HUNT';
@@ -135,6 +135,7 @@ function update(dt) {
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   if (b.type === 'shadow') { updateShadow(b, dt); continue }
   if (b.type === 'snake') { updateSnake(b, dt); continue }
+  if (b.type === 'snakeSkin') { updateSnakeSkin(b, dt); continue }
   updateSlime(b, dt)
  }
 

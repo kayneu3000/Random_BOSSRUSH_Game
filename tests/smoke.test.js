@@ -419,80 +419,164 @@ test('admin mode sticks across lobby/restart until a normal class is picked', as
   startGame();
   assert.equal(state.isAdmin, false, 'normal class pick disables admin');
 });
-
-test('snake: hunger via apple destruction shrinks segments to victory', async () => {
-  const { createSnake, updateSnake, damageApple } = await import('../js/bosses/snake.js');
+test('snake: destroying small snakes starves it until only the head remains', async () => {
+  const { createSnake, updateSnake, damageSmallSnake } = await import('../js/bosses/snake.js');
   const { damageBoss } = await import('../js/entities.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.notMe = false; state.peace = false; state.dmgMultiplier = 1;
-  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = [];
   createSnake(500, 300);
   const sn = state.bosses.find(b => b.type === 'snake');
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
   assert.equal(sn.segments, 8, 'snake starts with 8 segments');
   assert.equal(sn.maxHp, 800);
+  assert.ok(sk && sk.alive, 'the molted skin spawns together with the snake');
+  assert.equal(sk.hp, 500, 'the skin has 500 hp');
   damageBoss(sn, 50);
   assert.equal(sn.hp, 800, 'snake is immune to direct hits');
+  assert.equal(sk.hp, 500, 'a hit aimed at the snake does not hurt the skin');
   state.player = { x: sn.x + 400, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
-  sn.venomCooldown = 0; sn.appleTimer = 0;
+  sn.appleTimer = 0;
   updateSnake(sn, 1 / 60);
-  assert.ok(state.enemyProjectiles.some(p => p.type === 'venom'), 'snake spits venom projectiles');
-  assert.ok(state.apples.length === 1, 'apples appear on the map');
-  const a = state.apples[0];
-  damageApple(a, 999);
-  assert.equal(sn.segments, 7, 'one destroyed apple removes one segment');
+  assert.ok(state.smallSnakes.length >= 1, 'small snakes appear on the map');
+  damageSmallSnake(state.smallSnakes[0], 999);
+  assert.equal(sn.segments, 7, 'one destroyed small snake removes one segment');
   assert.equal(sn.maxHp, 700, 'snake loses max hp while starving');
   for (let i = 0; i < 7; i++) {
     sn.appleTimer = 0;
     updateSnake(sn, 1 / 60);
-    damageApple(state.apples[0], 999);
+    const next = state.smallSnakes.find(s => !s.destroyed);
+    damageSmallSnake(next, 999);
   }
   assert.equal(sn.segments, 0);
   assert.equal(sn.alive, false, 'snake is defeated when only the head remains');
-  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
 
-test('snake eats apples to grow', async () => {
+test('the snake itself no longer attacks the player', async () => {
+  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  sk.alive = false;
+  state.player = { x: sn.x, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  state.invuln = 0; sn.appleTimer = 99; sn.attackCooldown = 0;
+  const hp0 = state.player.hp;
+  for (let i = 0; i < 120; i++) updateSnake(sn, 1 / 60);
+  assert.equal(state.player.hp, hp0, 'the snake itself never damages the player');
+  assert.equal(state.enemyProjectiles.filter(p => p.type === 'venom').length, 0, 'the snake itself never spits venom');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+});
+
+test('the skin hunts the player: venom, tail strike and contact damage', async () => {
+  const { createSnake } = await import('../js/bosses/snake.js');
+  const { updateSnakeSkin } = await import('../js/bosses/snakeSkin.js');
+  const { damageBoss } = await import('../js/entities.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  state.player = { x: sk.x + 30, y: sk.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  state.invuln = 0;
+  sk.venomCooldown = 0; sk.attackCooldown = 0;
+  const hp0 = state.player.hp;
+  updateSnakeSkin(sk, 1 / 60);
+  assert.ok(state.enemyProjectiles.some(p => p.type === 'venom'), 'the skin shoots venom at the player');
+  assert.ok(state.player.hp < hp0, 'the tail strike hurts on contact');
+  assert.equal(sk.attackCooldown, 1, 'the tail strike has a 1s cooldown');
+  damageBoss(sk, 120);
+  assert.equal(sk.hp, 380, 'the skin is vulnerable to direct hits');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+});
+
+test('the skin orbits and periodically sprints at the player', async () => {
+  const { createSnakeSkin, updateSnakeSkin } = await import('../js/bosses/snakeSkin.js');
+  const { damageBoss } = await import('../js/entities.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnakeSkin(600, 300);
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  assert.equal(sk.hp, 500, 'the skin has 500 hp');
+  state.player = { x: sk.x + 240, y: sk.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
+  state.invuln = 0;
+  sk.venomCooldown = 99; sk.sprintCooldown = 0; sk.mode = 'circle';
+  updateSnakeSkin(sk, 1 / 60);
+  assert.equal(sk.mode, 'sprint', 'after its cooldown the skin sprints toward the player');
+  assert.ok(Math.abs(sk.sprintDx - 1) < .01 && Math.abs(sk.sprintDy) < .01, 'the sprint aims at the player');
+  sk.mode = 'circle'; sk.sprintTimer = 0;
+  const a0 = Math.atan2(sk.y - state.player.y, sk.x - state.player.x);
+  sk.venomCooldown = 0;
+  updateSnakeSkin(sk, 1 / 60);
+  const a1 = Math.atan2(sk.y - state.player.y, sk.x - state.player.x);
+  assert.ok(Math.abs(Math.sin(a1 - a0)) > .01, 'the skin circles around the player');
+  assert.ok(state.enemyProjectiles.some(p => p.type === 'venom'), 'venom fires in circle mode too');
+  const sn2 = state.bosses.find(b => b.type === 'snake');
+  damageBoss(sk, 9999);
+  assert.equal(sk.alive, false, 'the skin dies to direct hits');
+  assert.equal(sn2, undefined, 'no snake is needed for a standalone skin');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+});
+
+test('a destroyed skin respawns 15 seconds later near the snake', async () => {
+  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
+  const { damageBoss } = await import('../js/entities.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.notMe = false; state.peace = false; state.dmgMultiplier = 1;
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  createSnake(500, 300);
+  const sn = state.bosses.find(b => b.type === 'snake');
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  assert.equal(sn.skinRespawn, -1, 'no respawn is running at the start');
+  damageBoss(sk, 9999);
+  assert.equal(sk.alive, false, 'the skin dies');
+  assert.equal(sn.skinRespawn, 15, 'a 15 second respawn timer starts');
+  for (let i = 0; i < 60 * 8 && sn.skinRespawn > 0; i++) updateSnake(sn, 1 / 60);
+  assert.ok(Math.abs(sn.skinRespawn - 7) < .05, '8 seconds later the skin is still gone');
+  assert.ok(!state.bosses.some(b => b.type === 'snakeSkin' && b.alive), 'no early respawn');
+  for (let i = 0; i < 60 * 9 && sn.skinRespawn > 0; i++) updateSnake(sn, 1 / 60);
+  assert.equal(sn.skinRespawn, -1, 'the respawn timer finished');
+  assert.ok(state.bosses.some(b => b.type === 'snakeSkin' && b.alive), 'a new skin spawned');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+});
+
+test('snake eats small snakes to grow', async () => {
   const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.notMe = false; state.peace = true; state.dmgMultiplier = 1;
-  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
   createSnake(500, 300);
   const sn = state.bosses.find(b => b.type === 'snake');
-  state.apples.push({ x: sn.x, y: sn.y, r: 26, hp: 60, maxHp: 60, wobble: 0, destroyed: false });
+  state.smallSnakes.push({ x: sn.x, y: sn.y, r: 20, hp: 60, maxHp: 60, wobble: 0, dir: 0, turnTimer: 9, destroyed: false });
   const segs0 = sn.segments, hp0 = sn.hp;
   updateSnake(sn, 1 / 60);
-  assert.equal(sn.segments, segs0 + 1, 'eating an apple adds a segment');
-  assert.ok(sn.hp > hp0, 'eating an apple heals the snake');
-  assert.equal(state.apples.some(a => a.destroyed), true, 'the apple was eaten');
-  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+  assert.equal(sn.segments, segs0 + 1, 'eating a small snake adds a segment');
+  assert.equal(sn.maxHp, 900, 'eating raises the max hp');
+  assert.ok(sn.hp > hp0, 'eating a small snake heals the snake');
+  assert.equal(state.smallSnakes[0].destroyed, true, 'the small snake was eaten');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
 
-test('snake body contact damages the player', async () => {
-  const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
-  state.gameRunning = true; state.paused = false; state.finished = false;
-  state.notMe = false; state.peace = false; state.invincible = false;
-  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
-  createSnake(500, 300);
-  const sn = state.bosses.find(b => b.type === 'snake');
-  state.player = { x: sn.x, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
-  state.invuln = 0; sn.attackCooldown = 0; sn.peace = undefined;
-  const hp0 = state.player.hp;
-  updateSnake(sn, 1 / 60);
-  assert.ok(state.player.hp < hp0, 'head/body contact hurts');
-  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
-});
-
-test('snake fight boots via lobby data and shows the segment HUD', async () => {
+test('snake fight boots via lobby data and shows the HUD for snake and skin', async () => {
   state.selected = 'archer'; state.selectedBoss = 'snake';
   state.unlocks = { healer: true, ember: true, gunner: true, admin: false };
   state.adminMode = false; state.isAdmin = false;
   startGame();
   assert.ok(state.bosses.some(b => b.type === 'snake' && b.alive), 'snake fight spawns');
+  assert.ok(state.bosses.some(b => b.type === 'snakeSkin' && b.alive), 'the skin spawns with the fight');
   const { updateHUD } = await import('../js/ui.js');
+  updateHUD();
+  assert.equal(document.getElementById('bossName').textContent, 'SNAKE + DIE HAUT');
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  sk.alive = false;
   updateHUD();
   assert.equal(document.getElementById('bossName').textContent, 'SNAKE');
   assert.ok(document.getElementById('bossCount').textContent.includes('SEGMENTE'), 'segment hud is shown');
-  state.bosses = []; state.apples = [];
+  state.bosses = []; state.smallSnakes = [];
 });
 
 test('snake stays locked until slime, dragon and gunball are defeated', () => {
@@ -506,41 +590,46 @@ test('snake stays locked until slime, dragon and gunball are defeated', () => {
   el.onclick();
   assert.equal(state.selectedBoss, 'shadow', 'locked without all three wins');
   state.unlocks.gunner = true;
-  state.bosses = []; state.apples = [];
+  state.bosses = []; state.smallSnakes = [];
 });
 
-test('snake and apple rendering paths run without throwing', async () => {
+test('snake, skin and small snake rendering paths run without throwing', async () => {
   const { draw } = await import('../js/render.js');
   const { createSnake } = await import('../js/bosses/snake.js');
   state.gameRunning = true; state.paused = false; state.finished = false; state.notMe = false;
-  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
   state.selected = 'archer'; state.selectedBoss = 'snake'; state.peace = false;
   createSnake(400, 300);
-  state.apples.push({ x: 520, y: 260, r: 26, hp: 60, maxHp: 60, wobble: 1, destroyed: false });
-  state.bosses[0].trail = [{ x: 380, y: 300 }, { x: 360, y: 300 }];
+  state.smallSnakes.push({ x: 520, y: 260, r: 20, hp: 60, maxHp: 60, wobble: 1, dir: 1, turnTimer: 9, destroyed: false });
+  const sn = state.bosses.find(b => b.type === 'snake');
+  sn.trail = [{ x: 380, y: 300 }, { x: 360, y: 300 }];
   state.player = { x: 640, y: 420, r: 17, speed: 260, angle: 0 };
   for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
   draw();
-  state.bosses[0].whipTimer = .5;
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  sk.mode = 'sprint';
   draw();
-  assert.ok(state.bosses[0].alive);
-  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+  assert.ok(sn.alive && sk.alive);
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
 
 test('snake looks around instead of staring at the player constantly', async () => {
   const { createSnake, updateSnake } = await import('../js/bosses/snake.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.notMe = false; state.peace = true; state.dmgMultiplier = 1;
-  state.bosses = []; state.apples = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
   createSnake(500, 300);
   const sn = state.bosses.find(b => b.type === 'snake');
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  sk.alive = false;
   state.player = { x: sn.x, y: sn.y - 500, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
-  sn.faceAngle = 0; sn.faceTarget = 0; sn.faceTimer = 99;
+  sn.faceAngle = 0; sn.faceTarget = 0; sn.faceTimer = 99; sn.wanderAngle = -Math.PI / 2; sn.appleTimer = 99;
   updateSnake(sn, 1 / 60);
   assert.equal(sn.faceAngle, 0, 'no re-lock while the look timer runs');
   const realRandom = Math.random;
-  Math.random = () => 0.9;
+  Math.random = () => 0.5;
   try {
+    sn.wanderAngle = -Math.PI / 2;
     sn.faceTimer = 0;
     updateSnake(sn, 1 / 60);
     assert.ok(Math.abs(sn.faceTarget - (-Math.PI / 2)) < 0.01, 're-lock aims along the travel direction');
@@ -549,5 +638,5 @@ test('snake looks around instead of staring at the player constantly', async () 
   } finally {
     Math.random = realRandom;
   }
-  state.bosses = []; state.apples = []; state.enemyProjectiles = [];
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
