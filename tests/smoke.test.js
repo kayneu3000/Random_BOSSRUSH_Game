@@ -6,7 +6,11 @@ function makeElement(id) {
     id,
     textContent: '',
     innerHTML: '',
+    className: '',
+    children: [],
     style: {},
+    appendChild(child) { this.children.push(child); return child; },
+    replaceChildren(...kids) { this.children = kids.slice(); },
     dataset: {},
     width: 0,
     height: 0,
@@ -571,11 +575,37 @@ test('snake fight boots via lobby data and shows the HUD for snake and skin', as
   const { updateHUD } = await import('../js/ui.js');
   updateHUD();
   assert.equal(document.getElementById('bossName').textContent, 'SNAKE + DIE HAUT');
+  const bars = document.getElementById('bossBars').children;
+  assert.equal(bars.length, 1, 'the skin gets no boss bar, the snake does');
+  assert.equal(bars[0].children[0].textContent, 'SNAKE', 'the bar is labeled SNAKE');
   const sk = state.bosses.find(b => b.type === 'snakeSkin');
   sk.alive = false;
   updateHUD();
   assert.equal(document.getElementById('bossName').textContent, 'SNAKE');
   assert.ok(document.getElementById('bossCount').textContent.includes('SEGMENTE'), 'segment hud is shown');
+  state.bosses = []; state.smallSnakes = [];
+});
+
+test('boss bars: one per boss, none for the skin, none when only the skin is alive', async () => {
+  const { createSnakeSkin } = await import('../js/bosses/snakeSkin.js');
+  const { createSlime } = await import('../js/bosses/slime.js');
+  const { updateHUD } = await import('../js/ui.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  state.peace = false; state.notMe = false; state.duel = undefined; state.duelTargets = undefined;
+  createSnakeSkin(600, 300);
+  updateHUD();
+  assert.equal(document.getElementById('bossName').textContent, 'DIE HAUT', 'skin name is still shown');
+  assert.equal(document.getElementById('bossBars').children.length, 0, 'the skin never gets its own boss bar');
+  createSlime(400, 300, 1);
+  const { createSnake } = await import('../js/bosses/snake.js');
+  createSnake(500, 300);
+  updateHUD();
+  const labels = document.getElementById('bossBars').children.map(r => r.children[0].textContent);
+  assert.deepEqual(labels.filter(l => l === 'SLIME').length, 1, 'each boss gets exactly one bar');
+  assert.deepEqual(labels.filter(l => l === 'SNAKE').length, 1, 'the snake gets exactly one bar');
+  assert.equal(labels.filter(l => l === 'DIE HAUT').length, 0, 'the skin gets zero bars');
+  assert.ok(document.getElementById('bossCount').textContent.includes('BOSSE AKTIV'), 'multi-boss count shown');
   state.bosses = []; state.smallSnakes = [];
 });
 
