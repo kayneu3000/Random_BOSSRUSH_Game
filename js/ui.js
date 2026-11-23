@@ -101,9 +101,19 @@ export function updateHUD() {
  else if (s.selected === 'gunner') $('attackCooldownText').textContent = s.gunnerReload > 0 ? 'NACHLADEN ' + s.gunnerReload.toFixed(1) + 's' : 'PATRONEN: ' + s.gunnerAmmo + '/5';
  else $('attackCooldownText').textContent = s.attackTimer > 0 ? 'ANGRIFF IN ' + s.attackTimer.toFixed(1) + 's' : 'ANGRIFF BEREIT';
 
- const living = s.bosses.filter(b => b.alive), total = living.reduce((sum, b) => sum + b.hp, 0), max = living.reduce((sum, b) => sum + b.maxHp, 0);
- $('bossHPFill').style.width = (max ? total / max * 100 : 0) + '%';
+ const living = s.bosses.filter(b => b.alive);
  const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'SNAKE', snakeSkin: 'DIE HAUT' };
+ const barsArea = $('bossBars');
+ const barBosses = living.filter(b => b.type !== 'snakeSkin');
+ barsArea.replaceChildren();
+ for (const b of barBosses) {
+  const row = document.createElement('div'); row.className = 'bossBarRow';
+  const label = document.createElement('div'); label.className = 'bossBarLabel'; label.textContent = BOSS_NAMES[b.type] || b.type.toUpperCase();
+  const bar = document.createElement('div'); bar.className = 'bossHP';
+  const fill = document.createElement('div'); fill.className = 'bossHPFill'; fill.style.width = (b.maxHp ? b.hp / b.maxHp * 100 : 0) + '%';
+  bar.appendChild(fill); row.appendChild(label); row.appendChild(bar);
+  barsArea.appendChild(row);
+ }
  const bossTypes = [...new Set(living.map(b => b.type))];
  if (bossTypes.length > 1) {
   $('bossName').textContent = bossTypes.map(t => BOSS_NAMES[t]).join(' + ');

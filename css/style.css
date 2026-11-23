@@ -95,8 +95,11 @@ canvas{width:100%;height:100%;display:block}
 #playerHPText{font-size:12px;margin-top:5px}
 #bossHUD{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(430px,55vw);text-align:center;pointer-events:none}
 #bossHUD .name{font-weight:1000;letter-spacing:4px;color:#eee;font-size:16px;text-shadow:0 0 12px #777}
-#bossHP{height:13px;background:#222;border:1px solid #aaa;border-radius:20px;overflow:hidden;margin-top:7px}
-#bossHPFill{height:100%;width:100%;background:linear-gradient(90deg,#888,#ddd)}
+#bossBars{width:100%}
+.bossBarRow{margin-top:8px}
+.bossBarLabel{font-size:10px;letter-spacing:2px;color:#ddd;margin-bottom:3px}
+.bossHP{height:13px;background:#222;border:1px solid #aaa;border-radius:20px;overflow:hidden}
+.bossHPFill{height:100%;width:100%;background:linear-gradient(90deg,#888,#ddd);transition:width .15s linear}
 #bossCount{font-size:11px;color:#ccc;margin-top:4px}
 #controls{position:absolute;inset:0;pointer-events:none}
 #stickArea{position:absolute;left:20px;bottom:20px;width:145px;height:145px;pointer-events:auto;touch-action:none}
@@ -118,8 +121,8 @@ canvas{width:100%;height:100%;display:block}
 #game.dragonTheme .hudTitle,#game.dragonTheme #bossHUD .name,#game.dragonTheme #bossCount,#game.dragonTheme #gameMessage,#game.dragonTheme #playerHPText,#game.dragonTheme #attackCooldownText{color:#ff2424;text-shadow:0 0 12px #ff000088}
 #game.dragonTheme .hpOuter{background:#350404}
 #game.dragonTheme .hpInner{background:linear-gradient(90deg,#8b0000,#ff1010,#ff5050)}
-#game.dragonTheme #bossHP{background:#250000;border-color:#ff1010;box-shadow:0 0 12px #ff000055}
-#game.dragonTheme #bossHPFill{background:linear-gradient(90deg,#690000,#e00000,#ff1e1e,#ff5757)}
+#game.dragonTheme .bossHP{background:#250000;border-color:#ff1010;box-shadow:0 0 12px #ff000055}
+#game.dragonTheme .bossHPFill{background:linear-gradient(90deg,#690000,#e00000,#ff1e1e,#ff5757)}
 #game.dragonTheme #stickBase{background:#ff000022;border-color:#ff222266}
 #game.dragonTheme #stickKnob{background:#ff202099;border-color:#ff7777}
 #game.dragonTheme .action{background:linear-gradient(145deg,#880000,#300000);border-color:#ff2828;color:#ff4545}
@@ -148,8 +151,8 @@ canvas{width:100%;height:100%;display:block}
 #game.slimeTheme .hudTitle,#game.slimeTheme #playerHPText,#game.slimeTheme #attackCooldownText,#game.slimeTheme #bossHUD .name,#game.slimeTheme #bossCount,#game.slimeTheme #gameMessage{color:#8deaff;text-shadow:0 0 12px #00bfff88}
 #game.slimeTheme .hpOuter{background:#06213a;border:1px solid #1678a8}
 #game.slimeTheme .hpInner{background:linear-gradient(90deg,#0572c7,#13c8ff,#a5f7ff)}
-#game.slimeTheme #bossHP{background:#031a30;border-color:#38d8ff;box-shadow:0 0 15px #00bfff55}
-#game.slimeTheme #bossHPFill{background:linear-gradient(90deg,#0056b3,#008dff,#18d9ff,#a3f8ff)}
+#game.slimeTheme .bossHP{background:#031a30;border-color:#38d8ff;box-shadow:0 0 15px #00bfff55}
+#game.slimeTheme .bossHPFill{background:linear-gradient(90deg,#0056b3,#008dff,#18d9ff,#a3f8ff)}
 #game.slimeTheme #stickBase{background:#009dff22;border-color:#20cfffff}
 #game.slimeTheme #stickKnob{background:#13baff99;border-color:#8deaff}
 #game.slimeTheme .action{background:linear-gradient(145deg,#07558a,#031b36);border-color:#31cfff;color:#9ceeff;box-shadow:0 0 12px #00bfff22}
@@ -168,8 +171,8 @@ canvas{width:100%;height:100%;display:block}
 #game.gunballTheme .hudTitle,#game.gunballTheme #playerHPText,#game.gunballTheme #attackCooldownText,#game.gunballTheme #bossHUD .name,#game.gunballTheme #bossCount,#game.gunballTheme #gameMessage{color:#d8c1ff;text-shadow:0 0 12px #9c56ff}
 #game.gunballTheme .hpOuter{background:#160d26;border:1px solid #8159b9}
 #game.gunballTheme .hpInner{background:linear-gradient(90deg,#58309c,#a66cff,#e1c7ff)}
-#game.gunballTheme #bossHP{background:#10091d;border-color:#c09aff;box-shadow:0 0 15px #9d58ff88}
-#game.gunballTheme #bossHPFill{background:linear-gradient(90deg,#39205f,#7542bb,#b18aff,#e4d1ff)}
+#game.gunballTheme .bossHP{background:#10091d;border-color:#c09aff;box-shadow:0 0 15px #9d58ff88}
+#game.gunballTheme .bossHPFill{background:linear-gradient(90deg,#39205f,#7542bb,#b18aff,#e4d1ff)}
 #game.gunballTheme #stickBase{background:#9a5cff22;border-color:#a77aff}
 #game.gunballTheme #stickKnob{background:#a46aff99;border-color:#e2caff}
 #game.gunballTheme .action{background:linear-gradient(145deg,#55317d,#170d27);border-color:#b48aff;color:#e4d1ff}
@@ -187,8 +190,8 @@ canvas{width:100%;height:100%;display:block}
 #game.shadowTheme .hudTitle,#game.shadowTheme #playerHPText,#game.shadowTheme #attackCooldownText,#game.shadowTheme #bossHUD .name,#game.shadowTheme #bossCount,#game.shadowTheme #gameMessage{color:#cbb9ff;text-shadow:0 0 12px #7b4dff}
 #game.shadowTheme .hpOuter{background:#120c22;border:1px solid #6a55b8}
 #game.shadowTheme .hpInner{background:linear-gradient(90deg,#4b2d91,#8657ff,#d9c8ff)}
-#game.shadowTheme #bossHP{background:#0e0919;border-color:#a386ff;box-shadow:0 0 15px #7b4dff99}
-#game.shadowTheme #bossHPFill{background:linear-gradient(90deg,#2c1852,#5c35a8,#9d7bff,#d5c6ff)}
+#game.shadowTheme .bossHP{background:#0e0919;border-color:#a386ff;box-shadow:0 0 15px #7b4dff99}
+#game.shadowTheme .bossHPFill{background:linear-gradient(90deg,#2c1852,#5c35a8,#9d7bff,#d5c6ff)}
 #game.shadowTheme #stickBase{background:#7b4dff22;border-color:#8f6dff}
 #game.shadowTheme #stickKnob{background:#7b4dff99;border-color:#cbb9ff}
 #game.shadowTheme .action{background:linear-gradient(145deg,#3c2b6e,#110b22);border-color:#9d82ff;color:#d9c8ff}
