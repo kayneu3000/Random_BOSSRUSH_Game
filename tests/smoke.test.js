@@ -701,6 +701,8 @@ test('showErrBox schreibt Fehler sichtbar ins Diagnose-Banner', async () => {
 
 test('debug-Chip per Konsolen-Befehl schaltet sich ein und zeigt Zahlen', async () => {
   const { toggleDebugChip } = await import('../js/ui.js');
+  const preChip = document.getElementById('debugChip');
+  if (preChip && preChip.style.display === 'block') toggleDebugChip(); // sicherstellen: startet aus
   assert.equal(toggleDebugChip(), true);
   state.selected = 'archer'; state.selectedBoss = 'slime';
   startGame();
@@ -708,4 +710,18 @@ test('debug-Chip per Konsolen-Befehl schaltet sich ein und zeigt Zahlen', async 
   const chip = document.getElementById('debugChip');
   assert.ok(String(chip.textContent).includes('Arena='), 'Chip enthaelt Kamera-/Arena-Werte');
   assert.equal(toggleDebugChip(), false);
+});
+
+test('autoDebugChip erscheint beim Snake-Start automatisch (ohne Konsolen-Befehl)', async () => {
+  const { autoDebugChip, toggleDebugChip } = await import('../js/ui.js');
+  state.selected = 'faust'; state.selectedBoss = 'snake';
+  startGame();
+  assert.ok(state.gameRunning, 'Snake-Fight laeuft');
+  update(1 / 60);
+  const chip = document.getElementById('debugChip');
+  assert.ok(chip, 'Chip existiert automatisch');
+  assert.equal(chip.style.display, 'block', 'Chip ist beim Snake-Start sichtbar');
+  assert.ok(String(chip.textContent).includes('Arena='), 'Chip hat Werte');
+  toggleDebugChip(); // manuell aus + Auto-Timer gestoppt
+  assert.equal(chip.style.display, 'none', 'manuell abschaltbar');
 });
