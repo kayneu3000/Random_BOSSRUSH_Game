@@ -168,3 +168,15 @@ export function attachUI({ startGame }) {
 
  if (!localStorage.getItem('bossrushTutorial')) showScreen('tutScreen');
 }
+
+// Diagnose-Banner: zeigt JS-Fehler ALLES visible an (auch wenn Safari e.message
+// leer laesst oder #gameMessage weggetimed wird). Hilft Hugo beim Melden.
+export function showErrBox(err) {
+ try {
+  const box = $('errBox'); if (!box) return;
+  const msg = err && err.message ? String(err.message) : String(err);
+  const stack = err && err.stack ? String(err.stack).split('\n').slice(0, 3).join(' | ') : '';
+  box.textContent = 'BUG-INFO ' + msg + (stack ? '   ' + stack : '');
+  box.style.display = 'block'
+ } catch (e) { /* Banner darf niemals Probleme machen */ }
+}
