@@ -191,13 +191,40 @@ export function showErrBox(err) {
 // DEBUG: kleiner Zahlen-Chip, per Konsolen-Befehl "debug" ein/aus.
 // Zeigt selbst auf schwarzem Canvas die echten Werte (DOM, nicht Canvas!):
 // Canvas-Groesse, Kamera, Spieler, Arena + ob Zeichnen-Abschnitte klemmen.
-let debugOn = false;
+let debugOn = false, debugAutoTimer = 0;
+
+// Chip notfalls per JS erzeugen — falls Safari eine alte index.html gecacht hat,
+// fehlt das HTML-Element und der debug-Befehl waere wirkungslos.
+function ensureDebugChip() {
+ try {
+  if (document.getElementById('debugChip')) return;
+  const chip = document.createElement('div'); chip.id = 'debugChip';
+  (document.getElementById('game') || document.body).appendChild(chip)
+ } catch (e) { /* niemals Probleme machen */ }
+}
+
+function setChip(on) {
+ debugOn = on;
+ const chip = $('debugChip');
+ if (chip) chip.style.display = on ? 'block' : 'none';
+ updateDebugChip()
+}
+
 export function toggleDebugChip() {
- const chip = $('debugChip'); if (!chip) return false;
- debugOn = !debugOn;
- chip.style.display = debugOn ? 'block' : 'none';
- updateDebugChip();
+ ensureDebugChip();
+ clearTimeout(debugAutoTimer); // manuelle Schaltung stoppt die Auto-Abschaltung
+ setChip(!debugOn);
  return debugOn
+}
+
+// Auto-Modus: beim Snake-Kampfstart schaltet sich der Chip SELBST ein und
+// geht nach `seconds` wieder aus — Hugo muss nichts eintippen.
+export function autoDebugChip(seconds = 25) {
+ ensureDebugChip();
+ if (debugOn) return;
+ clearTimeout(debugAutoTimer);
+ setChip(true);
+ debugAutoTimer = setTimeout(() => { setChip(false) }, Math.max(3, seconds) * 1000)
 }
 export function updateDebugChip() {
  try {

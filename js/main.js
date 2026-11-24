@@ -15,7 +15,7 @@ import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } fro
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
-import { showErrBox } from "./ui.js";
+import { showErrBox, autoDebugChip } from "./ui.js";
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 120) });
@@ -82,7 +82,8 @@ function startGame() {
  $('overlay').style.display = 'none'; $('resume').style.display = 'block'; $('game').style.display = 'block';
  document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
 
- resizeCanvas();
+ if (s.selectedBoss === 'snake') autoDebugChip(30); // Chip erscheint beim Snake-Start automatisch
+  resizeCanvas();
  // iPad-Safari: Layout kann nach dem Anzeigen des Spiels noch nachlaufen —
  // deshalb resizeCanvas mehrfach erneut ausfuehren (schwarzer-Canvas-Alarm).
  requestAnimationFrame(resizeCanvas);
