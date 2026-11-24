@@ -552,15 +552,24 @@ function drawPlayer(){
 
 // Resilientes Zeichnen: ein kaputter Abschnitt darf nie den ganzen
 // Bildschirm leeren — Hintergrund und Rest bleiben immer sichtbar.
+// Fehler werden gezählt (der debug-Chip zeigt sie an) statt sie zu verstecken.
+export const drawStats = { ok: 0, errors: {} };
 function safeDraw(label, fn){
- try{fn()}catch(e){console.error('draw['+label+']',e)}
+ try{fn();drawStats.ok++}catch(e){drawStats.errors[label]=(drawStats.errors[label]||0)+1;console.error('draw['+label+']',e)}
+}
+function themeFallback(){
+ const b=state.selectedBoss;
+ return b==='dragon'?'#1d0908':b==='gunball'?'#080510':b==='snake'?'#0a1c0d':b==='shadow'?'#0b0714':'#63dff5'
 }
 
 export function draw(){
  const s=state;
  ctx.clearRect(0,0,99999,99999);
+ // Sicherheit: Canvas bekommt IMMER zuerst die Themen-Farbe voll gemalt —
+ // selbst wenn danach alles andere fehlschlaegt, ist es nicht mehr "schwarz-leer".
+ ctx.fillStyle=themeFallback();ctx.fillRect(0,0,Math.max(s.W,1),Math.max(s.H,1));
  ctx.save();ctx.translate(-s.camera.x+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0),-s.camera.y+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0));
- drawBackground();
+ safeDraw('hintergrund',()=>drawBackground());
  if(s.arena.w<MAP.w||s.arena.h<MAP.h){ctx.fillStyle='#000000c6';if(s.arena.w<MAP.w)ctx.fillRect(s.arena.w,0,MAP.w-s.arena.w,MAP.h);if(s.arena.h<MAP.h)ctx.fillRect(0,s.arena.h,MAP.w,MAP.h-s.arena.h)}
  const dragon=s.bosses.find(b=>b.type==='dragon'&&b.alive), shadowB=s.bosses.find(b=>b.type==='shadow'&&b.alive), hero=dragon||shadowB;
  if(hero)for(const t of s.infernoTowers)if(!t.destroyed){const beamColor=hero.type==='shadow'?'#8f5cff':'#ff3219',beamGlow=hero.type==='shadow'?'#b79aff':'#ff3517',beamCore=hero.type==='shadow'?'#e2d6ff':'#ffbd58';ctx.save();ctx.strokeStyle=beamColor;ctx.shadowColor=beamGlow;ctx.shadowBlur=18;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(t.x,t.y-9);ctx.lineTo(hero.x,hero.y);ctx.stroke();ctx.strokeStyle=beamCore;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(t.x,t.y-9);ctx.lineTo(hero.x,hero.y);ctx.stroke();ctx.restore()}

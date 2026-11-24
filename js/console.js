@@ -1,7 +1,7 @@
 import { state } from "./state.js";
 import { MAP, classes } from "./config.js";
 import { $ } from "./utils.js";
-import { showGameMessage } from "./ui.js";
+import { showGameMessage, toggleDebugChip } from "./ui.js";
 import { createSlime } from "./bosses/slime.js";
 import { createDragon, createTowers } from "./bosses/dragon.js";
 import { createGunball } from "./bosses/gunball.js";
@@ -120,6 +120,7 @@ export function runCommand(text, startGame){
   else showGameMessage('USAGE: time freeze / time normal');
   return
  }
+ if(c==='debug'){const on=toggleDebugChip();showGameMessage(on?'DEBUG AN — Zahlen oben':'DEBUG AUS');return}
  if(c==='arena')return cmdArena(a1,startGame);
  if(c==='slime')return cmdSpawn('slime');
  if(c==='dragon'){cmdSpawn('dragon');return}
@@ -134,7 +135,7 @@ function cmdHelp(page){
  const pages=[
   'KOMMANDOS: slime dragon gunball shadow snake  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: faust ember gunner sword archer tank assassin healer  \u00b7  help 2',
   'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  speed 300  \u00b7  cooldown 0.5  \u00b7  help 3',
-  'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  not me  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
+  'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  not me  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush  \u00b7  debug'
  ];
  const p=Math.max(0,Math.min(pages.length-1,(Number(page)||1)-1));
  showGameMessage(pages[p],2.6)
