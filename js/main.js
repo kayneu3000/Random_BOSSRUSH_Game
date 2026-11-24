@@ -15,10 +15,13 @@ import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } fro
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
+import { showErrBox } from "./ui.js";
 
 window.addEventListener('resize', resizeCanvas);
-window.addEventListener('error', e => { try { showGameMessage('FEHLER: ' + (e && e.message ? e.message : 'unbekannt'), 99) } catch (err) {} });
-window.addEventListener('unhandledrejection', e => { try { showGameMessage('FEHLER: ' + (e.reason && e.reason.message ? e.reason.message : 'unbekannt'), 99) } catch (err) {} });
+window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 120) });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(resizeCanvas, 80) }, { once: false });
+window.addEventListener('error', e => { try { const m = 'FEHLER: ' + (e && e.message ? e.message : 'unbekannt'); showGameMessage(m, 99); showErrBox(e && e.message ? e : new Error(m)) } catch (err) {} });
+window.addEventListener('unhandledrejection', e => { try { const m = 'FEHLER: ' + (e.reason && e.reason.message ? e.reason.message : 'unbekannt'); showGameMessage(m, 99); showErrBox(e.reason instanceof Error ? e.reason : new Error(m)) } catch (err) {} });
 loadUnlocks();
 applyUnlocksToUI();
 attachUI({ startGame });
@@ -80,6 +83,11 @@ function startGame() {
  document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
 
  resizeCanvas();
+ // iPad-Safari: Layout kann nach dem Anzeigen des Spiels noch nachlaufen —
+ // deshalb resizeCanvas mehrfach erneut ausfuehren (schwarzer-Canvas-Alarm).
+ requestAnimationFrame(resizeCanvas);
+ setTimeout(resizeCanvas, 80);
+ setTimeout(resizeCanvas, 400);
  s.gameRunning = true; s.last = performance.now();
  requestAnimationFrame(loop)
 }
@@ -101,7 +109,8 @@ function movePlayer(dt) {
 function updateCamera() {
  const s = state;
  s.camera.x = s.arena.w >= s.W ? Math.max(0, Math.min(s.arena.w-s.W, s.player.x-s.W/2)) : (s.arena.w-s.W)/2;
- s.camera.y = s.arena.h >= s.H ? Math.max(0, Math.min(s.arena.h-s.H, s.player.y-s.H/2)) : (s.arena.h-s.H)/2
+ s.camera.y = s.arena.h >= s.H ? Math.max(0, Math.min(s.arena.h-s.H, s.player.y-s.H/2)) : (s.arena.h-s.H)/2;
+ if (!Number.isFinite(s.camera.x) || !Number.isFinite(s.camera.y)) s.camera = { x: 0, y: 0 }
 }
 
 function update(dt) {
@@ -176,9 +185,12 @@ function loop(now) {
   if (!s.paused) { update(dt); draw() }
  } catch (err) {
   console.error(err);
-  showGameMessage('FEHLER: ' + (err && err.message ? err.message : String(err)), 99)
+  const m = 'FEHLER: ' + (err && err.message ? err.message : String(err));
+  showGameMessage(m, 99);
+  showErrBox(err)
  }
  requestAnimationFrame(loop)
 }
 
 export { startGame, update, loop };
+
