@@ -42,6 +42,8 @@ function makeCtx() {
   );
 }
 
+const canvasEl = () => document.getElementById('canvas');
+
 const store = new Map();
 const elements = new Map();
 const registerElement = id => {
@@ -57,6 +59,7 @@ globalThis.document = {
   getElementById: registerElement,
   querySelectorAll: () => [],
   createElement: () => makeElement('created'),
+  addEventListener() {},
   body: makeElement('body')
 };
 globalThis.window = { addEventListener() {}, removeEventListener() {} };
@@ -671,4 +674,27 @@ test('snake looks around instead of staring at the player constantly', async () 
     Math.random = realRandom;
   }
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+});
+
+test('resizeCanvas haertet 0/NaN-Groesse (schwarzer-Bildschirm-Fix)', async () => {
+  const { resizeCanvas } = await import('../js/canvas.js');
+  const prevW = canvasEl().clientWidth, prevH = canvasEl().clientHeight;
+  try {
+    canvasEl().clientWidth = 0; canvasEl().clientHeight = 0;
+    resizeCanvas();
+    assert.ok(Number.isFinite(state.W) && state.W >= 1, 'state.W ist >= 1');
+    assert.ok(Number.isFinite(state.H) && state.H >= 1, 'state.H ist >= 1');
+    assert.ok(canvasEl().width >= 1 && canvasEl().height >= 1, 'canvas Backing-Store niemals 0');
+  } finally {
+    canvasEl().clientWidth = prevW; canvasEl().clientHeight = prevH;
+    resizeCanvas();
+  }
+});
+
+test('showErrBox schreibt Fehler sichtbar ins Diagnose-Banner', async () => {
+  const { showErrBox } = await import('../js/ui.js');
+  showErrBox(new Error('Test-BUG-XYZ'));
+  const box = document.getElementById('errBox');
+  assert.ok(String(box.textContent).includes('Test-BUG-XYZ'), 'Banner enthaelt Meldung');
+  box.textContent = ''; box.style.display = 'none';
 });
