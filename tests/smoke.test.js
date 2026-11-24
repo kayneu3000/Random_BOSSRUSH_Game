@@ -698,3 +698,14 @@ test('showErrBox schreibt Fehler sichtbar ins Diagnose-Banner', async () => {
   assert.ok(String(box.textContent).includes('Test-BUG-XYZ'), 'Banner enthaelt Meldung');
   box.textContent = ''; box.style.display = 'none';
 });
+
+test('debug-Chip per Konsolen-Befehl schaltet sich ein und zeigt Zahlen', async () => {
+  const { toggleDebugChip } = await import('../js/ui.js');
+  assert.equal(toggleDebugChip(), true);
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  startGame();
+  update(1 / 60);
+  const chip = document.getElementById('debugChip');
+  assert.ok(String(chip.textContent).includes('Arena='), 'Chip enthaelt Kamera-/Arena-Werte');
+  assert.equal(toggleDebugChip(), false);
+});

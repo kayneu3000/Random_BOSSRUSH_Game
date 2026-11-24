@@ -1,4 +1,6 @@
 import { $ } from "./utils.js";
+import { canvas } from "./canvas.js";
+import { drawStats } from "./render.js";
 import { ADMIN_UNLOCK_CODE } from "./config.js";
 import { state } from "./state.js";
 
@@ -128,6 +130,7 @@ export function updateHUD() {
   else if (sn) $('bossCount').textContent = sn.segments + (sn.segments === 1 ? ' SEGMENT ÜBRIG' : ' SEGMENTE ÜBRIG');
  else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
  }
+ updateDebugChip()
 }
 
 export function attachUI({ startGame }) {
@@ -175,8 +178,41 @@ export function showErrBox(err) {
  try {
   const box = $('errBox'); if (!box) return;
   const msg = err && err.message ? String(err.message) : String(err);
+  // Fehlerzaehler fuer den debug-Chip (auch wenn der Banner weggeklickt/timed ist)
+  state.drawErrors = state.drawErrors || {};
+  const key = msg.slice(0, 42);
+  state.drawErrors[key] = (state.drawErrors[key] || 0) + 1;
   const stack = err && err.stack ? String(err.stack).split('\n').slice(0, 3).join(' | ') : '';
   box.textContent = 'BUG-INFO ' + msg + (stack ? '   ' + stack : '');
   box.style.display = 'block'
  } catch (e) { /* Banner darf niemals Probleme machen */ }
+}
+
+// DEBUG: kleiner Zahlen-Chip, per Konsolen-Befehl "debug" ein/aus.
+// Zeigt selbst auf schwarzem Canvas die echten Werte (DOM, nicht Canvas!):
+// Canvas-Groesse, Kamera, Spieler, Arena + ob Zeichnen-Abschnitte klemmen.
+let debugOn = false;
+export function toggleDebugChip() {
+ const chip = $('debugChip'); if (!chip) return false;
+ debugOn = !debugOn;
+ chip.style.display = debugOn ? 'block' : 'none';
+ updateDebugChip();
+ return debugOn
+}
+export function updateDebugChip() {
+ try {
+  if (!debugOn) return;
+  const chip = $('debugChip'); if (!chip) return;
+  const s = state, p = s.player || { x: 0, y: 0 };
+  const errs = Object.entries(drawStats.errors).map(([k, v]) => k + ':' + v).join(',');
+  const browserErrs = Object.entries(state.drawErrors || {}).map(([k, v]) => k + ':' + (v > 1 ? v + 'x' : 'einmal')).join(',');
+  chip.textContent = 'W=' + s.W + ' H=' + s.H + ' dpr=' + s.dpr +
+   ' canvas=' + (canvas ? canvas.width + 'x' + canvas.height : '?') +
+   ' Kamera=' + Math.round(s.camera.x) + ',' + Math.round(s.camera.y) +
+   ' Spieler=' + Math.round(p.x) + ',' + Math.round(p.y) +
+   ' Arena=' + s.arena.w + 'x' + s.arena.h +
+   ' ZeichnenOK=' + drawStats.ok +
+   ' ZeichnenFehler=' + (errs || 'keine') +
+   ' Abstuerze=' + (browserErrs || 'keine');
+ } catch (e) { /* Chip darf niemals Probleme machen */ }
 }
