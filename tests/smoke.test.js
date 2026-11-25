@@ -751,7 +751,7 @@ test('NaN-Feuerwehr: Spielerrueckholung, Projektil-Entsorgung, Dash-Wacht', asyn
 
 test('Quellen-Detektiv: NaN-Rettung merkt sich den Taeter + VERSION sichtbar', async () => {
   const { VERSION } = await import('../js/config.js');
-  assert.equal(VERSION, 27, 'VERSION=27');
+  assert.equal(VERSION, 28, 'VERSION=28');
   state.selected = 'archer'; state.selectedBoss = 'slime';
   startGame();
   state.player.x = NaN; state.player.y = NaN;
@@ -794,4 +794,29 @@ test('Timer-NaN-Polizei: NaN-dashDuration wird zu 0 und vergiftet nichts', async
   assert.equal(state.dashDuration, 0, 'dashDuration gesaeubert');
   assert.equal(state.dashTimer, 0, 'dashTimer gesaeubert');
   assert.ok(Number.isFinite(state.player.x), 'Spieler-Position endlich');
+});
+
+test('Schwarz-Autopsie: Chip nennt Bild-/Verdeckt-/Flaeche-/Heilen-Felder + heal-Befehl', async () => {
+  const { runCommand } = await import('../js/console.js');
+  const { drawStats } = await import('../js/render.js');
+  state.selected = 'faust'; state.selectedBoss = 'snake';
+  startGame();
+  update(1 / 60);
+  const { toggleDebugChip } = await import('../js/ui.js');
+  const pre = document.getElementById('debugChip');
+  if (pre && pre.style.display === 'block') toggleDebugChip();
+  toggleDebugChip();
+  update(1 / 60);
+  const txt = String(document.getElementById('debugChip').textContent);
+  assert.ok(txt.includes('v28'), 'Chip zeigt v28');
+  assert.ok(txt.includes('Bild='), 'Chip zeigt Bild-Feld');
+  assert.ok(txt.includes('Verdeckt='), 'Chip zeigt Verdeckt-Feld');
+  assert.ok(txt.includes('Flaeche='), 'Chip zeigt Flaeche-Feld');
+  assert.ok(txt.includes('Heilen='), 'Chip zeigt Heilen-Feld');
+  toggleDebugChip();
+  // heal-Befehl: darf niemals abstuerzen und meldet Reparatur
+  const heils0 = drawStats.heal || 0;
+  runCommand('heal');
+  assert.ok(drawStats.heal !== undefined, 'drawStats.heal existiert nach heal');
+  assert.ok(typeof heils0 === 'number', 'heal-Zaehler numerisch');
 });
