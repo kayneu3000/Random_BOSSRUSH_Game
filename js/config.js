@@ -54,4 +54,4 @@ export const BULLET_STATS={
  core:{speed:90,r:13,damage:40,life:7}
 };
 
-export const VERSION = 26;
+export const VERSION = 27;
