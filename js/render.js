@@ -598,10 +598,12 @@ export function draw(){
  }
  safeDraw('spieler',()=>drawPlayer());
  safeDraw('projektile',()=>{for(const p of s.projectiles){
+  if(!isFinite(p.x)||!isFinite(p.y))continue;
   if(p.gunner){ctx.fillStyle='#e2caff';ctx.shadowColor='#a66cff';ctx.shadowBlur=18;ctx.beginPath();ctx.ellipse(p.x,p.y,10,4,Math.atan2(p.vy,p.vx),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
   else{ctx.fillStyle='#b9fbff';ctx.shadowColor='#36dfff';ctx.shadowBlur=14;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
  }});
  safeDraw('feind-projektile',()=>{for(const p of s.enemyProjectiles){
+  if(!isFinite(p.x)||!isFinite(p.y))continue;
   ctx.save();
   if(p.type==='shuriken'){
    ctx.translate(p.x,p.y);ctx.rotate(s.elapsed*16);
@@ -620,7 +622,7 @@ export function draw(){
   if(p.type==='blackhole'){ctx.fillStyle='#080510';ctx.beginPath();ctx.arc(p.x,p.y,p.r*.65,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
- safeDraw('partikel',()=>{for(const p of s.particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()}});
+ safeDraw('partikel',()=>{for(const p of s.particles){if(!isFinite(p.x)||!isFinite(p.y))continue;ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()}});
  ctx.globalAlpha=1;
  safeDraw('effekte',()=>{for(const e of s.effects){
   if(e.type==='slash'){ctx.strokeStyle=e.weapon==='tank'?'#ff9c58':e.weapon==='assassin'?'#e0d2ff':'#ffbba0';ctx.lineWidth=e.weapon==='tank'?12:7;ctx.globalAlpha=e.life/.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r,e.angle-.85,e.angle+.85);ctx.stroke()}

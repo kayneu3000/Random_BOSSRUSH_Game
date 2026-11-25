@@ -238,6 +238,7 @@ export function updateDebugChip() {
    ' Kamera=' + Math.round(s.camera.x) + ',' + Math.round(s.camera.y) +
    ' Spieler=' + Math.round(p.x) + ',' + Math.round(p.y) +
    ' Arena=' + s.arena.w + 'x' + s.arena.h +
+   ' Rettungen=' + (s.nanSaves||0) +
    ' ZeichnenOK=' + drawStats.ok +
    ' ZeichnenFehler=' + (errs || 'keine') +
    ' Abstuerze=' + (browserErrs || 'keine');

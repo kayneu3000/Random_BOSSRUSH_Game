@@ -21,6 +21,7 @@ export const state = {
  W: 0,
  H: 0,
  dpr: 1,
+ nanSaves: 0,
  last: 0,
  elapsed: 0,
  kills: 0,
