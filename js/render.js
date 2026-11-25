@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
-import { ctx } from "./canvas.js";
+import { ctx, forceCanvasRealloc } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
 
@@ -185,7 +185,8 @@ function drawEmberHand(){
  ctx.fillStyle='#e5c49b';ctx.strokeStyle='#71321b';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(35,-18);ctx.lineTo(27,-35);ctx.lineTo(44,-22);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(52,-17);ctx.lineTo(61,-33);ctx.lineTo(59,-14);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.fillStyle='#ffe9b8';for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(53+i*5,5);ctx.lineTo(55+i*5,11);ctx.lineTo(57+i*5,5);ctx.fill()}
  for(let i=0;i<6;i++){const fx=24+Math.random()*35,fy=(Math.random()-.5)*28;ctx.fillStyle=i%2?'#ff4a0b':'#ffd84b';ctx.globalAlpha=.65+Math.random()*.35;ctx.beginPath();ctx.ellipse(fx,fy,3+Math.random()*3,6+Math.random()*7,Math.random()-.5,0,Math.PI*2);ctx.fill()}
- ctx.globalAlpha=1;ctx.restore()
+ ctx.globalAlpha=1;ctx.restore();
+ try{ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,1,1)}catch(e){}
 }
 
 /* Inferno-Drache: klare Silhouette, Lava-Risse, gluehendes Maul */
@@ -553,10 +554,27 @@ function drawPlayer(){
 // Resilientes Zeichnen: ein kaputter Abschnitt darf nie den ganzen
 // Bildschirm leeren — Hintergrund und Rest bleiben immer sichtbar.
 // Fehler werden gezählt (der debug-Chip zeigt sie an) statt sie zu verstecken.
-export const drawStats = { ok: 0, errors: {} };
+export const drawStats = { ok: 0, errors: {}, restarts: 0 };
 function safeDraw(label, fn){
  try{fn();drawStats.ok++}catch(e){drawStats.errors[label]=(drawStats.errors[label]||0)+1;console.error('draw['+label+']',e)}
 }
+// CANVAS-WACHE: malt jedes Frame-Ende ein unsichtbares 1px-Testpixel und liest
+// es im naechsten Frame zurueck. Antwortet es falsch, hat iPad-Safari die
+// Zeichenflaeche stillgelegt — dann wird sie zwangsweise neu angelegt und das
+// Spiel malt sofort weiter (Zaehler: CanvasNeustarten im debug-Chip).
+let sentinelArmed=false,sentinelFrames=0;
+function canvasHealthCheck(){
+ try{
+  sentinelFrames++;
+  const d=ctx.getImageData(0,0,1,1);
+  if(!d||!d.data)return;
+  const r=d.data[0];
+  if(!sentinelArmed){if(r===255)sentinelArmed=true;return}
+  if(sentinelFrames%45!==0)return;
+  if(r!==255){forceCanvasRealloc();drawStats.restarts=(drawStats.restarts||0)+1}
+ }catch(e){/*Canvas-Wache darf niemals Probleme machen*/}
+}
+
 function themeFallback(){
  const b=state.selectedBoss;
  return b==='dragon'?'#1d0908':b==='gunball'?'#080510':b==='snake'?'#0a1c0d':b==='shadow'?'#0b0714':'#63dff5'
@@ -564,6 +582,7 @@ function themeFallback(){
 
 export function draw(){
  const s=state;
+ canvasHealthCheck();
  ctx.clearRect(0,0,99999,99999);
  // Sicherheit: Canvas bekommt IMMER zuerst die Themen-Farbe voll gemalt —
  // selbst wenn danach alles andere fehlschlaegt, ist es nicht mehr "schwarz-leer".

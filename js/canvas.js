@@ -25,3 +25,16 @@ export function resizeCanvas(){
  }
  ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0)
 }
+
+// Zwangszuruecksetzen der Canvas-Bitmap: iPad-Safari kann die Zeichenflaeche
+// unter GPU-Speicherdruck stilllegen (Bild schwarz, JS laeuft weiter).
+// Neu anlegen erzwingt frischen Speicher — das Spiel malt naechste Frame sofort weiter.
+export function forceCanvasRealloc(){
+ try{
+  const bw=Math.max(1,Math.floor((state.W||960)*(state.dpr||1)));
+  const bh=Math.max(1,Math.floor((state.H||540)*(state.dpr||1)));
+  canvas.width=1;canvas.height=1;
+  canvas.width=bw;canvas.height=bh;
+  lastBW=0;lastBH=0
+ }catch(e){}
+}

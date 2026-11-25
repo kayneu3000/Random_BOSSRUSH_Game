@@ -748,3 +748,24 @@ test('NaN-Feuerwehr: Spielerrueckholung, Projektil-Entsorgung, Dash-Wacht', asyn
   // aufräumen
   state.dashDuration = 0;
 });
+
+test('Quellen-Detektiv: NaN-Rettung merkt sich den Taeter + VERSION sichtbar', async () => {
+  const { VERSION } = await import('../js/config.js');
+  assert.equal(VERSION, 26, 'VERSION=26');
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  startGame();
+  state.player.x = NaN; state.player.y = NaN;
+  update(1 / 60);
+  assert.ok(state.lastNanSource, 'Quelle erkannt: ' + state.lastNanSource);
+  assert.ok(state.nanSources && Object.keys(state.nanSources).length > 0, 'Quellenliste gefuellt');
+  // Chip nennt Quelle und Version
+  const { toggleDebugChip } = await import('../js/ui.js');
+  const pre = document.getElementById('debugChip');
+  if (pre && pre.style.display === 'block') toggleDebugChip();
+  toggleDebugChip();
+  update(1 / 60);
+  const txt = String(document.getElementById('debugChip').textContent);
+  assert.ok(txt.includes('v26') || txt.includes('v' + VERSION), 'Chip zeigt Version');
+  assert.ok(txt.includes('Quelle='), 'Chip zeigt letzte Quelle');
+  toggleDebugChip();
+});

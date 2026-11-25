@@ -93,23 +93,33 @@ function startGame() {
  requestAnimationFrame(loop)
 }
 
+function markNaN(label){
+ const s = state;
+ s.lastNanSource = label;
+ s.nanSources = s.nanSources || {};
+ s.nanSources[label] = (s.nanSources[label]||0)+1;
+ s.nanSaves = (s.nanSaves||0)+1
+}
+
+// NaN-Feuerwehr mit QUELLEN-DETEKTIV: jede Rettung merkt sich, WER das
+// 'keine Zahl' verursacht hat — der debug-Chip zeigt den Tater an.
 function movePlayer(dt) {
  const s = state;
- // NaN-Feuerwehr: wenn irgendeine Berechnung 'keine Zahl' in die Position
- // geschrieben hat (z.B. Dash/Teilung durch 0), wird sie hier abgefangen und
- // der Spieler in die Arena-Mitte gerettet — bevor der Problemkette folgt.
- if (!Number.isFinite(s.player.x)) { s.player.x = MAP.w/2; s.nanSaves = (s.nanSaves||0)+1 }
- if (!Number.isFinite(s.player.y)) { s.player.y = MAP.h/2; s.nanSaves = (s.nanSaves||0)+1 }
+ if (!Number.isFinite(s.player.x)) { s.player.x = MAP.w/2; markNaN('start-Spieler.x') }
+ if (!Number.isFinite(s.player.y)) { s.player.y = MAP.h/2; markNaN('start-Spieler.y') }
  if (!Number.isFinite(s.player.angle)) s.player.angle = -Math.PI/2;
  if (!Number.isFinite(s.player.speed)) s.player.speed = classes[s.selected].speed;
+ const quelle = s.dashDuration > 0 ? 'dash' : 'steuerknueppel';
  if (s.dashDuration > 0) {
   const dv = s.selected === 'sword' ? 1275 : 850;
   s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
  } else {
-  const v = getInput();
-  s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
-  if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x)
+  const v = getInput(); const vx = Number.isFinite(v.x)?v.x:0, vy = Number.isFinite(v.y)?v.y:0;
+  s.player.x += vx*s.player.speed*dt; s.player.y += vy*s.player.speed*dt;
+  if (Math.hypot(vx, vy) > .1) s.player.angle = Math.atan2(vy, vx)
  }
+ if (!Number.isFinite(s.player.x)) { s.player.x = MAP.w/2; markNaN(quelle) }
+ if (!Number.isFinite(s.player.y)) { s.player.y = MAP.h/2; markNaN(quelle) }
  s.player.x = Math.max(30, Math.min(s.arena.w-30, s.player.x));
  s.player.y = Math.max(30, Math.min(s.arena.h-30, s.player.y))
 }
@@ -118,7 +128,7 @@ function updateCamera() {
  const s = state;
  s.camera.x = s.arena.w >= s.W ? Math.max(0, Math.min(s.arena.w-s.W, s.player.x-s.W/2)) : (s.arena.w-s.W)/2;
  s.camera.y = s.arena.h >= s.H ? Math.max(0, Math.min(s.arena.h-s.H, s.player.y-s.H/2)) : (s.arena.h-s.H)/2;
- if (!Number.isFinite(s.camera.x) || !Number.isFinite(s.camera.y)) s.camera = { x: 0, y: 0 };
+ if (!Number.isFinite(s.camera.x) || !Number.isFinite(s.camera.y)) { s.camera = { x: 0, y: 0 }; markNaN('kamera') };
  if (!Number.isFinite(s.screenShake)) s.screenShake = 0
 }
 
@@ -151,8 +161,7 @@ function update(dt) {
 
  for (const b of s.bosses) {
   if (!b.alive) continue;
-  if (!Number.isFinite(b.x)) { b.x = s.arena.w/2; s.nanSaves = (s.nanSaves||0)+1 }
-  if (!Number.isFinite(b.y)) { b.y = s.arena.h/2; s.nanSaves = (s.nanSaves||0)+1 }
+  if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) { b.x = s.arena.w/2; b.y = s.arena.h/2; markNaN('boss:'+b.type) }
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   if (b.type === 'shadow') { updateShadow(b, dt); continue }
