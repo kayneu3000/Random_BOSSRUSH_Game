@@ -1,7 +1,7 @@
 import { $ } from "./utils.js";
 import { canvas } from "./canvas.js";
 import { drawStats } from "./render.js";
-import { ADMIN_UNLOCK_CODE } from "./config.js";
+import { ADMIN_UNLOCK_CODE, VERSION } from "./config.js";
 import { state } from "./state.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
@@ -233,12 +233,16 @@ export function updateDebugChip() {
   const s = state, p = s.player || { x: 0, y: 0 };
   const errs = Object.entries(drawStats.errors).map(([k, v]) => k + ':' + v).join(',');
   const browserErrs = Object.entries(state.drawErrors || {}).map(([k, v]) => k + ':' + (v > 1 ? v + 'x' : 'einmal')).join(',');
-  chip.textContent = 'W=' + s.W + ' H=' + s.H + ' dpr=' + s.dpr +
+  chip.textContent = 'v' + VERSION +
+   ' | W=' + s.W + ' H=' + s.H + ' dpr=' + s.dpr +
    ' canvas=' + (canvas ? canvas.width + 'x' + canvas.height : '?') +
    ' Kamera=' + Math.round(s.camera.x) + ',' + Math.round(s.camera.y) +
    ' Spieler=' + Math.round(p.x) + ',' + Math.round(p.y) +
    ' Arena=' + s.arena.w + 'x' + s.arena.h +
    ' Rettungen=' + (s.nanSaves||0) +
+   ' Quelle=' + (s.lastNanSource||'-') +
+   ' Quellen=' + (Object.entries(s.nanSources||{}).map(([k,v]) => k + ':' + v).join(',') || 'keine') +
+   ' CanvasNeustarten=' + drawStats.restarts +
    ' ZeichnenOK=' + drawStats.ok +
    ' ZeichnenFehler=' + (errs || 'keine') +
    ' Abstuerze=' + (browserErrs || 'keine');
