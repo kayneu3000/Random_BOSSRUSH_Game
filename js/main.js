@@ -33,7 +33,9 @@ function startGame() {
  s.isAdmin = s.selected === 'admin' || s.adminMode;
  if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
- s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
+ // dashX/dashY VORAB initialisieren: undefined * dv * dt waere NaN (Hauptverdaechtiger
+ // des schwarzen Bildschirms)
+ s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
@@ -112,7 +114,13 @@ function movePlayer(dt) {
  const quelle = s.dashDuration > 0 ? 'dash' : 'steuerknueppel';
  if (s.dashDuration > 0) {
   const dv = s.selected === 'sword' ? 1275 : 850;
-  s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
+  // Read-Guard: falls ein altes/CACHE-misches Modul dashX/dashY undefiniert oder NaN hinterlaesst,
+  // wird hier nicht NaN bewegt, sondern sicher 0 + Quelle vermerkt (Chip zeigt 'leerer-dash').
+  let dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
+  let dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
+  if (!Number.isFinite(s.player.dashX) || !Number.isFinite(s.player.dashY)) markNaN('leerer-dash');
+  const step = (Number.isFinite(dv) && dv > 0 ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
+  s.player.x += dX*step; s.player.y += dY*step
  } else {
   const v = getInput(); const vx = Number.isFinite(v.x)?v.x:0, vy = Number.isFinite(v.y)?v.y:0;
   s.player.x += vx*s.player.speed*dt; s.player.y += vy*s.player.speed*dt;
@@ -135,6 +143,13 @@ function updateCamera() {
 function update(dt) {
  const s = state;
  if (s.paused || s.finished) return;
+ // Timer-NaN-Polizei: Math.max(0, NaN) bleibt naemlich NaN und vergiftet fuer immer.
+ if (!Number.isFinite(s.elapsed)) { s.elapsed = 0; markNaN('elapsed') }
+ if (!Number.isFinite(s.attackTimer)) s.attackTimer = 0;
+ if (!Number.isFinite(s.dashTimer)) s.dashTimer = 0;
+ if (!Number.isFinite(s.dashDuration)) { s.dashDuration = 0; markNaN('dash-timer') }
+ if (!Number.isFinite(s.invuln)) s.invuln = 0;
+ if (!Number.isFinite(s.screenShake)) s.screenShake = 0;
  if (s.timeFreeze) {
   movePlayer(dt);
   if (s.keys.KeyJ || s.keys.Space) attack();
@@ -200,7 +215,10 @@ function update(dt) {
 function loop(now) {
  const s = state;
  if (!s.gameRunning) return;
- const dt = Math.min((now-s.last)/1000, .035); s.last = now;
+ // dt-Guard: Math.min(NaN, .035) waere NaN und haette das ganze Update vergiftet.
+ let dt = (now-s.last)/1000; s.last = now;
+ if (!Number.isFinite(dt) || dt <= 0) dt = 1/60;
+ dt = Math.min(dt, .035);
  try {
   if (!s.paused) { update(dt); draw() }
  } catch (err) {

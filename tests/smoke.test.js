@@ -751,7 +751,7 @@ test('NaN-Feuerwehr: Spielerrueckholung, Projektil-Entsorgung, Dash-Wacht', asyn
 
 test('Quellen-Detektiv: NaN-Rettung merkt sich den Taeter + VERSION sichtbar', async () => {
   const { VERSION } = await import('../js/config.js');
-  assert.equal(VERSION, 26, 'VERSION=26');
+  assert.equal(VERSION, 27, 'VERSION=27');
   state.selected = 'archer'; state.selectedBoss = 'slime';
   startGame();
   state.player.x = NaN; state.player.y = NaN;
@@ -768,4 +768,30 @@ test('Quellen-Detektiv: NaN-Rettung merkt sich den Taeter + VERSION sichtbar', a
   assert.ok(txt.includes('v26') || txt.includes('v' + VERSION), 'Chip zeigt Version');
   assert.ok(txt.includes('Quelle='), 'Chip zeigt letzte Quelle');
   toggleDebugChip();
+});
+
+test('Dash-Wurzel-Fix: Spieler ohne dashX/dashY wird nicht zu NaN (leerer-dash-Rettung)', async () => {
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame();
+  // Simuliert CACHE-Mix: combat.js alt -> dashX/dashY existieren NICHT am Spieler
+  delete state.player.dashX; delete state.player.dashY;
+  state.dashDuration = 0.2; state.dashTimer = 0;
+  const x0 = state.player.x, y0 = state.player.y;
+  update(1 / 60);
+  assert.ok(Number.isFinite(state.player.x) && Number.isFinite(state.player.y), 'Position endlich nach leerem Dash');
+  assert.equal(state.lastNanSource, 'leerer-dash', 'Quelle benannt: ' + state.lastNanSource);
+  // Dash-Ziel-Werte initialisiert?
+  startGame();
+  assert.equal(state.player.dashX, 0, 'dashX initialisiert');
+  assert.equal(state.player.dashY, 0, 'dashY initialisiert');
+});
+
+test('Timer-NaN-Polizei: NaN-dashDuration wird zu 0 und vergiftet nichts', async () => {
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame();
+  state.dashDuration = NaN; state.dashTimer = NaN; state.player.x = undefined;
+  update(1 / 60);
+  assert.equal(state.dashDuration, 0, 'dashDuration gesaeubert');
+  assert.equal(state.dashTimer, 0, 'dashTimer gesaeubert');
+  assert.ok(Number.isFinite(state.player.x), 'Spieler-Position endlich');
 });
