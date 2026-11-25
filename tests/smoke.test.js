@@ -725,3 +725,26 @@ test('autoDebugChip erscheint beim Snake-Start automatisch (ohne Konsolen-Befehl
   toggleDebugChip(); // manuell aus + Auto-Timer gestoppt
   assert.equal(chip.style.display, 'none', 'manuell abschaltbar');
 });
+
+test('NaN-Feuerwehr: Spielerrueckholung, Projektil-Entsorgung, Dash-Wacht', async () => {
+  const { dash } = await import('../js/combat.js');
+  const { updateEnemyProjectiles } = await import('../js/projectiles.js');
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  startGame();
+  // 1) Spieler-Position NaN -> Rettung in Arena-Mitte
+  state.player.x = NaN; state.player.y = NaN;
+  const saves0 = state.nanSaves || 0;
+  update(1 / 60);
+  assert.ok(Number.isFinite(state.player.x) && Number.isFinite(state.player.y), 'Spielerposition wieder endlich');
+  assert.ok((state.nanSaves || 0) > saves0, 'Rettungen gezaehlt');
+  // 2) NaN-Feindprojektil -> sofort entsorgt, keine Zeichnen-Fehler mehr moeglich
+  state.enemyProjectiles.push({ x: NaN, y: 10, vx: 100, vy: 0, r: 8, life: 2, damage: 3, type: 'venom' });
+  updateEnemyProjectiles(1 / 60);
+  assert.ok(state.enemyProjectiles.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)), 'keine NaN-Projektile mehr');
+  // 3) Dash mit NaN-Blickrichtung -> dashX bleibt endliche Zahl
+  state.player.angle = NaN; state.dashTimer = 0;
+  dash();
+  assert.ok(Number.isFinite(state.player.dashX) && Number.isFinite(state.player.dashY), 'Dash-Richtung endliche Zahl');
+  // aufräumen
+  state.dashDuration = 0;
+});
