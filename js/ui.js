@@ -243,6 +243,10 @@ export function updateDebugChip() {
    ' Quelle=' + (s.lastNanSource||'-') +
    ' Quellen=' + (Object.entries(s.nanSources||{}).map(([k,v]) => k + ':' + v).join(',') || 'keine') +
    ' CanvasNeustarten=' + drawStats.restarts +
+   ' Bild=' + (drawStats.black || '-') +
+   ' Verdeckt=' + (drawStats.coveredBy || '-') +
+   ' Flaeche=' + (drawStats.rect || '-') +
+   ' Heilen=' + (drawStats.heal || 0) +
    ' ZeichnenOK=' + drawStats.ok +
    ' ZeichnenFehler=' + (errs || 'keine') +
    ' Abstuerze=' + (browserErrs || 'keine');

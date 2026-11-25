@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
-import { ctx, forceCanvasRealloc } from "./canvas.js";
+import { ctx, forceCanvasRealloc, repairCanvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
 
@@ -554,7 +554,7 @@ function drawPlayer(){
 // Resilientes Zeichnen: ein kaputter Abschnitt darf nie den ganzen
 // Bildschirm leeren — Hintergrund und Rest bleiben immer sichtbar.
 // Fehler werden gezählt (der debug-Chip zeigt sie an) statt sie zu verstecken.
-export const drawStats = { ok: 0, errors: {}, restarts: 0 };
+export const drawStats = { ok: 0, errors: {}, restarts: 0, heal: 0, black: 'unausgescannt', coveredBy: '-', rect: '-' };
 function safeDraw(label, fn){
  try{fn();drawStats.ok++}catch(e){drawStats.errors[label]=(drawStats.errors[label]||0)+1;console.error('draw['+label+']',e)}
 }
@@ -562,7 +562,7 @@ function safeDraw(label, fn){
 // es im naechsten Frame zurueck. Antwortet es falsch, hat iPad-Safari die
 // Zeichenflaeche stillgelegt — dann wird sie zwangsweise neu angelegt und das
 // Spiel malt sofort weiter (Zaehler: CanvasNeustarten im debug-Chip).
-let sentinelArmed=false,sentinelFrames=0;
+let sentinelArmed=false,sentinelFrames=0,blackInRow=0;
 function canvasHealthCheck(){
  try{
   sentinelFrames++;
@@ -572,7 +572,48 @@ function canvasHealthCheck(){
   if(!sentinelArmed){if(r===255)sentinelArmed=true;return}
   if(sentinelFrames%45!==0)return;
   if(r!==255){forceCanvasRealloc();drawStats.restarts=(drawStats.restarts||0)+1}
+  autopsyScreen()
  }catch(e){/*Canvas-Wache darf niemals Probleme machen*/}
+}
+// SCHWARZ-AUTOPSIE: 9 Punkte uebers ganze Bild abtasten. Alle fast-schwarz
+// obwohl das Spiel malt? -> Safari komponiert nicht mehr. Dann: Reparatur.
+// 2 aufeinanderfolgende schwarze Scans noetig -> keine Fehlalarme bei dunklen
+// Hintergrunden. Themen-Fuellungen (#0a1c0d co) sind alle heller als Schwelle 14.
+function autopsyScreen(){
+ try{
+  const s=state,W=Math.max(1,s.W||1),H=Math.max(1,s.H||1),dpr=s.dpr||1;
+  let black=0;
+  for(let i=0;i<9;i++){
+   const fx=i%3,fy=Math.floor(i/3);
+   const px=Math.min(W-1,Math.floor(fx*W/2)),py=Math.min(H-1,Math.floor(fy*H/2));
+   const d=ctx.getImageData(Math.floor(px*dpr),Math.floor(py*dpr),1,1);
+   if(!d||!d.data||d.data.length<4){drawStats.black='unlesbar';blackInRow=0;return}
+   const a=d.data[3],mx=Math.max(d.data[0],d.data[1],d.data[2]);
+   if(a===0||mx<14)black++
+  }
+  drawStats.black=black===9?'schwarz':'bunt';
+  domCheck();
+  if(black===9){
+   blackInRow++;
+   // Nur heilen, wenn auch die Canvas-Flaeche und das Deckverhaeltnis normal sind
+   const obendrauf=String(drawStats.coveredBy);
+   const decktCanvas=obendrauf===''||obendrauf==='?'||/#?canvas/i.test(obendrauf)||obendrauf==='-';
+   if(blackInRow>=2&&decktCanvas){repairCanvas();drawStats.heal=(drawStats.heal||0)+1;drawStats.restarts=(drawStats.restarts||0)+1}
+  }else blackInRow=0
+ }catch(e){drawStats.black='unlesbar';blackInRow=0}
+}
+// Verdeckt etwas die Leinwand? Wie gross ist sie sichtbar?
+function domCheck(){
+ try{
+  const cv=document.getElementById&&document.getElementById('canvas');
+  if(cv&&cv.getBoundingClientRect){
+   const r=cv.getBoundingClientRect();
+   drawStats.rect=Math.round(r.width)+'x'+Math.round(r.height);
+   let f=null;
+   try{f=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)}catch(e){}
+   drawStats.coveredBy=f?(f.id?'#'+f.id:(f.tagName||'?')):'-'
+  }
+ }catch(e){drawStats.coveredBy='?'}
 }
 
 function themeFallback(){

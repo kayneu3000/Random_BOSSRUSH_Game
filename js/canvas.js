@@ -38,3 +38,18 @@ export function forceCanvasRealloc(){
   lastBW=0;lastBH=0
  }catch(e){}
 }
+
+// DOM-Schubs: Canvas aus dem DOM nehmen und an exakt derselben Stelle wieder
+// einhaengen. Das zwingt iPad-Safari, die Compositing-Schicht neu zu bauen —
+// gegen den Bug "Canvas-Inhalt alive, Bildschirm trotzdem schwarz".
+export function repairCanvas(){
+ try{
+  const p=canvas.parentNode;
+  if(p&&p.removeChild&&canvas.nextSibling!==undefined){
+   const ref=canvas.nextSibling;
+   p.removeChild(canvas);
+   p.insertBefore(canvas,ref)
+  }
+ }catch(e){/* Reparatur darf niemals abstuerzen */}
+ forceCanvasRealloc()
+}
