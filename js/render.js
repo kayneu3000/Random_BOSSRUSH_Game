@@ -562,6 +562,18 @@ function safeDraw(label, fn){
 // Zeichenflaeche stillgelegt — dann wird sie zwangsweise neu angelegt und das
 // Spiel malt sofort weiter (Zaehler: CanvasNeustarten im debug-Chip).
 let sentinelArmed=false,sentinelFrames=0,blackInRow=0;
+// KOMPOSITING-NUDGE (v30): Der v29-Chip hat es bewiesen - die Backing-Store-
+// Lesung klappt (Sentinel armiert, Bild=bunt), aber der BILDSCHIRM zeigt schwarz:
+// iPad-Safari verliert die Kompositing-Schicht der Canvas. Detection ist unmoeglich
+// (wir lesen nur den Store, nicht den Schirm) -> deshalb heilen wir ZEITGESTEUERT:
+// alle 20 s einmal die Canvas still aus dem DOM nehmen und zurueckhaengen.
+// Zwingt Safari, die GPU-Schicht neu zu bauen. Inhalt bleibt erhalten, kein Flackern.
+let nudgeFrames=0;
+function nudgeCompositing(){
+ if(++nudgeFrames<1200)return;
+ nudgeFrames=0;
+ try{repairCanvas();drawStats.heal=(drawStats.heal||0)+1}catch(e){}
+}
 function canvasHealthCheck(){
  try{
   sentinelFrames++;
@@ -571,7 +583,8 @@ function canvasHealthCheck(){
   if(!sentinelArmed){if(r===255)sentinelArmed=true;return}
   if(sentinelFrames%45!==0)return;
   if(r!==255){forceCanvasRealloc();drawStats.restarts=(drawStats.restarts||0)+1}
-  autopsyScreen()
+  autopsyScreen();
+  nudgeCompositing()
  }catch(e){/*Canvas-Wache darf niemals Probleme machen*/}
 }
 // SCHWARZ-AUTOPSIE: 9 Punkte uebers ganze Bild abtasten. Alle fast-schwarz
