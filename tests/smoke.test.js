@@ -244,8 +244,8 @@ test('admin class persists across restarts and console is admin-only by design',
   state.adminBaseClass = 'gunner';
   startGame();
   assert.equal(state.isAdmin, true, 'admin session active');
-  assert.equal(state.selected, 'gunner', 'admin plays with the stored base class');
-  assert.equal(state.player.maxHp, 200);
+  assert.equal(state.selected, 'admin', 'Hugo #42: ADMIN bleibt ADMIN (eigene Klasse)');
+  assert.equal(state.player.maxHp, 300, 'ADMIN hat eigene 300 HP');
   runCommand('hp 300');
   assert.equal(state.player.maxHp, 300);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
@@ -420,12 +420,12 @@ test('admin mode sticks across lobby/restart until a normal class is picked', as
   state.adminBaseClass = 'tank';
   startGame();
   assert.equal(state.isAdmin, true);
-  assert.equal(state.selected, 'tank');
+  assert.equal(state.selected, 'admin', 'Hugo #42: ADMIN bleibt gewaehlt');
   for (let i = 0; i < 5 && !state.finished; i++) update(1 / 60);
   state.selected = 'archer';
   startGame();
   assert.equal(state.isAdmin, true, 'admin mode survives second start');
-  assert.equal(state.selected, 'tank');
+  assert.equal(state.selected, 'archer', 'Hugo #42: kein Zwangs-Remap mehr — gewaehlte Klasse bleibt');
   state.adminMode = false;
   state.isAdmin = false;
   state.selected = 'archer';
@@ -775,5 +775,19 @@ test('admin mode: own skin, no attacks for now (Hugo)', async () => {
   attack();
   assert.equal(dummy.hp, 100, 'ADMIN greift (noch) nicht an');
   assert.equal(state.attackTimer, 0, 'ADMIN loest keinen Cooldown aus');
+  state.isAdmin = false;
+});
+
+test('admin is a real class now: own stats, stays selected, no remap (Hugo #42)', async () => {
+  const { classes } = await import('../js/config.js');
+  assert.ok(classes.admin, 'ADMIN ist eine echte Klasse');
+  assert.equal(classes.admin.hp, 300, 'ADMIN hat 300 HP');
+  assert.equal(classes.admin.damage, 0, 'ADMIN hat erstmal keinen Angriff');
+  state.selected = 'admin'; state.selectedBoss = 'snake';
+  state.adminMode = false; state.isAdmin = false;
+  startGame();
+  assert.equal(state.selected, 'admin', 'ADMIN bleibt gewaehlt (kein Remap)');
+  assert.equal(state.player.maxHp, 300, 'ADMIN-Spieler hat 300 HP');
+  assert.ok(document.getElementById('className').textContent.indexOf('ADMIN') >= 0, 'HUD zeigt ADMIN');
   state.isAdmin = false;
 });
