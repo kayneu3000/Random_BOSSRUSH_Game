@@ -14,6 +14,7 @@ import { createSnakeSkin, updateSnakeSkin } from "./bosses/snakeSkin.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
+import { initBossPreviews } from "./previews.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 import { showErrBox } from "./ui.js";
 
@@ -27,6 +28,7 @@ applyUnlocksToUI();
 attachUI({ startGame });
 attachInput();
 attachConsole(startGame);
+initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 
 function startGame() {
  const s = state;
@@ -96,7 +98,7 @@ function startGame() {
 function movePlayer(dt) {
  const s = state;
  if (s.dashDuration > 0) {
-  const dv = s.selected === 'sword' ? 1275 : 850;
+  const dv = (s.selected === 'sword' || s.selected === 'whip') ? 1275 : 850; /* Peitsche: sehr weiter Dash (Hugo) */
   // Read-Guard: ohne dashX/dashY oder mit NaN sicher 0 bewegen statt NaN bauen
   const dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
   const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;

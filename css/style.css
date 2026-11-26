@@ -35,7 +35,12 @@ button:active{transform:scale(.96)}
 .snakePreview:before{content:"";position:absolute;left:6px;bottom:14px;width:70px;height:22px;border-radius:14px 22px 20px 26px;background:repeating-linear-gradient(95deg,#3f8f2b 0 6px,#2c6b21 6px 9px,#8fd64f 9px 12px);border:2px solid #0e2810;box-shadow:0 0 18px #4d9e3477}
 .snakePreview:after{content:"";position:absolute;right:4px;bottom:10px;width:34px;height:32px;border-radius:52% 52% 46% 46%;background:radial-gradient(circle at 38% 33%,#ffe14d 0 4px,transparent 5px),radial-gradient(circle at 64% 33%,#ffe14d 0 4px,transparent 5px),radial-gradient(circle at 38% 33%,#111 2px,transparent 3px),radial-gradient(circle at 64% 33%,#111 2px,transparent 3px),radial-gradient(circle at 35% 30%,#b6ef6d,#5cb03a 55%,#254f1d);box-shadow:0 0 14px #8cf83855}
 .snakePreview i{position:absolute;right:-2px;bottom:24px;width:10px;height:3px;background:#ff5638;border-radius:2px;box-shadow:4px 3px 0 #ff5638,-2px 4px 0 #ff5638}
+#selectSnake{background:linear-gradient(110deg,#2f7a1e,#63e04a,#2f7a1e);border:1px solid #8cf838;box-shadow:0 0 18px #8cf83866,inset 0 0 12px #b6ff9a33;color:#eeffde}
 #lobby .snakeLocked{opacity:.45;filter:grayscale(.8)}
+/* Echte Boss-Bilder (Hugo): CSS-Pseudo-Preview aus, Mini-Canvas an */
+.realPreview:before,.realPreview:after,.realPreview i{content:none!important;display:none!important}
+.bossPreviewCanvas{width:95px;height:85px;display:block}
+.whipSvg{display:block;filter:drop-shadow(0 0 8px #ffc46a66)}
 
 /* Klassenwahl-Themes */
 #classScreen.slimeTheme{background:radial-gradient(ellipse at 50% 20%,#075a86,#062d4a 55%,#02111f)}

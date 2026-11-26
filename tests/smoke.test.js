@@ -444,10 +444,10 @@ test('snake: destroying small snakes starves it until only the head remains', as
   assert.equal(sn.segments, 8, 'snake starts with 8 segments');
   assert.equal(sn.maxHp, 1000, 'HUGO-Skala: Leiste ist immer 10 Zehntel');
   assert.ok(sk && sk.alive, 'the molted skin spawns together with the snake');
-  assert.equal(sk.hp, 300, 'the skin has 300 hp');
+  assert.equal(sk.hp, 500, 'the skin has 500 hp');
   damageBoss(sn, 50);
   assert.equal(sn.hp, 800, 'snake is immune to direct hits (8/10 Leiste)');
-  assert.equal(sk.hp, 300, 'a hit aimed at the snake does not hurt the skin');
+  assert.equal(sk.hp, 500, 'a hit aimed at the snake does not hurt the skin');
   state.player = { x: sn.x + 400, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
   sn.appleTimer = 0;
   updateSnake(sn, 1 / 60);
@@ -502,7 +502,7 @@ test('the skin hunts the player: venom, tail strike and contact damage', async (
   assert.ok(state.player.hp < hp0, 'the tail strike hurts on contact');
   assert.equal(sk.attackCooldown, 1, 'the tail strike has a 1s cooldown');
   damageBoss(sk, 120);
-  assert.equal(sk.hp, 180, 'the skin is vulnerable to direct hits');
+  assert.equal(sk.hp, 380, 'the skin is vulnerable to direct hits');
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
 
@@ -514,7 +514,7 @@ test('the skin orbits and periodically sprints at the player', async () => {
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
   createSnakeSkin(600, 300);
   const sk = state.bosses.find(b => b.type === 'snakeSkin');
-  assert.equal(sk.hp, 300, 'the skin has 300 hp');
+  assert.equal(sk.hp, 500, 'the skin has 500 hp');
   state.player = { x: sk.x + 240, y: sk.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
   state.invuln = 0;
   sk.venomCooldown = 99; sk.sprintCooldown = 0; sk.mode = 'circle';
@@ -728,4 +728,30 @@ test('CANVAS-WACHE: draw() hinterlaesst keinen save/restore-Stack (schwarzer-Bil
     assert.equal(ctx.__stackDepth, 0, 'Skin-Tod-Frame ' + f + ': Imbalance');
   }
   state.bosses = []; state.smallSnakes = [];
+});
+
+test('the whip class: 220 hp, long line attack, 0.5s cooldown, 30 damage (Hugo)', async () => {
+  const { attack } = await import('../js/combat.js');
+  const { classes } = await import('../js/config.js');
+  const w = classes.whip;
+  assert.equal(w.hp, 220, 'Peitsche hat 220 HP');
+  assert.equal(w.damage, 30, 'Peitsche macht 30 Schaden');
+  assert.equal(w.cool, .5, 'Peitsche hat 0,5s Angriffscooldown');
+  assert.equal(w.speed, 270, 'Peitsche ist etwas schneller als normale Klassen');
+  assert.ok(w.line, 'Peitsche greift in einer Linie an');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.selected = 'whip'; state.attackTimer = 0; state.cooldownOverride = 0;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.player = { x: 500, y: 500, r: 17, hp: 220, maxHp: 220, speed: w.speed, angle: 0, dashX: 0, dashY: 0 };
+  state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.enemyProjectiles = []; state.fireTrails = []; state.projectiles = []; state.effects = [];
+  const onLine = { id: 1, type: 'slime', x: 700, y: 502, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  const offLine = { id: 2, type: 'slime', x: 640, y: 640, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  const farAway = { id: 3, type: 'slime', x: 900, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  state.bosses.push(onLine, offLine, farAway);
+  attack();
+  assert.equal(onLine.hp, 70, 'Peitsche trifft das Ziel in der Linie (30 Schaden)');
+  assert.equal(offLine.hp, 100, 'Peitsche trifft Ziele neben der Linie NICHT');
+  assert.equal(farAway.hp, 100, 'Peitsche trifft Ziele ausserhalb der Reichweite NICHT');
+  assert.ok(Math.abs(state.attackTimer - .5) < 1e-9, '0,5s Cooldown gesetzt');
+  assert.ok(state.effects.some(e => e.type === 'slash' && e.weapon === 'whip'), 'Peitschen-Schlag-Effekt sichtbar');
 });

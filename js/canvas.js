@@ -1,7 +1,12 @@
 import { state } from "./state.js";
 
 export const canvas = document.getElementById('canvas');
-export const ctx = canvas.getContext('2d');
+export let ctx = canvas.getContext('2d');
+/* Lobby-Vorschauen (Hugo: echte Boss-Bilder) zeichnen kurz auf eine andere
+   Canvas. export let = Live-Binding: alle Importeure sehen den Tausch. */
+const mainCtx = ctx;
+export function beginPreviewCtx(c){ ctx = c }
+export function endPreviewCtx(){ ctx = mainCtx }
 
 // Schwarzer Bildschirm auf iPad Safari: clientWidth kann (kurzzeitig) 0/NaN sein,
 // wenn das Layout nach dem Anzeigen des Spiels noch nicht fertig ist.
