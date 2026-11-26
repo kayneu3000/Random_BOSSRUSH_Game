@@ -453,7 +453,14 @@ function drawSkin(b){
   ctx.globalAlpha=1
  }
  if(b.flash>0){ctx.fillStyle='#fff';ctx.globalAlpha=b.flash*4;ctx.beginPath();ctx.arc(b.x,b.y,r*.9,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+ ctx.restore();
  ctx.restore()
+ /* FIX (schwarzer Bildschirm): hier fehlte das zweite restore() — drawSkin hat
+    jeden Frame einen Canvas-State auf den Stack geleckt. Die Transformationen
+    stapelten sich mit jeder Frame, alle Figuren (Skin/Snake/Spieler) drifteten
+    unendlich aus dem Sichtfeld — nur der flache Boden blieb -> "schwarzer"
+    (leerer dunkelgruener) Schirm, waehrend HUD + Schaden normal liefen. Deshalb:
+    Skin tot (15-s-Respawn) = sichtbar, Skin lebendig = schwarz. */
 }
 
 /* Kleine Schlangen: langsam unterwegs, SNAKE frisst sie */

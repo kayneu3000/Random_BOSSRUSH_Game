@@ -28,10 +28,14 @@ function makeElement(id) {
 }
 
 function makeCtx() {
+  let depth = 0;
   return new Proxy(
     {},
     {
       get(_t, key) {
+        if (key === '__stackDepth') return depth;
+        if (key === 'save') return () => { depth++; };
+        if (key === 'restore') return () => { depth = Math.max(0, depth - 1); };
         if (key === 'createLinearGradient' || key === 'createRadialGradient') {
           return () => ({ addColorStop() {} });
         }
@@ -49,7 +53,7 @@ const elements = new Map();
 const registerElement = id => {
   if (!elements.has(id)) {
     const el = makeElement(id);
-    if (id === 'canvas') el.getContext = () => makeCtx();
+    if (id === 'canvas') { const c = makeCtx(); el.getContext = () => c; }
     elements.set(id, el);
   }
   return elements.get(id);
@@ -697,4 +701,28 @@ test('showErrBox schreibt Fehler sichtbar ins Diagnose-Banner', async () => {
   const box = document.getElementById('errBox');
   assert.ok(String(box.textContent).includes('Test-BUG-XYZ'), 'Banner enthaelt Meldung');
   box.textContent = ''; box.style.display = 'none';
+});
+
+test('CANVAS-WACHE: draw() hinterlaesst keinen save/restore-Stack (schwarzer-Bildschirm-Regression drawSkin)', async () => {
+  state.selected = 'faust'; state.selectedBoss = 'snake';
+  state.unlocks = { healer: true, ember: true, gunner: true, admin: false };
+  state.adminMode = false; state.isAdmin = false;
+  startGame();
+  const { update } = await import('../js/main.js');
+  const { draw } = await import('../js/render.js');
+  const { updateHUD } = await import('../js/ui.js');
+  const ctx = (await import('../js/canvas.js')).ctx;
+  const dt = 1 / 60;
+  for (let f = 0; f < 90; f++) {
+    state.keys.KeyW = f % 6 < 3; state.keys.KeyD = f % 8 < 4;
+    update(dt); updateHUD(); draw();
+    assert.equal(ctx.__stackDepth, 0, 'Frame ' + f + ': draw() leakte einen Canvas-State (save/restore-Imbalance)');
+  }
+  const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  if (sk) sk.alive = false;
+  for (let f = 0; f < 30; f++) {
+    update(dt); updateHUD(); draw();
+    assert.equal(ctx.__stackDepth, 0, 'Skin-Tod-Frame ' + f + ': Imbalance');
+  }
+  state.bosses = []; state.smallSnakes = [];
 });
