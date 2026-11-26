@@ -30,13 +30,13 @@ export function updateSnakeSkin(b,dt){
  const dx=T.x-b.x,dy=T.y-b.y,d=Math.hypot(dx,dy)||1;
  if(b.mode==='sprint'){
   b.sprintTimer-=dt;
-  b.x+=b.sprintDx*620*dt;b.y+=b.sprintDy*620*dt;
+  b.x+=b.sprintDx*470*dt;b.y+=b.sprintDy*470*dt; /* Hugo: Haut etwas langsamer */
   if(b.sprintTimer<=0){b.mode='circle';b.sprintCooldown=2.1}
  }else{
   b.sprintCooldown-=dt;
   const wantD=240,ux=dx/d,uy=dy/d;
-  const vx=ux*(d-wantD)*1.3-uy*b.orbitDir*230;
-  const vy=uy*(d-wantD)*1.3+ux*b.orbitDir*230;
+  const vx=ux*(d-wantD)*1.0-uy*b.orbitDir*175;
+  const vy=uy*(d-wantD)*1.0+ux*b.orbitDir*175;
   b.x+=vx*dt;b.y+=vy*dt;
   if(b.sprintCooldown<=0&&d<620){
    b.mode='sprint';b.sprintTimer=.7;

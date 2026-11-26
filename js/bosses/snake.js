@@ -108,10 +108,10 @@ export function updateSnake(b,dt){
 
  if(target){
   const dx=target.x-b.x,dy=target.y-b.y,d=Math.hypot(dx,dy)||1;
-  b.x+=dx/d*170*dt;b.y+=dy/d*170*dt
+  b.x+=dx/d*130*dt;b.y+=dy/d*130*dt /* HuGo: Snake etwas langsamer */
  }else{
   b.wanderAngle+=(Math.random()-.5)*.7;
-  b.x+=Math.cos(b.wanderAngle)*60*dt;b.y+=Math.sin(b.wanderAngle)*60*dt
+  b.x+=Math.cos(b.wanderAngle)*45*dt;b.y+=Math.sin(b.wanderAngle)*45*dt
  }
  clampArena(b);
 
