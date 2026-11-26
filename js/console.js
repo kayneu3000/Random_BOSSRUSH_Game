@@ -2,7 +2,7 @@ import { state } from "./state.js";
 import { MAP, classes } from "./config.js";
 import { $ } from "./utils.js";
 import { showGameMessage, toggleDebugChip } from "./ui.js";
-import { repairCanvas, resizeCanvas } from "./canvas.js";
+import { repairCanvas, resizeCanvas, deepSwapCanvas } from "./canvas.js";
 import { createSlime } from "./bosses/slime.js";
 import { createDragon, createTowers } from "./bosses/dragon.js";
 import { createGunball } from "./bosses/gunball.js";
@@ -144,10 +144,11 @@ function cmdHelp(page){
 }
 
 function cmdHeal(){
- // Canvas-Notfall-Reparatur: Bitmap neu anlegen + Canvas im DOM neu einhaengen
+ // Canvas-Notfall-Reparatur SCHWER: brandneues Canvas-Element + neuer Kontext
+ const tief=deepSwapCanvas();
  resizeCanvas();
- repairCanvas();
- showGameMessage('CANVAS REPARIERT — guck auf den Bildschirm!',2.5)
+ if(!tief)repairCanvas();
+ showGameMessage(tief?'CANVAS VOLL GETAUSCHT — guck auf den Bildschirm!':'CANVAS REPARIERT — guck auf den Bildschirm!',2.5)
 }
 
 function cmdClass(name){

@@ -1,7 +1,30 @@
 import { state } from "./state.js";
 
-export const canvas = document.getElementById('canvas');
-export const ctx = canvas.getContext('2d');
+// let (nicht const): deepSwapCanvas() ersetzt das Element samt Kontext zur Laufzeit.
+// ES-Module-Live-Bindings machen die Aenderung fuer alle Importeure sofort sichtbar.
+export let canvas = document.getElementById('canvas');
+export let ctx = canvas.getContext('2d');
+
+// DIE SCHWERE ARTILLERIE (v31): nagelneues <canvas>-Element + neuer 2D-Kontext.
+// Wenn Safari selbst den Umhaenge-Nudge ignoriert, bekommt das Spiel ein
+// komplett frisches Element - damit stirbt jede GPU-Schichten-Verrottung.
+export function deepSwapCanvas(){
+ try{
+  const neu=document.createElement('canvas');
+  neu.id='canvas';
+  if(neu.getContext){
+   neu.style.cssText=canvas.style.cssText;
+   const p=canvas.parentNode;
+   if(p&&p.insertBefore&&p.removeChild){
+    p.insertBefore(neu,canvas);
+    p.removeChild(canvas);
+    const c2=neu.getContext('2d');
+    if(c2){canvas=neu;ctx=c2;lastBW=0;lastBH=0;return true}
+   }
+  }
+ }catch(e){/* darf niemals abstuerzen */}
+ return false
+}
 
 let lastBW = 0, lastBH = 0;
 
