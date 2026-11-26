@@ -751,7 +751,7 @@ test('NaN-Feuerwehr: Spielerrueckholung, Projektil-Entsorgung, Dash-Wacht', asyn
 
 test('Quellen-Detektiv: NaN-Rettung merkt sich den Taeter + VERSION sichtbar', async () => {
   const { VERSION } = await import('../js/config.js');
-  assert.equal(VERSION, 29, 'VERSION=29');
+  assert.equal(VERSION, 30, 'VERSION=30');
   state.selected = 'archer'; state.selectedBoss = 'slime';
   startGame();
   state.player.x = NaN; state.player.y = NaN;
@@ -808,7 +808,7 @@ test('Schwarz-Autopsie: Chip nennt Bild-/Verdeckt-/Flaeche-/Heilen-Felder + heal
   toggleDebugChip();
   update(1 / 60);
   const txt = String(document.getElementById('debugChip').textContent);
-  assert.ok(txt.includes('v29'), 'Chip zeigt v29');
+  assert.ok(txt.includes('v30'), 'Chip zeigt v30');
   assert.ok(txt.includes('Bild='), 'Chip zeigt Bild-Feld');
   assert.ok(txt.includes('Verdeckt='), 'Chip zeigt Verdeckt-Feld');
   assert.ok(txt.includes('Flaeche='), 'Chip zeigt Flaeche-Feld');
