@@ -247,6 +247,7 @@ export function updateDebugChip() {
    ' Verdeckt=' + (drawStats.coveredBy || '-') +
    ' Flaeche=' + (drawStats.rect || '-') +
    ' Heilen=' + (drawStats.heal || 0) +
+   ' Tief=' + (drawStats.tiefaustausch || 0) +
    ' ZeichnenOK=' + drawStats.ok +
    ' ZeichnenFehler=' + (errs || 'keine') +
    ' Abstuerze=' + (browserErrs || 'keine');

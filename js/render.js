@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
-import { ctx, forceCanvasRealloc, repairCanvas } from "./canvas.js";
+import { ctx, forceCanvasRealloc, repairCanvas, deepSwapCanvas, resizeCanvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
 
@@ -568,11 +568,20 @@ let sentinelArmed=false,sentinelFrames=0,blackInRow=0;
 // (wir lesen nur den Store, nicht den Schirm) -> deshalb heilen wir ZEITGESTEUERT:
 // alle 20 s einmal die Canvas still aus dem DOM nehmen und zurueckhaengen.
 // Zwingt Safari, die GPU-Schicht neu zu bauen. Inhalt bleibt erhalten, kein Flackern.
-let nudgeFrames=0;
+let nudgeFrames=0,nudgeCycles=0;
 function nudgeCompositing(){
  if(++nudgeFrames<1200)return;
  nudgeFrames=0;
- try{repairCanvas();drawStats.heal=(drawStats.heal||0)+1}catch(e){}
+ nudgeCycles++;
+ try{
+  // Kaskade: alle 20 s Umhaengen; nach dem 3. Nudge (alle 60 s) der tiefe Tausch
+  // mit brandneuem Canvas-Element und frischem 2D-Kontext.
+  if(nudgeCycles%3===0){
+   if(deepSwapCanvas()){drawStats.heal=(drawStats.heal||0)+1;drawStats.tiefaustausch=(drawStats.tiefaustausch||0)+1;resizeCanvas();return}
+  }
+  repairCanvas();
+  drawStats.heal=(drawStats.heal||0)+1
+ }catch(e){}
 }
 function canvasHealthCheck(){
  try{
