@@ -1,6 +1,9 @@
 import { state } from "./state.js";
 import { damageBoss, damagePlayer, damageTower } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
+import { createMiniPlant } from "./bosses/plant.js";
+import { ACID_POOL_LIFE } from "./config.js";
+import { sfx } from "./audio.js";
 
 export function updatePlayerProjectiles(dt){
  for(const p of state.projectiles){
@@ -51,9 +54,16 @@ export function updateEnemyProjectiles(dt){
  for(const p of state.enemyProjectiles){
   if(p.type==='fireball'||!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
   else moveEnemyProjectile(p,dt);
-  if(p.life>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){damagePlayer(p.damage);p.life=0}
-  if(p.life>0&&state.friendlyFire&&(p.age||0)>.35){
+  /* PLANT (Hugo #47): Saeure und Samen machen KEINEN direkten Kontakt-Schaden —
+     sie fliegen durch, bis sie landen: Saeure wird zur Pfuetze, Samen zur
+     Mini-Fresspflanze. */
+  if(p.life>0&&p.damage>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){damagePlayer(p.damage);p.life=0}
+  if(p.life>0&&state.friendlyFire&&(p.age||0)>.35&&p.damage>0){
    for(const b of state.bosses){if(!b.alive)continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage,true);p.life=0;break}}
+  }
+  if(p.life<=0){
+   if(p.pool){state.acidPools.push({x:p.x,y:p.y,r:34,life:ACID_POOL_LIFE,tick:0});sfx('acid')}
+   else if(p.mini){createMiniPlant(p.x,p.y)}
   }
  }
  state.enemyProjectiles=state.enemyProjectiles.filter(p=>p.life>0)

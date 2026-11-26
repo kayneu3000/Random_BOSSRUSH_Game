@@ -1,5 +1,5 @@
 import { $ } from "./utils.js";
-import { ADMIN_UNLOCK_CODE } from "./config.js";
+import { ADMIN_UNLOCK_CODE, PLANT_SHIELD_HITS } from "./config.js";
 import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
 
@@ -29,7 +29,7 @@ export function applyUnlocksToUI() {
   card.classList.remove('locked');
   card.querySelector('h3').textContent = labels[cls][1]
  }
- const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)] };
+ const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)], sauger: ['saugerCard', 'Sauger ' + String.fromCodePoint(0x1F331)] };
  for (const cls of Object.keys(whipLabels)) {
   if (!state.unlocks[cls]) continue;
   const wcard = $(whipLabels[cls][0]);
@@ -50,6 +50,7 @@ export function showScreen(id) {
   $('classScreen').classList.toggle('slimeTheme', state.selectedBoss === 'slime');
   $('classScreen').classList.toggle('dragonTheme', state.selectedBoss === 'dragon');
   $('classScreen').classList.toggle('gunballTheme', state.selectedBoss === 'gunball');
+  $('classScreen').classList.toggle('plantTheme', state.selectedBoss === 'plant');
   document.querySelectorAll('.classCard').forEach(c => c.classList.toggle('selected', c.dataset.class === (state.adminMode ? 'admin' : state.selected)))
  }
 }
@@ -85,6 +86,9 @@ export function endGame(win) {
  } else if (win && state.selectedBoss === 'snake') {
   state.unlocks.whip = true;
   $('overlayText').textContent = 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag!'
+ } else if (win && state.selectedBoss === 'plant') {
+  state.unlocks.sauger = true;
+  $('overlayText').textContent = 'Die Fresspflanze ist besiegt! SAUGER FREIGESCHALTET: 250 HP, grün mit Stacheln und eine Fresspflanze in der Hand, die Gegner anzieht!'
  } else $('overlayText').textContent = win ? 'Der Boss wurde besiegt!' : 'Der Boss hat dich besiegt. Versuche es erneut!';
  applyUnlocksToUI();
  saveUnlocks();
@@ -129,7 +133,7 @@ export function updateHUD() {
  setText(getCooldownEl(s), getCooldownText(s));
 
  const living = s.bosses.filter(b => b.alive);
- const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'Snake', snakeSkin: 'DIE HAUT' };
+ const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'Snake', snakeSkin: 'DIE HAUT', plant: 'PFLANZE' };
  const barsArea = $('bossBars');
  // HAUT-HUD (Hugo-Fix 'unsterbliche Haut'): Die Haut bekommt ihre EIGENE Leiste,
  // damit ihr Schaden sichtbar ist — vorher wirkte sie unsterblich, weil ihre 500
@@ -166,8 +170,9 @@ export function updateHUD() {
   setText($('bossCount'), living.length + ' BOSSE AKTIV')
  } else if (bossTypes.length === 1) {
   setText($('bossName'), BOSS_NAMES[bossTypes[0]]);
-  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow'), sn = living.find(q => q.type === 'snake'), sk = living.find(q => q.type === 'snakeSkin');
-  if (d) setText($('bossCount'), d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV');
+  const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow'), sn = living.find(q => q.type === 'snake'), sk = living.find(q => q.type === 'snakeSkin'), pl = living.find(q => q.type === 'plant');
+  if (pl) setText($('bossCount'), pl.burrowed ? 'VERGRABEN' : pl.vulnerable ? 'VERWUNDBAR — ' + Math.ceil(pl.vulnTimer) + 's' : 'SCHILD — NOCH ' + (PLANT_SHIELD_HITS - pl.shieldHits) + ' ANGRIFFEN');
+  else if (d) setText($('bossCount'), d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV');
   else if (g) setText($('bossCount'), g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`);
   else if (sh) setText($('bossCount'), sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase);
   else if (sk) setText($('bossCount'), sk.mode === 'sprint' ? 'SPRINT!' : sk.mode === 'circle' ? 'UMKREIST DICH — ' + Math.ceil(sk.hp) + ' HP' : 'JAGT DICH — ' + Math.ceil(sk.hp) + ' HP');
@@ -185,6 +190,11 @@ export function attachUI({ startGame }) {
   if (!(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner)) return;
   state.selectedBoss = 'snake'; showScreen('classScreen')
  };
+ $('selectPlant').onclick = () => {
+  /* PLANT = Level 2 Boss #2: erst nach dem SNAKE-Sieg (Peitsche) waehlbar */
+  if (!state.unlocks.whip) return;
+  state.selectedBoss = 'plant'; showScreen('classScreen')
+ };
  $('muteBtn').onclick = () => { $('muteBtn').textContent = toggleMute() ? '\U0001F507' : '\U0001F50A' };
  $('tutStart').onclick = () => { state.selectedBoss = 'shadow'; state.selected = 'faust'; state.adminMode = false; state.isAdmin = false; startGame() };
  $('tutSkip').onclick = () => { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } showScreen('lobby') };
@@ -196,6 +206,7 @@ export function attachUI({ startGame }) {
   if (dc === 'ember' && !state.unlocks.ember) return;
   if (dc === 'gunner' && !state.unlocks.gunner) return;
   if (dc === 'whip' && !state.unlocks.whip) return;
+  if (dc === 'sauger' && !state.unlocks.sauger) return;
   if (dc === 'admin' && !state.unlocks.admin) {
    const code = prompt("ADMIN-CODE EINGEBEN:");
    if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;

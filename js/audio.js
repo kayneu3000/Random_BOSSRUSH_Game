@@ -83,6 +83,14 @@ export function sfx(name){
    case 'venom': tone(t, 300, 90, .25, 'sine', .25); noise(t, .2, 1200, 300, 'bandpass', .25); break;
    case 'victory': [523, 659, 784, 1046].forEach((f, i) => tone(t + i * .16, f, f, .3, 'triangle', .3)); break;
    case 'defeat': [392, 330, 262, 196].forEach((f, i) => tone(t + i * .22, f, f * .97, .4, 'triangle', .3)); break;
+   /* PLANT (Hugo #47) */
+   case 'bite': noise(t, .09, 900, 200, 'lowpass', .5); tone(t, 150, 60, .13, 'sawtooth', .3); break;
+   case 'acid': tone(t, 520, 160, .24, 'sawtooth', .22); noise(t, .26, 900, 240, 'bandpass', .3); break;
+   case 'tongue': tone(t, 180, 480, .18, 'sine', .3); noise(t, .12, 600, 1500, 'bandpass', .2); break;
+   case 'sling': tone(t, 700, 120, .26, 'square', .28); noise(t, .18, 1800, 300, 'highpass', .3); break;
+   case 'scream': tone(t, 880, 170, .7, 'sawtooth', .38); noise(t, .7, 2400, 280, 'bandpass', .45); break;
+   case 'burrow': noise(t, .5, 420, 90, 'lowpass', .5); tone(t, 95, 48, .5, 'sine', .3); break;
+   case 'seed': tone(t, 620, 990, .16, 'triangle', .28); break;
   }
  }catch(e){}
 }
@@ -113,7 +121,12 @@ const THEMES = {
            bassWave: 'triangle', melWave: 'square', melDouble: true },
  snake:  { bpm: 150, root: 73.42,  kick: [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0], hat: [0,1,1,1, 0,1,1,1, 0,1,1,1, 0,1,1,1],
            bass: [0,0,7,0, 0,3,5,0, -2,-2,3,-2, -4,3,5,7], mel: [12,15,19,15, 12,10,12,15, 19,15,12,10, 12,15,12,10],
-           bassWave: 'sawtooth', melWave: 'triangle' }
+           bassWave: 'sawtooth', melWave: 'triangle' },
+ plant:  { /* Sumpf-Walzer (Hugo #47): unheimlich, trippelnd, langsam (96 BPM) —
+              wogender Triangle-Bass + doppelter Triangle-Lead in Moll-Schleife */
+           bpm: 96, root: 98.0,  kick: [1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0], hat: [0,0,1,0, 0,0,0,1, 0,0,1,0, 0,0,1,0],
+           bass: [0,-2,-4,-2, 0,-2,-5,-2, 0,-2,-4,-2, -7,-5,-2,0], mel: [12,OFF,15,12, 19,OFF,15,12, 10,OFF,15,10, 7,10,12,OFF],
+           bassWave: 'triangle', melWave: 'triangle', melDouble: true }
 };
 
 function kick(t){

@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { classes, MAP } from "./config.js";
+import { classes, MAP, PLANT_SHIELD_HITS, ACID_POOL_LIFE } from "./config.js";
 import { ctx, canvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
@@ -496,6 +496,76 @@ function drawSmallSnake(a){
  ctx.restore()
 }
 
+/* PLANT — DIE FRESSPFLANZE (Hugo #47): waechst aus dem Boden, Maul + Zaehne +
+   Blaettern. Verwundbar = welkt + X-Augen. Ungreifbar = Schild-Ring (12 Hits). */
+export function drawPlant(b){
+ const s=state;
+ ctx.save();ctx.translate(b.x,b.y);
+ if(b.burrowed){
+  /* VERGRABEN: nur Erdhuegel + Blattpitzen */
+  ctx.fillStyle='#5a3d22';ctx.beginPath();ctx.ellipse(0,26,54,18,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#7a5230';ctx.beginPath();ctx.ellipse(0,20,38,12,0,0,Math.PI*2);ctx.fill();
+  for(let k=0;k<4;k++){const a=s.elapsed*3+k*1.7;ctx.fillStyle='#9be15d';ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(Math.cos(a)*30,8+Math.sin(a*2)*6,3,0,Math.PI*2);ctx.fill()}
+  ctx.restore();return
+ }
+ const vuln=b.vulnerable, flash=b.flash>0;
+ const bodyA=flash?'#e9ffc2':vuln?'#b6d94a':'#4e9c2f';
+ const bodyB=flash?'#ffffff':vuln?'#e7ffa8':'#9be15d';
+ const dark=flash?'#7a4a2a':'#1d4a12';
+ ctx.rotate(Math.sin(b.wobble)*.05);
+ /* Wurzeln im Boden */
+ ctx.strokeStyle='#7a5230';ctx.lineWidth=6;ctx.lineCap='round';
+ for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(k*14,34);ctx.quadraticCurveTo(k*22,48,k*30+Math.sin(s.elapsed*2+k)*4,58);ctx.stroke()}
+ /* Stiel */
+ ctx.fillStyle='#3d7a22';ctx.fillRect(-9,-4,18,44);
+ /* Kopf-Kugel */
+ ctx.fillStyle=bodyA;ctx.beginPath();ctx.arc(0,-34,46,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=bodyB;ctx.beginPath();ctx.ellipse(-14,-48,20,13,-.5,0,Math.PI*2);ctx.fill();
+ /* Blatt-Kragen */
+ ctx.fillStyle='#3d7a22';
+ for(const side of [-1,1]){ctx.save();ctx.translate(side*40,-14);ctx.rotate(side*.75);ctx.beginPath();ctx.ellipse(0,0,24,10,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+ /* MAUL (oeffnet sich bei Attacken) */
+ const mo=b.mouthOpen||0;
+ ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(0,-20,30,10+mo*22,0,0,Math.PI*2);ctx.fill();
+ /* Zaehne */
+ ctx.fillStyle='#fff8e0';
+ for(let k=-2;k<=2;k++){
+  ctx.beginPath();ctx.moveTo(k*11-4,-20-(9+mo*20));ctx.lineTo(k*11,-8-mo*18);ctx.lineTo(k*11+4,-20-(9+mo*20));ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(k*11-4,-20+(9+mo*20));ctx.lineTo(k*11,-8+mo*18);ctx.lineTo(k*11+4,-20+(9+mo*20));ctx.closePath();ctx.fill()
+ }
+ /* Augen: zornig — verwundbar: X-Augen */
+ if(vuln){
+  ctx.strokeStyle='#0c2a08';ctx.lineWidth=3;
+  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*20-5,-60);ctx.lineTo(side*20+5,-50);ctx.moveTo(side*20+5,-60);ctx.lineTo(side*20-5,-50);ctx.stroke()}
+ }else{
+  ctx.fillStyle='#ffffff';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*20,-55,6,0,Math.PI*2);ctx.fill()}
+  ctx.fillStyle='#0c2a08';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*20+side*2,-54,3,0,Math.PI*2);ctx.fill()}
+ }
+ /* SCHILD-Ring: leuchtet staerker, je naher der 12-Angriffe-Durchbruch ist */
+ if(!vuln){
+  ctx.globalAlpha=.22+(b.shieldHits/PLANT_SHIELD_HITS)*.5;
+  ctx.strokeStyle='#7ef0ff';ctx.lineWidth=4;
+  ctx.beginPath();ctx.arc(0,-30,62,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=1
+ }
+ ctx.restore()
+}
+
+/* MINI-FRESSPFLANZE (Samen): unsterblich, aber nur 10 Sekunden da */
+export function drawMiniPlant(a){
+ const s=state;
+ ctx.save();ctx.translate(a.x,a.y);
+ ctx.globalAlpha=Math.max(.15,Math.min(1,a.life/2));
+ const puls=1+Math.sin(a.wobble)*.1;
+ ctx.fillStyle='#3d7a22';ctx.fillRect(-3,0,6,14);
+ ctx.fillStyle=Math.sin(a.wobble*2)>.6?'#e7ffa8':'#9be15d';
+ ctx.beginPath();ctx.ellipse(0,-8,13*puls,11*puls,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#1d4a12';ctx.beginPath();ctx.ellipse(0,-4,8,3.5,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#fff8e0';for(const tx of [-4,0,4]){ctx.beginPath();ctx.moveTo(tx-1.5,-7);ctx.lineTo(tx,-4.5);ctx.lineTo(tx+1.5,-7);ctx.closePath();ctx.fill()}
+ ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(-4,-13,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-13,2,0,Math.PI*2);ctx.fill();
+ ctx.restore()
+}
+
 function drawSauronTower(t){
  const x=t.x,y=t.y,r=t.r;ctx.save();ctx.translate(x,y);ctx.fillStyle='#080504aa';ctx.beginPath();ctx.ellipse(0,37,40,13,0,0,Math.PI*2);ctx.fill();
  const armor=ctx.createLinearGradient(-r,-r,r,r);armor.addColorStop(0,'#514139');armor.addColorStop(.35,'#201714');armor.addColorStop(.7,'#090808');armor.addColorStop(1,'#3c2119');
@@ -564,6 +634,20 @@ function drawWeapon(){
   ctx.fillStyle=atk&&flick>.85?'#fff3b0':'#ffd98a';
   ctx.beginPath();ctx.arc(lx,ly,2.2,0,Math.PI*2);ctx.fill();
   ctx.restore()
+ }else if(s.selected==='sauger'){
+  /* SAUGER (Hugo #47): Fresspflanze in der Hand — kaut beim Angriff */
+  ctx.save();
+  const cool=classes[s.selected].cool||2, atk=s.attackTimer>0;
+  const chomp=atk?Math.abs(Math.sin((1-s.attackTimer/cool)*Math.PI*3)):.14+Math.sin(s.elapsed*2)*.12;
+  ctx.strokeStyle='#2e7d32';ctx.lineWidth=5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(14,2);ctx.quadraticCurveTo(26,-8,34,-14);ctx.stroke();
+  ctx.translate(34,-14);ctx.rotate(-.3);
+  ctx.fillStyle='#4e9c2f';ctx.beginPath();ctx.ellipse(0,-4,10,9,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#1d4a12';
+  ctx.save();ctx.rotate(-chomp*.7);ctx.beginPath();ctx.ellipse(0,-9,9,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.save();ctx.rotate(chomp*.7);ctx.beginPath();ctx.ellipse(0,1,9,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.fillStyle='#fff8e0';for(const tx of [-4,0,4]){ctx.beginPath();ctx.moveTo(tx-2,-7);ctx.lineTo(tx,-4.5);ctx.lineTo(tx+2,-7);ctx.closePath();ctx.fill()}
+  ctx.restore()
  }else if(s.selected==='faust'){
   ctx.save();ctx.rotate(-swing);ctx.fillStyle='#f0c9a0';ctx.strokeStyle='#8a5a34';ctx.lineWidth=2;
   ctx.beginPath();ctx.roundRect(12+swing*12,-19,19,16,7);ctx.fill();ctx.stroke();
@@ -579,7 +663,12 @@ function drawPlayer(){
  if(s.invuln>0&&Math.floor(s.elapsed*18)%2===0)ctx.globalAlpha=.45;
  ctx.fillStyle='#07121e99';ctx.beginPath();ctx.ellipse(0,10,20,9,0,0,Math.PI*2);ctx.fill();
  if(s.selected==='tank'){ctx.fillStyle='#778b9c';ctx.fillRect(-13,-13,26,27);ctx.fillStyle='#c4d5dc';ctx.fillRect(-9,-10,18,13);ctx.strokeStyle='#465765';ctx.lineWidth=2;ctx.strokeRect(-13,-13,26,27)}
-  else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
+  else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':s.selected==='sauger'?'#3fae49':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
+   if(s.selected==='sauger'){ /* SAUGER (Hugo #47): gruen mit Stacheln */
+    ctx.fillStyle='#1d5c28';
+    for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*13-Math.sin(a)*4,Math.sin(a)*13+Math.cos(a)*4);ctx.lineTo(Math.cos(a)*22,Math.sin(a)*22);ctx.lineTo(Math.cos(a)*13+Math.sin(a)*4,Math.sin(a)*13-Math.cos(a)*4);ctx.closePath();ctx.fill()}
+   }
+   ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
  ctx.restore();drawWeapon()
 }
 
@@ -608,7 +697,35 @@ export function draw(){
   for(let flame=0;flame<15;flame++){const a=flame*Math.PI*2/15+s.elapsed*1.5,fx=f.x+Math.cos(a)*f.r*.8,fy=f.y+Math.sin(a)*f.r*.65;ctx.fillStyle=flame%3===0?'#ffe65a':'#ff7822';ctx.beginPath();ctx.ellipse(fx,fy,f.r*.13,f.r*.27,a,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
- safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){if(b.type==='dragon')drawDragon(b);else if(b.type==='gunball')drawGunball(b);else if(b.type==='shadow')drawShadow(b);else if(b.type==='snake')drawSnake(b);else if(b.type==='snakeSkin')drawSkin(b);else drawSlime(b)}});
+ safeDraw('pfuetzen',()=>{for(const a of s.acidPools){
+  /* SAEURE-PFUETZEN (Hugo #47): bleiben liegen, blubbern, verblassen */
+  const puls=1+Math.sin(s.elapsed*6+a.x*.1)*.08;
+  ctx.save();ctx.globalAlpha=Math.min(.9,a.life/ACID_POOL_LIFE+.2);
+  ctx.fillStyle='#9be15d';ctx.beginPath();ctx.ellipse(a.x,a.y,a.r*puls,a.r*.62*puls,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#c8f75a';ctx.beginPath();ctx.ellipse(a.x,a.y,a.r*.55,a.r*.34,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e7ffa8';for(let k=0;k<5;k++){const ba=s.elapsed*2+k*1.3;ctx.beginPath();ctx.arc(a.x+Math.cos(ba)*a.r*.5,a.y+Math.sin(ba)*a.r*.25,2+Math.sin(ba*3)*1,0,Math.PI*2);ctx.fill()}
+  ctx.restore()
+ }});
+ safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){if(b.type==='dragon')drawDragon(b);else if(b.type==='gunball')drawGunball(b);else if(b.type==='shadow')drawShadow(b);else if(b.type==='snake')drawSnake(b);else if(b.type==='snakeSkin')drawSkin(b);else if(b.type==='plant')drawPlant(b);else drawSlime(b)}});
+ safeDraw('zunge',()=>{for(const b of s.bosses){
+  /* ZUNGE (Hugo #47): bis zum Maprand, schwingt die Wand entlang */
+  if(!b.alive||b.type!=='plant'||!b.tongue||!b.tongue.active)continue;
+  const t=b.tongue;
+  ctx.save();ctx.lineCap='round';
+  ctx.strokeStyle='#ff7ab8';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(b.x,b.y-30);ctx.lineTo(t.x,t.y);ctx.stroke();
+  ctx.strokeStyle='#ffc2dd';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(b.x,b.y-30);ctx.lineTo(t.x,t.y);ctx.stroke();
+  ctx.fillStyle='#ff5aa0';ctx.beginPath();ctx.arc(t.x,t.y,13,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ffe14d';ctx.beginPath();ctx.arc(t.x,t.y,5,0,Math.PI*2);ctx.fill();
+  ctx.restore()
+ }});
+ safeDraw('mini-pflanzen',()=>{for(const a of s.miniPlants)drawMiniPlant(a)});
+ safeDraw('schallwellen',()=>{for(const w of s.shockwaves){
+  /* SCHREI-SCHALLWELLE (Hugo #47): DRUEBER DASHEN! */
+  ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,w.life/2.6))*.85;
+  ctx.strokeStyle='#c8f75a';ctx.lineWidth=9;ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='#e7ffa8';ctx.lineWidth=3;ctx.beginPath();ctx.arc(w.x,w.y,Math.max(2,w.r-8),0,Math.PI*2);ctx.stroke();
+  ctx.restore()
+ }});
  safeDraw('tuerme',()=>{for(const t of s.infernoTowers)drawSauronTower(t)});
  safeDraw('schlangen',()=>{for(const a of s.smallSnakes)if(!a.destroyed)drawSmallSnake(a)});
  safeDraw('begleiter',()=>{for(const comp of s.companions){ctx.save();ctx.translate(comp.x,comp.y+Math.sin(comp.wobble)*3);ctx.globalAlpha=.95;ctx.strokeStyle='#aaffff';ctx.lineWidth=2;ctx.shadowColor='#35eaff';ctx.shadowBlur=12;ctx.beginPath();ctx.arc(0,0,comp.r+4,0,Math.PI*2);ctx.stroke();ctx.restore();drawSlime(comp)}});
@@ -636,7 +753,7 @@ export function draw(){
    ctx.shadowBlur=0;ctx.fillStyle='#454d7a';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
    ctx.restore();continue
   }
-  const colors={venom:'#8cf838',snake:'#7ee0c2',boomerang:'#e0c7ff',growth:'#a4e87b',mirror:'#d6d0ff',teleport:'#b36bff',giant:'#ffb06c',splitter:'#ffcf75',planet:'#a9bfff',chain:'#d8aaff',time:'#79e6ff',rain:'#d2b3ff',fusion:'#ff8dce',magnet:'#ff5c8a',blackhole:'#28143f',core:'#ffdc75',shard:'#ffe5a3',chainLink:'#bfa4ff',planetMoon:'#b6d5ff'};
+  const colors={venom:'#8cf838',snake:'#7ee0c2',boomerang:'#e0c7ff',growth:'#a4e87b',mirror:'#d6d0ff',teleport:'#b36bff',giant:'#ffb06c',splitter:'#ffcf75',planet:'#a9bfff',chain:'#d8aaff',time:'#79e6ff',rain:'#d2b3ff',fusion:'#ff8dce',magnet:'#ff5c8a',blackhole:'#28143f',core:'#ffdc75',shard:'#ffe5a3',chainLink:'#bfa4ff',planetMoon:'#b6d5ff',vine:'#8cf838',acid:'#c8f75a',seed:'#e7ffa3'};
   const color=colors[p.type]||'#ff9c36';
   if(p.type==='venom'){
    /* LIGHT: Venom flach ohne Glow — Safari-GPU-Schonung */

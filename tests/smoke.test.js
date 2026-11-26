@@ -221,13 +221,13 @@ test('console: spawn, duel, boss rush and time freeze work', async () => {
   assert.equal(state.friendlyFire, true);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
   runCommand('bossrush', startGame);
-  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball', 'shadow', 'snake']);
+  assert.deepEqual(state.bossRushQueue, ['dragon', 'gunball', 'shadow', 'snake', 'plant']);
   assert.ok(state.bosses.some(b => b.type === 'slime' && b.alive));
   for (let i = 0; i < 20 && !state.finished; i++) update(1 / 60);
   for (const b of state.bosses) b.alive = false;
   update(1 / 60);
   assert.ok(state.bosses.some(b => b.type === 'dragon' && b.alive), 'next boss rush boss spawns');
-  assert.equal(state.bossRushQueue.length, 3);
+  assert.equal(state.bossRushQueue.length, 4);
   runCommand('time freeze');
   const t0 = state.elapsed;
   update(1 / 60);
@@ -811,4 +811,131 @@ test('snake hunger: 7s ohne Essen kostet ein Zehntel (Hugo #43)', async () => {
   assert.equal(snake.segments, 8, 'Fang heilt ein Segment (+1/10)');
   assert.ok(snake.hungerTimer < 7, 'Fang resettet den Hunger-Timer');
   state.bosses = []; state.smallSnakes = [];
+});
+
+/* ---------- PLANT + SAUGER (Hugo #47) ---------- */
+
+test('sauger class + plant constants exist per Hugo spec (#47)', async () => {
+  const { classes, PLANT_HP, PLANT_SHIELD_HITS, PLANT_VULN_TIME, MINI_PLANT_LIFE, ACID_POOL_LIFE } = await import('../js/config.js');
+  const sg = classes.sauger;
+  assert.ok(sg, 'SAUGER-Klasse existiert');
+  assert.equal(sg.hp, 250, 'Sauger hat 250 HP');
+  assert.equal(sg.cool, 2, 'Sauger hat 2s Cooldown');
+  assert.ok(sg.pull, 'Sauger zieht Gegner an');
+  assert.equal(PLANT_HP, 700, 'Plant hat 700 HP');
+  assert.equal(PLANT_SHIELD_HITS, 12, 'Schild ueberlebt 12 Angriffe');
+  assert.equal(PLANT_VULN_TIME, 8, 'Danach 8 Sekunden angreifbar');
+  assert.equal(MINI_PLANT_LIFE, 10, 'Mini-Fresspflanzen nur 10s da');
+  assert.equal(ACID_POOL_LIFE, 6, 'Saeure-Pfuetzen bleiben 6s liegen');
+});
+
+test('plant fight boots: rooted boss with 700 hp, arrays reset, frames stable', async () => {
+  state.selected = 'faust'; state.selectedBoss = 'plant';
+  state.isAdmin = false; state.adminMode = false;
+  state.acidPools = [{x:0,y:0,life:1,r:10,tick:0}]; state.miniPlants = [{x:0,y:0,life:1,r:10,biteCd:1,wobble:0}]; state.shockwaves = [{x:0,y:0,r:10,speed:10,life:1,hit:false}];
+  startGame();
+  assert.equal(state.bosses.length, 1);
+  const b = state.bosses[0];
+  assert.equal(b.type, 'plant', 'Plant spawn im Plant-Fight');
+  assert.equal(b.hp, 700, 'Plant hat 700 HP');
+  assert.ok(state.acidPools.length === 0 && state.miniPlants.length === 0 && state.shockwaves.length === 0, 'Pfuetzen/Minis/Wellen werden beim Start geleert');
+  state.keys.KeyJ = false; state.keys.Space = false;
+  for (let i = 0; i < 180 && !state.finished; i++) update(1/60);
+  assert.ok(state.elapsed > 1, 'Plant-Fight laeuft stabil');
+  assert.ok(state.bosses.some(b => b.alive) || state.finished);
+  state.bosses = []; state.finished = true; state.gameRunning = false;
+});
+
+test('plant shield: 12 hits survive, then 8s vulnerable, then shield resets', async () => {
+  const { updatePlant } = await import('../js/bosses/plant.js');
+  const { PLANT_SHIELD_HITS } = await import('../js/config.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.dmgMultiplier = 1; state.notMe = false; state.peace = false; state.invincible = false; state.invuln = 0;
+  state.player = { x: 900, y: 300, r: 17, hp: 999, maxHp: 999, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
+  state.acidPools = []; state.miniPlants = []; state.shockwaves = []; state.enemyProjectiles = [];
+  const b = { id: 31, type: 'plant', x: 600, y: 300, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: 99, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: false, mode: 'out', t: 0, x: 0, y: 0, ex: 0, ey: 0, dir: 1, edge: '', caught: false }, faceAngle: 0, attackCooldown: 0 };
+  state.bosses = [b]; state.effects = []; state.particles = [];
+  for (let i = 0; i < PLANT_SHIELD_HITS - 1; i++) damageBoss(b, 40);
+  assert.equal(b.hp, 700, 'Schild-Hits kosten KEINE HP');
+  assert.equal(b.vulnerable, false, 'Schild noch zu');
+  damageBoss(b, 40);
+  assert.equal(b.vulnerable, true, '12. Angriff oeffnet das Schild');
+  assert.equal(b.vulnTimer, 8, '8 Sekunden angreifbar');
+  assert.equal(b.hp, 700, 'der 12. Angriff selbst wird noch absorbiert (ueberlebt!)');
+  damageBoss(b, 40);
+  assert.equal(b.hp, 660, 'im offenen Schild nimmt sie Schaden');
+  updatePlant(b, 4);
+  assert.equal(b.vulnerable, true, 'nach 4s noch angreifbar');
+  updatePlant(b, 4.05);
+  assert.equal(b.vulnerable, false, 'nach 8s ist das Schild wieder zu');
+  assert.equal(b.shieldHits, 0, 'Zaehler resettet');
+  // Zunge inaktiv lassen: keine Fang-Checks im Test
+  state.bosses = [];
+});
+
+test('mini plants: bite the player, are unkillable by design, vanish after 10s', async () => {
+  const { createMiniPlant, updateMiniPlants } = await import('../js/bosses/plant.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.invincible = false; state.peace = false; state.invuln = 0; state.brutal = false; state.selected = 'faust';
+  state.player = { x: 500, y: 500, r: 17, hp: 200, maxHp: 200, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
+  state.miniPlants = []; state.effects = []; state.particles = [];
+  createMiniPlant(505, 505);
+  assert.equal(state.miniPlants.length, 1, 'Samen wird zur Mini-Fresspflanze');
+  const a = state.miniPlants[0];
+  const hp0 = state.player.hp;
+  for (let i = 0; i < 30; i++) updateMiniPlants(1/60); /* Start-biteCd abwarten */
+  assert.ok(state.player.hp < hp0, 'Mini-Fresspflanze beisst');
+  for (let i = 0; i < 9; i++) updateMiniPlants(1); /* 9 Sekunden */
+  assert.ok(state.miniPlants.length >= 1, 'vor Ablauf noch da (sie sind ja unsterblich — kein HP-Konzept)');
+  updateMiniPlants(1.2);
+  assert.equal(state.miniPlants.length, 0, 'nach 10 Sekunden sind sie weg');
+});
+
+test('acid pools: tick damage while standing in them, evaporate after 6s', async () => {
+  const { updateAcidPools } = await import('../js/bosses/plant.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.invincible = false; state.peace = false; state.invuln = 0; state.brutal = false; state.selected = 'faust';
+  state.player = { x: 500, y: 500, r: 17, hp: 200, maxHp: 200, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
+  state.acidPools = [{ x: 505, y: 505, r: 34, life: 6, tick: 0 }]; state.particles = [];
+  const hp0 = state.player.hp;
+  updateAcidPools(0.1);
+  assert.ok(state.player.hp < hp0, 'Saeure in der Pfuetze brennt');
+  state.player.invuln = 0;
+  for (let i = 0; i < 70; i++) { state.invuln = 0; updateAcidPools(0.1) } /* 7 Sekunden */
+  assert.equal(state.acidPools.length, 0, 'Pfuetze verdunstet nach ACID_POOL_LIFE');
+});
+
+test('sauger pull: moving boss is dragged, grabbed (stun + damage) and flung; rooted plant only takes damage', async () => {
+  const { updatePulls } = await import('../js/combat.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.selected = 'sauger'; state.attackTimer = 0; state.cooldownOverride = 0;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.player = { x: 500, y: 500, r: 17, hp: 250, maxHp: 250, speed: 245, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
+  state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.effects = []; state.projectiles = [];
+  const mover = { id: 41, type: 'slime', x: 700, y: 500, r: 40, hp: 200, maxHp: 200, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  state.bosses.push(mover);
+  attack();
+  assert.ok(mover.saugerPull, 'beweglicher Gegner wird angesaugt');
+  for (let i = 0; i < 60 && mover.saugerPull; i++) updatePulls(1/60);
+  assert.ok(!mover.saugerPull, 'Griff abgeschlossen');
+  assert.ok(mover.hp < 200, 'Gegner nimmt Griff-Schaden (25 + 15)');
+  assert.ok(mover.stunTimer > 0, 'Gegner kann kurz keinen Schaden machen');
+  assert.ok(Math.abs(mover.x - 500) > 100, 'Gegner wurde nach hinten geschleudert');
+  // unbeweglicher Boss: PFLANZE bekommt nur Schaden (Schild-Kontext), kein Pull
+  state.selected = 'sauger'; state.attackTimer = 0;
+  const plant = { id: 42, type: 'plant', x: 700, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, tongue: { active: false } };
+  state.bosses = [plant];
+  attack();
+  assert.ok(!plant.saugerPull, 'unbewegliche Pflanze wird NICHT gezogen');
+  assert.equal(plant.shieldHits, 1, 'Angriff zaehlt auf dem Schild');
+  state.bosses = [];
+});
+
+test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {
+  state.unlocks.sauger = false; state.selectedBoss = 'plant'; state.selectedBoss = 'plant';
+  state.kills = 0; state.bosses = []; state.player = { hp: 250, maxHp: 250 };
+  endGame(true);
+  assert.equal(state.unlocks.sauger, true, 'SAUGER freigeschaltet');
+  assert.ok(document.getElementById('overlayText').textContent.indexOf('SAUGER') >= 0, 'Sieg-Text nennt SAUGER');
+  state.unlocks.sauger = false;
 });
