@@ -442,19 +442,19 @@ test('snake: destroying small snakes starves it until only the head remains', as
   const sn = state.bosses.find(b => b.type === 'snake');
   const sk = state.bosses.find(b => b.type === 'snakeSkin');
   assert.equal(sn.segments, 8, 'snake starts with 8 segments');
-  assert.equal(sn.maxHp, 800);
+  assert.equal(sn.maxHp, 1000, 'HUGO-Skala: Leiste ist immer 10 Zehntel');
   assert.ok(sk && sk.alive, 'the molted skin spawns together with the snake');
-  assert.equal(sk.hp, 500, 'the skin has 500 hp');
+  assert.equal(sk.hp, 300, 'the skin has 300 hp');
   damageBoss(sn, 50);
-  assert.equal(sn.hp, 800, 'snake is immune to direct hits');
-  assert.equal(sk.hp, 500, 'a hit aimed at the snake does not hurt the skin');
+  assert.equal(sn.hp, 800, 'snake is immune to direct hits (8/10 Leiste)');
+  assert.equal(sk.hp, 300, 'a hit aimed at the snake does not hurt the skin');
   state.player = { x: sn.x + 400, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
   sn.appleTimer = 0;
   updateSnake(sn, 1 / 60);
   assert.ok(state.smallSnakes.length >= 1, 'small snakes appear on the map');
   damageSmallSnake(state.smallSnakes[0], 999);
   assert.equal(sn.segments, 7, 'one destroyed small snake removes one segment');
-  assert.equal(sn.maxHp, 700, 'snake loses max hp while starving');
+  assert.equal(sn.hp, 700, 'HUGO-Skala: ein Segment weg = -1/10 Leiste');
   for (let i = 0; i < 7; i++) {
     sn.appleTimer = 0;
     updateSnake(sn, 1 / 60);
@@ -502,7 +502,7 @@ test('the skin hunts the player: venom, tail strike and contact damage', async (
   assert.ok(state.player.hp < hp0, 'the tail strike hurts on contact');
   assert.equal(sk.attackCooldown, 1, 'the tail strike has a 1s cooldown');
   damageBoss(sk, 120);
-  assert.equal(sk.hp, 380, 'the skin is vulnerable to direct hits');
+  assert.equal(sk.hp, 180, 'the skin is vulnerable to direct hits');
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });
 
@@ -514,7 +514,7 @@ test('the skin orbits and periodically sprints at the player', async () => {
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = [];
   createSnakeSkin(600, 300);
   const sk = state.bosses.find(b => b.type === 'snakeSkin');
-  assert.equal(sk.hp, 500, 'the skin has 500 hp');
+  assert.equal(sk.hp, 300, 'the skin has 300 hp');
   state.player = { x: sk.x + 240, y: sk.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
   state.invuln = 0;
   sk.venomCooldown = 99; sk.sprintCooldown = 0; sk.mode = 'circle';
@@ -568,8 +568,8 @@ test('snake eats small snakes to grow', async () => {
   const segs0 = sn.segments, hp0 = sn.hp;
   updateSnake(sn, 1 / 60);
   assert.equal(sn.segments, segs0 + 1, 'eating a small snake adds a segment');
-  assert.equal(sn.maxHp, 900, 'eating raises the max hp');
-  assert.ok(sn.hp > hp0, 'eating a small snake heals the snake');
+  assert.equal(sn.maxHp, 1000, 'maxHp stays on the fixed 10-tenths scale');
+  assert.equal(sn.hp, hp0 + 100, 'HUGO-Skala: +1/10 Leiste pro gegessener Schlange');
   assert.equal(state.smallSnakes[0].destroyed, true, 'the small snake was eaten');
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
 });

@@ -27,7 +27,7 @@ export const SNAKE_MAX_SEGMENTS=10;
 export const SNAKE_SEGMENT_HP=100;
 export const SMALL_SNAKE_HP=60;
 export const SMALL_SNAKE_MAX=2;
-export const SKIN_HP=500;
+export const SKIN_HP=300; /* Hugo: Haut 300 HP */
 export const TOWER_HP=75;
 
 export const VENOM={speed:260,r:10,damage:12,life:5};
