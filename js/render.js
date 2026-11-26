@@ -186,7 +186,6 @@ function drawEmberHand(){
  ctx.fillStyle='#ffe9b8';for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(53+i*5,5);ctx.lineTo(55+i*5,11);ctx.lineTo(57+i*5,5);ctx.fill()}
  for(let i=0;i<6;i++){const fx=24+Math.random()*35,fy=(Math.random()-.5)*28;ctx.fillStyle=i%2?'#ff4a0b':'#ffd84b';ctx.globalAlpha=.65+Math.random()*.35;ctx.beginPath();ctx.ellipse(fx,fy,3+Math.random()*3,6+Math.random()*7,Math.random()-.5,0,Math.PI*2);ctx.fill()}
  ctx.globalAlpha=1;ctx.restore();
- try{ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,1,1)}catch(e){}
 }
 
 /* Inferno-Drache: klare Silhouette, Lava-Risse, gluehendes Maul */
@@ -690,5 +689,11 @@ export function draw(){
   if(e.type==='towerDestroy'){ctx.globalAlpha=e.life;ctx.strokeStyle='#ff632d';ctx.lineWidth=7;ctx.beginPath();ctx.arc(e.x,e.y,60*(1-e.life)+15,0,Math.PI*2);ctx.stroke()}
   if(e.type==='companionHit'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#70faff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();ctx.shadowBlur=0}
  }});
- ctx.globalAlpha=1;ctx.restore()
+ ctx.globalAlpha=1;ctx.restore();
+ // CANVAS-WACHEN-SENTINEL (v29-Fix): muss im IDENTITAETS-Raum gemalt werden!
+ // Er haengte vorher am Ende von drawEmberHand - mitten im Kamera-Raum. Bei
+ // Kamera=560,844 lag der Testpunkt 560 px ausser Sicht, die Lesung oben links
+ // fand NIE Magenta, die Wache war vom 2. Frame an toter Code (deshalb
+ // Neustarten=0 und Bild=unausgescannt). Jetzt: Device-Pixel (0,0) oben links.
+ try{ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,1,1);ctx.restore()}catch(e){}
 }
