@@ -536,22 +536,29 @@ function drawWeapon(){
  }else if(s.selected==='assassin'){
   ctx.save();ctx.rotate(-swing);for(const side of [-1,1]){ctx.save();ctx.translate(19,side*15);ctx.rotate(side*.23);const knife=ctx.createLinearGradient(0,-4,31,4);knife.addColorStop(0,'#657789');knife.addColorStop(.45,'#f1f5fa');knife.addColorStop(1,'#a8b8c7');ctx.fillStyle=knife;ctx.strokeStyle='#526576';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(25,-2);ctx.lineTo(34,0);ctx.lineTo(25,2);ctx.lineTo(0,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#542a20';ctx.fillRect(-8,-3,10,6);ctx.restore()}ctx.restore()
  }else if(s.selected==='whip'){
-  /* PEITSCHE (Hugo): dunkelgruene Peitsche in der Hand, mit Schwung-Animation */
-  ctx.save();ctx.rotate(-swing);
+  /* PEITSCHE (Hugo #43): kleiner Griff, LANGE Peitsche, echtes Schwingen —
+     beim Angriff peitscht sie aus (Flick), danach relaxt sie zurueck. */
+  ctx.save();
+  const cool=classes[s.selected].cool||1, ph=s.attackTimer>0?1-s.attackTimer/cool:0;
+  const atk=s.attackTimer>0, flick=atk?Math.sin(ph*Math.PI):0;
+  ctx.rotate(-swing*1.15 - flick*.35);
   ctx.fillStyle='#185019';ctx.strokeStyle='#0c2a08';ctx.lineWidth=2;
-  ctx.beginPath();ctx.roundRect(6,-4,17,8,3);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#2e7d32';ctx.fillRect(8,-2,4,4);
-  const lash=s.attackTimer>0?(.55+swing):(0.38+Math.sin(s.elapsed*2.2)*.08);
-  const len=18+lash*46,tip=4+12*swing;
-  ctx.strokeStyle='#2e7d32';ctx.lineWidth=4.5;
-  ctx.beginPath();ctx.moveTo(20,0);
-  ctx.quadraticCurveTo(20+len*.5,-9-9*swing,20+len,tip);
+  ctx.beginPath();ctx.roundRect(6,-3.5,12,7,3);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#2e7d32';ctx.fillRect(7,-1.5,3,3);
+  const len=atk?40+flick*62:38+Math.sin(s.elapsed*2.2)*5;
+  const bend=atk?(18-flick*40):6*Math.sin(s.elapsed*1.7);
+  const tipY=bend*.6+ (atk?flick*10:0);
+  ctx.strokeStyle='#1f5c22';ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(16,0);
+  ctx.quadraticCurveTo(16+len*.45,bend*.9,16+len,tipY);
   ctx.stroke();
-  ctx.strokeStyle='#8cf838';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(20,0);
-  ctx.quadraticCurveTo(20+len*.5,-9-9*swing,20+len,tip);
+  ctx.strokeStyle='#8cf838';ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(16,0);
+  ctx.quadraticCurveTo(16+len*.45,bend*.9,16+len,tipY);
   ctx.stroke();
-  ctx.fillStyle='#ffd98a';ctx.beginPath();ctx.arc(21+len,tip,3,0,Math.PI*2);ctx.fill();
+  ctx.lineCap='butt';
+  ctx.fillStyle=atk&&flick>.85?'#fff3b0':'#ffd98a';
+  ctx.beginPath();ctx.arc(17+len,tipY,3,0,Math.PI*2);ctx.fill();
   ctx.restore()
  }else if(s.selected==='faust'){
   ctx.save();ctx.rotate(-swing);ctx.fillStyle='#f0c9a0';ctx.strokeStyle='#8a5a34';ctx.lineWidth=2;
@@ -569,7 +576,7 @@ function drawPlayer(){
  ctx.fillStyle='#07121e99';ctx.beginPath();ctx.ellipse(0,10,20,9,0,0,Math.PI*2);ctx.fill();
  if(s.selected==='tank'){ctx.fillStyle='#778b9c';ctx.fillRect(-13,-13,26,27);ctx.fillStyle='#c4d5dc';ctx.fillRect(-9,-10,18,13);ctx.strokeStyle='#465765';ctx.lineWidth=2;ctx.strokeRect(-13,-13,26,27)}
  else if(s.isAdmin){/* ADMIN-Skin: schwarz mit dunkelblauem Visier */ctx.fillStyle='#0b0b10';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1b3a75';ctx.beginPath();ctx.arc(0,-1,9,Math.PI*1.05,Math.PI*1.95);ctx.fill();ctx.fillStyle='#4a76c9';ctx.beginPath();ctx.arc(-5,-2,2.2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(5,-2,2.2,0,Math.PI*2);ctx.fill()}
- else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
+ else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
  ctx.restore();drawWeapon()
 }
 

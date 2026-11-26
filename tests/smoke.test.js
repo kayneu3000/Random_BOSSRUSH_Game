@@ -791,3 +791,26 @@ test('admin is a real class now: own stats, stays selected, no remap (Hugo #42)'
   assert.ok(document.getElementById('className').textContent.indexOf('ADMIN') >= 0, 'HUD zeigt ADMIN');
   state.isAdmin = false;
 });
+
+test('snake hunger: 7s ohne Essen kostet ein Zehntel (Hugo #43)', async () => {
+  const { updateSnake } = await import('../js/bosses/snake.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.isAdmin = false; state.selected = 'faust'; state.selectedBoss = 'snake';
+  state.dmgMultiplier = 1; state.notMe = false; state.peace = false; state.invincible = false;
+  state.screenShake = 0; state.kills = 0;
+  const snake = { id: 21, type: 'snake', x: 500, y: 500, r: 40, hp: 800, maxHp: 1000, alive: true, flash: 0, wobble: 0, segments: 8, trail: [], appleTimer: 100, hungerTimer: 0, skinRespawn: -1, attackCooldown: 0, faceAngle: 0, faceTarget: 0, faceTimer: 1, wanderAngle: 0 };
+  state.bosses = [snake]; state.smallSnakes = []; state.effects = []; state.projectiles = []; state.infernoTowers = []; state.fireTrails = [];
+  for (let i = 0; i < 6; i++) updateSnake(snake, 1);
+  assert.equal(snake.segments, 8, 'Nach 6 Sekunden Hunger noch 8 Segmente');
+  updateSnake(snake, 1);
+  assert.equal(snake.segments, 7, 'Nach 7 Sekunden ohne Essen: 1 Segment verloren');
+  assert.equal(snake.hp, 700, 'hp folgt der Zehntel-Skala (700/1000)');
+  assert.equal(snake.hungerTimer, 0, 'Hunger-Timer resettet nach dem Hunger-Schlag');
+  // Fang einer kleinen Schlange resettet den Hunger-Timer (+1/10 geheilt)
+  snake.hungerTimer = 6.9;
+  state.smallSnakes = [{ id: 22, type: 'smallSnake', x: snake.x, y: snake.y, r: 14, hp: 60, maxHp: 60, alive: true, destroyed: false, wobble: 0, dir: 0, turnTimer: 1 }];
+  updateSnake(snake, 1);
+  assert.equal(snake.segments, 8, 'Fang heilt ein Segment (+1/10)');
+  assert.ok(snake.hungerTimer < 7, 'Fang resettet den Hunger-Timer');
+  state.bosses = []; state.smallSnakes = [];
+});

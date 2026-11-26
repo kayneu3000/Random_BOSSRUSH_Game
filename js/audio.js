@@ -87,15 +87,29 @@ export function sfx(name){
  }catch(e){}
 }
 
-/* ---------- Musik: EIGENE Episode pro Boss (Hugo) ----------
-   bpm, Grundton (Hz), 16-Schritt-Bass (Halbton-Offsets, -99 = Pause),
-   Tonleiter fuer die Melodie, Kick-/Hi-Hat-Muster, Wellenformen. */
+/* ---------- Musik: EIGENE Episode pro Boss (Hugo #43: abwechslungsreicher) ----------
+   bpm, Grundton (Hz), 16-Schritt-Masken (1=an), Bass-/Melodie-Muster
+   (Halbton-Offsets relativ zum Grundton, -99 = Pause), Wellenformen.
+   Inspirationen (Hugo): Schatten = Undertale 'Ghost Fight' (quirky, off-beat,
+   stakkato), Gunball = Terraria 'Eye of Cthulhu' (treibende 16tel-Arpeggios),
+   Snake = schneller Dschungel-Groove (150 BPM). */
+const OFF=-99;
 const THEMES = {
- slime:  { bpm: 118, root: 110.0,  bass: [0,0,-4,0, 0,0,-2,0, -5,-5,-2,-5, -7,-2,0,3], scale: [0,3,5,7,10], kickEvery: 4, hatMask: [0,2],   bassWave: 'sawtooth', arpWave: 'triangle' },
- dragon: { bpm: 134, root: 87.31,  bass: [0,0,0,3, 0,0,0,5, 3,3,3,7, 5,3,2,0],       scale: [0,2,3,7,8],  kickEvery: 2, hatMask: [1,3],   bassWave: 'sawtooth', arpWave: 'sawtooth' },
- gunball:{ bpm: 142, root: 130.81, bass: [0,-99,0,-99, 7,-99,7,-99, 5,-99,5,-99, 3,-99,2,-99], scale: [0,3,7,10,12], kickEvery: 4, hatMask: [0,1,2,3], bassWave: 'square', arpWave: 'square' },
- shadow: { bpm: 92,  root: 82.41,  bass: [0,-99,-99,-99, -99,-99,0,-99, -5,-99,-99,-99, -99,-99,-2,-99], scale: [0,3,5,6,10], kickEvery: 8, hatMask: [2], bassWave: 'sine', arpWave: 'triangle' },
- snake:  { bpm: 126, root: 73.42,  bass: [0,0,7,0, 0,0,5,0, -2,-2,3,-2, -4,3,5,7],   scale: [0,3,5,7,10], kickEvery: 4, hatMask: [0,2],   bassWave: 'sawtooth', arpWave: 'triangle' }
+ slime:  { bpm: 118, root: 110.0,  kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,1], hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,1],
+           bass: [0,0,-4,0, 0,0,-2,0, -5,-5,-2,-5, -7,-2,0,3], mel: [12,OFF,7,10, 12,OFF,15,12, 10,OFF,7,10, 12,15,12,OFF],
+           bassWave: 'sawtooth', melWave: 'triangle' },
+ dragon: { bpm: 134, root: 87.31,  kick: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1], hat: [0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,1,1],
+           bass: [0,0,0,3, 0,0,0,5, 3,3,3,7, 5,3,2,0], mel: [12,15,12,10, 12,15,19,15, 12,15,12,10, 8,10,12,15],
+           bassWave: 'sawtooth', melWave: 'sawtooth' },
+ gunball:{ bpm: 144, root: 130.81, kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0], hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,1],
+           bass: [0,0,7,0, 0,0,7,0, 5,5,0,5, 3,3,0,3], mel: [24,19,15,19, 24,19,15,19, 22,19,15,19, 20,15,12,15],
+           bassWave: 'square', melWave: 'square' },
+ shadow: { bpm: 120, root: 82.41,  kick: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0], hat: [0,0,1,0, 0,1,0,0, 0,0,1,0, 0,1,0,1],
+           bass: [0,OFF,OFF,0, OFF,OFF,0,OFF, OFF,0,OFF,OFF, 3,OFF,0,OFF], mel: [15,OFF,12,OFF, 15,17,OFF,12, OFF,15,OFF,19, 17,OFF,15,OFF],
+           bassWave: 'triangle', melWave: 'square' },
+ snake:  { bpm: 150, root: 73.42,  kick: [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0], hat: [0,1,1,1, 0,1,1,1, 0,1,1,1, 0,1,1,1],
+           bass: [0,0,7,0, 0,3,5,0, -2,-2,3,-2, -4,3,5,7], mel: [12,15,19,15, 12,10,12,15, 19,15,12,10, 12,15,12,10],
+           bassWave: 'sawtooth', melWave: 'triangle' }
 };
 
 function kick(t){
@@ -110,25 +124,25 @@ function bassNote(f, t, d, wave){
   const lp = ac.createBiquadFilter(); lp.type = 'lowpass';
   lp.frequency.setValueAtTime(340, t);
   const g = ac.createGain();
-  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.24, t + .01);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.22, t + .01);
   g.gain.exponentialRampToValueAtTime(.001, t + d);
   o.connect(lp); lp.connect(g); g.connect(musicGain);
   o.start(t); o.stop(t + d + .05)
  }catch(e){}
 }
-function arpNote(f, t, d, g0, wave){
- tone(t, f, f * 1.01, d, wave || 'triangle', g0 * .2, musicGain)
+function melNote(f, t, d, g0, wave){
+ tone(t, f, f * 1.012, d, wave || 'triangle', g0 * .22, musicGain)
 }
 
 function scheduleStep(i, t, d){
  const th = THEMES[state.selectedBoss] || THEMES.slime;
- const root = th.root, n = th.bass[i % 16];
- if (n > -50) bassNote(root * Math.pow(2, n / 12), t, d * 3.2, th.bassWave);
- if (i % th.kickEvery === 0) kick(t);
- else if (th.hatMask.indexOf(i % 4) >= 0) hat(t, .5);
- const a = th.scale[(i >> 1) % th.scale.length];
- const oct = (i % 8 === 6) ? 12 : 0;
- arpNote(root * 2 * Math.pow(2, (a + oct) / 12), t, d * 1.6, i % 4 === 1 ? .9 : .45, th.arpWave)
+ const j = i % 16, root = th.root;
+ if (th.kick[j]) kick(t);
+ else if (th.hat[j]) hat(t, .5);
+ const bn = th.bass[j];
+ if (bn > OFF) bassNote(root * Math.pow(2, bn / 12), t, d * 2.6, th.bassWave);
+ const mn = th.mel[j];
+ if (mn > OFF) melNote(root * Math.pow(2, mn / 12), t, d * 1.4, j % 4 === 0 ? .95 : .55, th.melWave)
 }
 
 function startMusicLoop(){
