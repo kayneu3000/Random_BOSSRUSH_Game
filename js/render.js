@@ -536,29 +536,43 @@ function drawWeapon(){
  }else if(s.selected==='assassin'){
   ctx.save();ctx.rotate(-swing);for(const side of [-1,1]){ctx.save();ctx.translate(19,side*15);ctx.rotate(side*.23);const knife=ctx.createLinearGradient(0,-4,31,4);knife.addColorStop(0,'#657789');knife.addColorStop(.45,'#f1f5fa');knife.addColorStop(1,'#a8b8c7');ctx.fillStyle=knife;ctx.strokeStyle='#526576';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(25,-2);ctx.lineTo(34,0);ctx.lineTo(25,2);ctx.lineTo(0,4);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#542a20';ctx.fillRect(-8,-3,10,6);ctx.restore()}ctx.restore()
  }else if(s.selected==='whip'){
-  /* PEITSCHE (Hugo #43): kleiner Griff, LANGE Peitsche, echtes Schwingen —
-     beim Angriff peitscht sie aus (Flick), danach relaxt sie zurueck. */
+  /* PEITSCHE (Hugo #44-Redesign): KURZER Griff + LANGE, durchhaengende Peitsche
+     mit Verjuengung zur Spitze (Tapering) — keine 'Langstange mit Punkt' mehr.
+     Beim Angriff rollt sie weit nach vorne aus (Flick), danach haengt sie relaxt
+     in einem Bogen durch. */
   ctx.save();
   const cool=classes[s.selected].cool||1, ph=s.attackTimer>0?1-s.attackTimer/cool:0;
   const atk=s.attackTimer>0, flick=atk?Math.sin(ph*Math.PI):0;
-  ctx.rotate(-swing*1.15 - flick*.35);
+  ctx.rotate(-swing*.9 - flick*.22);
+  /* Griff: KURZ (dunkelgruen, Holz-Wicklung) */
   ctx.fillStyle='#185019';ctx.strokeStyle='#0c2a08';ctx.lineWidth=2;
-  ctx.beginPath();ctx.roundRect(6,-3.5,12,7,3);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#2e7d32';ctx.fillRect(7,-1.5,3,3);
-  const len=atk?40+flick*62:38+Math.sin(s.elapsed*2.2)*5;
-  const bend=atk?(18-flick*40):6*Math.sin(s.elapsed*1.7);
-  const tipY=bend*.6+ (atk?flick*10:0);
-  ctx.strokeStyle='#1f5c22';ctx.lineWidth=4;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(16,0);
-  ctx.quadraticCurveTo(16+len*.45,bend*.9,16+len,tipY);
-  ctx.stroke();
-  ctx.strokeStyle='#8cf838';ctx.lineWidth=1.6;
-  ctx.beginPath();ctx.moveTo(16,0);
-  ctx.quadraticCurveTo(16+len*.45,bend*.9,16+len,tipY);
-  ctx.stroke();
-  ctx.lineCap='butt';
+  ctx.beginPath();ctx.roundRect(3,-3,11,6,3);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#2e7d32';ctx.fillRect(5,-2.6,2,5.2);ctx.fillRect(9,-2.6,2,5.2);
+  ctx.fillStyle='#ffd98a';ctx.fillRect(14,-2,2.5,4); /* Griffkappe */
+  /* Peitschen-Verlauf als Bezier: haengt durch (droop), laengt sich beim Schlag */
+  const rest=50+Math.sin(s.elapsed*1.8)*4;
+  const len=atk?58+flick*66:rest;
+  const droop=atk?(24-flick*28):32+Math.sin(s.elapsed*1.4)*4;
+  const px0=16,py0=0;
+  const c1x=px0+len*.32, c1y=py0+droop*.95;
+  const c2x=px0+len*.78, c2y=py0+droop*(atk?Math.max(0,.7-flick*.9):.6);
+  const tx=px0+len,      ty=py0+droop*.12-flick*9;
+  /* Tapering: Kurve abtasten — Strich wird zur Spitze deutlich duenner */
+  let lx=px0,ly=py0;
+  const SEG=9;
+  for(let k=1;k<=SEG;k++){
+   const u=k/SEG,iu=1-u;
+   const x=iu*iu*iu*px0+3*iu*iu*u*c1x+3*iu*u*u*c2x+u*u*u*tx;
+   const y=iu*iu*iu*py0+3*iu*iu*u*c1y+3*iu*u*u*c2y+u*u*u*ty;
+   ctx.strokeStyle=k<=SEG*.45?'#1f5c22':'#8cf838';
+   ctx.lineWidth=5.4-4.2*(k/SEG);
+   ctx.lineCap='round';
+   ctx.beginPath();ctx.moveTo(lx,ly);ctx.lineTo(x,y);ctx.stroke();
+   lx=x;ly=y
+  }
+  /* Spitze (Cracker): blitzt weiss beim Crack */
   ctx.fillStyle=atk&&flick>.85?'#fff3b0':'#ffd98a';
-  ctx.beginPath();ctx.arc(17+len,tipY,3,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(lx,ly,2.2,0,Math.PI*2);ctx.fill();
   ctx.restore()
  }else if(s.selected==='faust'){
   ctx.save();ctx.rotate(-swing);ctx.fillStyle='#f0c9a0';ctx.strokeStyle='#8a5a34';ctx.lineWidth=2;
