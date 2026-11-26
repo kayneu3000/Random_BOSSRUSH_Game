@@ -45,7 +45,7 @@ function drawSlime(b){
 }
 
 /* Gunball: dunkle Kriegsmaschine mit rotierendem Pistolenlauf-Kranz */
-function drawGunball(b){
+export function drawGunball(b){
  const r=b.r,s=state,vuln=b.mode==='vulnerable',pulse=.55+Math.sin(s.elapsed*6)*.3;
  const pa=state.player?Math.atan2(state.player.y-b.y,state.player.x-b.x):0;
  ctx.save();ctx.translate(b.x,b.y);
@@ -140,7 +140,7 @@ function drawGunball(b){
 }
 
 /* Der Unbekannte des Schattens: gehüllte Gestalt mit Aetherschleier */
-function drawShadow(b){
+export function drawShadow(b){
  const r=b.r,s=state,vuln=b.mode==='vulnerable',pulse=.5+Math.sin(s.elapsed*5)*.3;
  ctx.save();ctx.translate(b.x,b.y);
  const aura=ctx.createRadialGradient(0,0,r*.4,0,0,r*2.2);
@@ -189,7 +189,7 @@ function drawEmberHand(){
 }
 
 /* Inferno-Drache: klare Silhouette, Lava-Risse, gluehendes Maul */
-function drawDragon(b){
+export function drawDragon(b){
  const r=b.r,s=state;
  const charging=b.mode==='beamCharge'||b.mode==='beamActive';
  const exhausted=b.mode==='exhausted';
@@ -291,7 +291,7 @@ function drawDragon(b){
 }
 
 /* SNAKE: Cobra mit Schuppenpanzer, Goldringen, Kapuzenmuster und Gift-Augen */
-function drawSnake(b){
+export function drawSnake(b){
  const s=state, segs=b.segments, headR=headRadiusOf(b);
  const pts=[{x:b.x,y:b.y}];
  for(const tp of b.trail)pts.push(tp);
@@ -616,7 +616,18 @@ export function draw(){
  safeDraw('partikel',()=>{for(const p of s.particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()}});
  ctx.globalAlpha=1;
  safeDraw('effekte',()=>{for(const e of s.effects){
-  if(e.type==='slash'){ctx.strokeStyle=e.weapon==='tank'?'#ff9c58':e.weapon==='assassin'?'#e0d2ff':'#ffbba0';ctx.lineWidth=e.weapon==='tank'?12:7;ctx.globalAlpha=e.life/.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r,e.angle-.85,e.angle+.85);ctx.stroke()}
+  if(e.type==='slash'){
+   if(e.weapon==='whip'){
+    /* PEITSCHE: langer, leicht geschwungener Linienschlag */
+    ctx.globalAlpha=e.life/.2;ctx.strokeStyle='#e6b877';ctx.lineWidth=5;ctx.shadowColor='#ffd98a';ctx.shadowBlur=10;
+    const ca=Math.cos(e.angle),sa=Math.sin(e.angle),pxn=-sa,pyn=ca;
+    ctx.beginPath();ctx.moveTo(e.x,e.y);
+    ctx.quadraticCurveTo(e.x+ca*e.r*.55+pxn*16,e.y+sa*e.r*.55+pyn*16,e.x+ca*e.r,e.y+sa*e.r);
+    ctx.stroke();ctx.shadowBlur=0
+   }else{
+    ctx.strokeStyle=e.weapon==='tank'?'#ff9c58':e.weapon==='assassin'?'#e0d2ff':'#ffbba0';ctx.lineWidth=e.weapon==='tank'?12:7;ctx.globalAlpha=e.life/.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r,e.angle-.85,e.angle+.85);ctx.stroke()
+   }
+  }
   if(e.type==='weapon'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#ffbd91';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,35,e.angle-.4,e.angle+.4);ctx.stroke()}
   if(e.type==='towerDestroy'){ctx.globalAlpha=e.life;ctx.strokeStyle='#ff632d';ctx.lineWidth=7;ctx.beginPath();ctx.arc(e.x,e.y,60*(1-e.life)+15,0,Math.PI*2);ctx.stroke()}
   if(e.type==='companionHit'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#70faff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();ctx.shadowBlur=0}

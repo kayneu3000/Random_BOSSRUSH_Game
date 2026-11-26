@@ -7,6 +7,8 @@ export const classes = {
  tank:{name:'TANK',hp:350,damage:65,cool:2.5,range:105,speed:145,icon:'🔨'},
  sword:{name:'SCHWERTKÄMPFER',hp:200,damage:30,cool:1,range:100,speed:235,icon:'⚔'},
  assassin:{name:'ASSASSIN',hp:200,damage:10,cool:.2,range:47,speed:345,icon:'🗡'},
+ /* PEITSCHE (Hugo): 220 HP, 30 Schaden, 0,5s Cooldown, langer LINIEN-Angriff, weiter Dash, etwas schneller als normale Klassen */
+ whip:{name:'PEITSCHE',hp:220,damage:30,cool:.5,range:230,speed:270,icon:'🗡',line:true},
  faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
  healer:{name:'HEALER',hp:100,damage:0,cool:0,range:0,speed:235,icon:'💚'},
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},
@@ -27,10 +29,10 @@ export const SNAKE_MAX_SEGMENTS=10;
 export const SNAKE_SEGMENT_HP=100;
 export const SMALL_SNAKE_HP=60;
 export const SMALL_SNAKE_MAX=2;
-export const SKIN_HP=300; /* Hugo: Haut 300 HP */
+export const SKIN_HP=500; /* Hugo: Haut wieder 500 HP dafuer staerkere Attacken */
 export const TOWER_HP=75;
 
-export const VENOM={speed:260,r:10,damage:12,life:5};
+export const VENOM={speed:290,r:10,damage:16,life:5}; /* Hugo: staerkere Haut-Attacken */
 
 export const gunballWeak=['snake','boomerang','growth','mirror','teleport'];
 export const gunballMedium=['giant','splitter','planet','chain','time','rain'];

@@ -14,6 +14,15 @@ function pickRangedTarget(){
  return { target, isSnakeFood }
 }
 
+/* PEITSCHE (Hugo): schmaler Korridor vor dem Spieler — trifft nur, was in der Linie liegt */
+const WHIP_DIFF=.34;
+function inWhipLine(x,y,maxD){
+ const dx=x-state.player.x,dy=y-state.player.y,d=Math.hypot(dx,dy);
+ if(!(d<=maxD))return false;
+ const a=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(a-state.player.angle),Math.cos(a-state.player.angle));
+ return Math.abs(diff)<=WHIP_DIFF
+}
+
 function pickMeleeTarget(c){
  let target=null,dist=Infinity,isTower=true,isSnakeFood=false;
  for(const a of state.smallSnakes){
@@ -59,6 +68,16 @@ export function attack(){
   const a=Math.atan2(target.y-state.player.y,target.x-state.player.x);state.player.angle=a;state.player.weaponAngle=a;
   state.projectiles.push({x:state.player.x+Math.cos(a)*25,y:state.player.y+Math.sin(a)*25,vx:Math.cos(a)*760,vy:Math.sin(a)*760,life:.9,damage:c.damage,r:6});
   state.effects.push({type:'weapon',x:state.player.x,y:state.player.y,angle:a,life:.22,weapon:'bow'});return
+ }
+ if(c.line){
+  /* PEITSCHE: trifft ALLES im Linien-Korridor (kleine Schlangen, Tuerme, Bosse) */
+  state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:'whip'});
+  const hits=[];
+  for(const a of state.smallSnakes){if(!a.destroyed&&inWhipLine(a.x,a.y,c.range+a.r))hits.push({t:a,k:'food'})}
+  for(const t of state.infernoTowers){if(!t.destroyed&&inWhipLine(t.x,t.y,c.range+t.r))hits.push({t,k:'tower'})}
+  for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;if(inWhipLine(b.x,b.y,c.range+b.r))hits.push({t:b,k:'boss'})}
+  for(const h of hits){if(h.k==='food')damageSmallSnake(h.t,c.damage);else if(h.k==='tower')damageTower(h.t,c.damage);else damageBoss(h.t,c.damage)}
+  return
  }
  const { target, isTower, isSnakeFood } = pickMeleeTarget(c);
  state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:state.selected});
