@@ -146,6 +146,30 @@ export function updateHUD() {
   const name = BOSS_NAMES[b.type] || b.type.toUpperCase();
   if (c.label.textContent !== name) c.label.textContent = name;
  }
+ // ZEUGE-Baustein: eine Zeile mit Positionen + Kamera. Steht der Boss-Screen-Punkt
+ // innerhalb 0..W/0..H, MUESSTE er sichtbar sein — dann ist es Safari-Werk.
+ // Sonst (NaN/off screen) ist es unser Code und wir sehen es sofort am Streifen.
+ const chip = $('dbgChip');
+ if (chip && s.gameRunning) {
+  const snake = living.find(q => q.type === 'snake');
+  const skin = living.find(q => q.type === 'snakeSkin');
+  const cx = Math.round(s.camera.x), cy = Math.round(s.camera.y);
+  const px = s.player ? Math.round(s.player.x) : -1, py = s.player ? Math.round(s.player.y) : -1;
+  let txt = 'CAM ' + cx + ',' + cy + ' | SPIELER ' + px + ',' + py;
+  if (snake) {
+   const sx = Math.round(snake.x - s.camera.x), sy = Math.round(snake.y - s.camera.y);
+   const on = sx >= 0 && sx <= s.W && sy >= 0 && sy <= s.H ? 'IM-SICHTFELD' : 'AUSSERHALB';
+   txt += ' | SNAKE ' + Math.round(snake.x) + ',' + Math.round(snake.y) + ' -> S ' + sx + ',' + sy + ' ' + on
+  }
+  if (skin) {
+   const kx = Math.round(skin.x - s.camera.x), ky = Math.round(skin.y - s.camera.y);
+   const on = kx >= 0 && kx <= s.W && ky >= 0 && ky <= s.H ? 'IM-SICHTFELD' : 'AUSSERHALB';
+   txt += ' | HAUT->S ' + kx + ',' + ky + ' ' + on
+  }
+  txt += ' | BOSSE ' + living.length + ' | ' + s.W + 'x' + s.H;
+  setText(chip, txt)
+ }
+
  const bossTypes = [...new Set(living.map(b => b.type))];
  if (bossTypes.length > 1) {
   setText($('bossName'), bossTypes.map(t => BOSS_NAMES[t]).join(' + '));
