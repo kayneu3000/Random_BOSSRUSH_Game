@@ -777,6 +777,45 @@ test('admin mode: own skin, no attacks for now (Hugo)', async () => {
   state.isAdmin = false;
 });
 
+test('admin gets a random SIDE CLASS on start — skin stays ADMIN (Hugo #45)', async () => {
+  const { classes } = await import('../js/config.js');
+  state.selected = 'admin'; state.selectedBoss = 'slime';
+  state.adminMode = false; state.isAdmin = false; state.sideClass = null;
+  for (let i = 0; i < 10; i++) {
+    startGame();
+    assert.ok(state.sideClass, 'Admin bekommt IMMER eine Nebenklasse zugelost');
+    assert.notEqual(state.sideClass, 'admin', 'Nebenklasse ist nie admin selbst');
+    assert.notEqual(state.sideClass, 'healer', 'Nebenklasse ist nie der nutzlose Healer');
+    assert.ok(classes[state.sideClass], 'Nebenklasse ist eine echte Klasse');
+    assert.equal(state.selected, 'admin', 'Admin BEHAELT seinen Skin/ seine Klasse');
+    assert.equal(state.player.maxHp, 300, 'Admin-Stats bleiben (300 HP)');
+    assert.ok(document.getElementById('className').textContent.indexOf('ADMIN · ') === 0, 'HUD zeigt ADMIN · <Nebenklasse>');
+  }
+  state.isAdmin = false; state.sideClass = null;
+});
+
+test('admin attacks through his side class (Hugo #45)', async () => {
+  const { attack } = await import('../js/combat.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.isAdmin = true; state.selected = 'admin'; state.sideClass = 'faust';
+  state.attackTimer = 0; state.cooldownOverride = 0;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
+  state.player = { x: 500, y: 500, r: 17, hp: 300, maxHp: 300, speed: 250, angle: 0, dashX: 0, dashY: 0 };
+  state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = []; state.effects = [];
+  const dummy = { id: 11, type: 'slime', x: 560, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  state.bosses.push(dummy);
+  attack();
+  assert.equal(dummy.hp, 90, 'Admin schlaegt mit FAUST-Nebenklasse (10 Schaden)');
+  assert.ok(Math.abs(state.attackTimer - .5) < 1e-9, 'Cooldown der Nebenklasse (0,5s)');
+  /* Whip-Nebenklasse: Linien-Angriff */
+  state.attackTimer = 0; state.sideClass = 'whip';
+  const far = { id: 12, type: 'slime', x: 700, y: 502, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  state.bosses.push(far);
+  attack();
+  assert.equal(far.hp, 60, 'Admin-peitscht mit WHIP-Nebenklasse (40 Schaden, Linie)');
+  state.isAdmin = false; state.sideClass = null;
+});
+
 test('admin is a real class now: own stats, stays selected, no remap (Hugo #42)', async () => {
   const { classes } = await import('../js/config.js');
   assert.ok(classes.admin, 'ADMIN ist eine echte Klasse');
