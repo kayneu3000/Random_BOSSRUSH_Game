@@ -35,7 +35,8 @@ initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 function startGame() {
  const s = state;
  s.isAdmin = s.selected === 'admin' || s.adminMode;
- if (s.isAdmin) s.selected = s.adminBaseClass;
+ /* ADMIN #42: classes.admin existiert jetzt — kein Remap mehr, HUD zeigt sauber ADMIN */
+ if (s.isAdmin && !classes[s.selected]) s.selected = s.adminBaseClass || 'faust';
  const c = classes[s.selected];
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
@@ -78,8 +79,8 @@ function startGame() {
 
  if (s.selected === 'healer') createHealerSlimes();
 
- $('className').textContent = (s.isAdmin ? 'ADMIN · ' : '') + c.name;
- $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : c.icon;
+ $('className').textContent = (s.isAdmin && s.selected !== 'admin' ? 'ADMIN · ' : '') + c.name;
+ $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : s.selected === 'admin' ? '🔨' : c.icon;
  $('attackLabel').textContent = s.selected === 'ember' ? 'FEUERSTRAHL' : s.selected === 'gunner' ? 'SCHUSS' : 'ANGRIFF';
  $('attackBtn').style.display = s.selected === 'healer' ? 'none' : 'flex';
  $('healBtn').style.display = s.selected === 'healer' ? 'flex' : 'none';
@@ -200,7 +201,15 @@ function loop(now) {
   // ERSTE Frame und friert die Textur ein (Spawnpause als Standbild). Das
   // width-Set erzwingt eine Neuupload der Textur — billig und ortlos.
   s.texNudge=(s.texNudge||0)+1;
-  if (s.texNudge>=45){ s.texNudge=0; canvas.width=canvas.width }
+  if (s.texNudge>=45){
+   s.texNudge=0; canvas.width=canvas.width;
+   /* DOM-KICK (Hugo-Beweis #42): DOM-Churn (wie sein 'ember'-Befehl) weckt
+      Safaris eingefrorene Komposition zuverlaessig — width-Set allein tut es
+      im Admin-Fall nicht. Mini-Stil-Puls auf HUD-Text, unsichtbar klein. */
+   try{ const hn=document.getElementById('className');
+    if(hn) hn.style.letterSpacing = hn.style.letterSpacing==='0.02px' ? '0px' : '0.02px'
+   }catch(err){}
+  }
  }
  try {
   if (!s.paused) { update(dt); draw() }
