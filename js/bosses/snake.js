@@ -95,9 +95,9 @@ export function damageSmallSnake(a,amount){
  if(a.hp<=0){
   a.hp=0;a.destroyed=true;
   for(let i=0;i<16;i++)particle(a.x,a.y,'#9be15d',3+Math.random()*4);
-  const snake=state.bosses.find(b=>b.type==='snake'&&b.alive);
-  if(snake)hungryDamage(snake);
-  else showGameMessage('KLEINE SCHLANGE BESIEGT!',1.2)
+  /* HUGO #44: Essen zerstoeren kostet Snake NICHTS mehr — sie verliert nur
+     ueber die 7-Sekunden-Hunger-Regel ein Zehntel (kein Sofort-Abzug mehr). */
+  showGameMessage('KLEINE SCHLANGE BESIEGT!',1.2)
  }
 }
 

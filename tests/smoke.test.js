@@ -432,38 +432,37 @@ test('admin mode sticks across lobby/restart until a normal class is picked', as
   startGame();
   assert.equal(state.isAdmin, false, 'normal class pick disables admin');
 });
-test('snake: destroying small snakes starves it until only the head remains', async () => {
+test('snake: food destruction costs NOTHING — only the 7s hunger rule bites (Hugo #44)', async () => {
   const { createSnake, updateSnake, damageSmallSnake } = await import('../js/bosses/snake.js');
   const { damageBoss } = await import('../js/entities.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
-  state.notMe = false; state.peace = false; state.dmgMultiplier = 1;
+  state.notMe = false; state.peace = false; state.dmgMultiplier = 1; state.invincible = false;
   state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = [];
   createSnake(500, 300);
   const sn = state.bosses.find(b => b.type === 'snake');
   const sk = state.bosses.find(b => b.type === 'snakeSkin');
+  sk.alive = false;
   assert.equal(sn.segments, 8, 'snake starts with 8 segments');
   assert.equal(sn.maxHp, 1000, 'HUGO-Skala: Leiste ist immer 10 Zehntel');
-  assert.ok(sk && sk.alive, 'the molted skin spawns together with the snake');
-  assert.equal(sk.hp, 500, 'the skin has 500 hp');
   damageBoss(sn, 50);
   assert.equal(sn.hp, 800, 'snake is immune to direct hits (8/10 Leiste)');
-  assert.equal(sk.hp, 500, 'a hit aimed at the snake does not hurt the skin');
   state.player = { x: sn.x + 400, y: sn.y, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0 };
-  sn.appleTimer = 0;
-  updateSnake(sn, 1 / 60);
-  assert.ok(state.smallSnakes.length >= 1, 'small snakes appear on the map');
+  sn.appleTimer = 99; /* kein Nachschub */
+  state.smallSnakes.push({ id: 999, type: 'smallSnake', x: sn.x + 500, y: sn.y, r: 14, hp: 60, maxHp: 60, alive: true, destroyed: false, wobble: 0, dir: 0, turnTimer: 1 });
   damageSmallSnake(state.smallSnakes[0], 999);
-  assert.equal(sn.segments, 7, 'one destroyed small snake removes one segment');
-  assert.equal(sn.hp, 700, 'HUGO-Skala: ein Segment weg = -1/10 Leiste');
-  for (let i = 0; i < 7; i++) {
-    sn.appleTimer = 0;
-    updateSnake(sn, 1 / 60);
-    const next = state.smallSnakes.find(s => !s.destroyed);
-    damageSmallSnake(next, 999);
-  }
+  assert.equal(sn.segments, 8, 'HUGO #44: Essen zerstoeren kostet Snake NICHTS');
+  assert.equal(sn.hp, 800, 'Leiste bleibt 8/10');
+  /* 7 Sekunden NICHTS gefressen -> erst jetzt -1/10 */
+  sn.hungerTimer = 0;
+  for (let i = 0; i < 421; i++) updateSnake(sn, 1 / 60); /* 421: float-sicher ueber 7s */
+  assert.equal(sn.segments, 7, 'nach 7s ohne Fressen: -1/10 Leiste');
+  assert.equal(sn.alive, true, 'Snake lebt noch');
+  /* 8 Hunger-Schlaege insgesamt = Snake besiegt (nur noch Kopf) */
+  for (let i = 0; i < 8; i++) { sn.hungerTimer = 0; updateSnake(sn, 7); }
   assert.equal(sn.segments, 0);
-  assert.equal(sn.alive, false, 'snake is defeated when only the head remains');
-  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = [];
+  assert.equal(sn.alive, false, 'Snake-Sieg durch Hunger (nur noch Kopf)');
+  assert.ok(state.finished, 'Sieg wird ausgeloest');
+  state.bosses = []; state.smallSnakes = []; state.enemyProjectiles = []; state.fireTrails = [];
 });
 
 test('the snake itself no longer attacks the player', async () => {

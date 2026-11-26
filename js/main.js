@@ -30,9 +30,21 @@ attachUI({ startGame });
 attachInput();
 attachConsole(startGame);
 ['pointerdown','touchstart','keydown'].forEach(ev => window.addEventListener(ev, initAudio, { passive: true })); /* KLANG: iOS-Geste abwarten */
-/* ANTI-ZOOM (Hugo #43): Pinch/Geste + Doppelklick-Level hart unterbinden */
+/* ANTI-ZOOM (Hugo #43/#44): Pinch/Geste + Doppelklick-Level hart unterbinden */
 ['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
 document.addEventListener('dblclick', e => e.preventDefault());
+/* ANTI-ZOOM STUFE 2 (Hugo-Beweis #44: touch-action + Meta-Viewport allein reicht
+   auf dem iPad NICHT): der Doppel-Tap-Killer — der ZWEITE Tap innerhalb 350ms
+   wird per preventDefault hart blockiert (Safari zoomt erst beim zweiten Tap).
+   NUR auf der Spielflaeche: Buttons/Karten/Panels bleiben normal klickbar. */
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+ const now = Date.now();
+ const el = e.target;
+ const ui = el && el.closest && el.closest('button,.classCard,.bossCard,.panel,.screen,.action,#controls,#pauseBtn,#muteBtn,#stickArea');
+ if (!ui && now - lastTouchEnd <= 350) e.preventDefault();
+ lastTouchEnd = now;
+}, { passive: false });
 initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 
 function startGame() {
@@ -217,6 +229,15 @@ function loop(now) {
     const st=canvas.style; st.transform = st.transform==='' ? 'translateZ(0)' : '';
     const hud=document.getElementById('hud');
     if(hud) hud.style.transform = hud.style.transform==='' ? 'translateZ(0)' : '';
+    /* ADMIN-ESKALATION (Hugo #44: IMMER NOCH dunkel): Canvas einmal aus dem DOM
+       nehmen und sofort wieder einhaengen — zwingt Safari, die Layer-Komposition
+       komplett neu zu bauen (starkeste unschaedliche Stufe nach Text-Kick). */
+    if (s.isAdmin && canvas.parentNode){
+     const nxt=canvas.nextSibling;
+     canvas.parentNode.removeChild(canvas);
+     if(nxt&&nxt.parentNode===canvas.parentNode) canvas.parentNode.insertBefore(canvas,nxt);
+     else canvas.parentNode.appendChild(canvas);
+    }
    }catch(err){}
   }
  }

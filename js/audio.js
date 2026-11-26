@@ -101,12 +101,16 @@ const THEMES = {
  dragon: { bpm: 134, root: 87.31,  kick: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1], hat: [0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,1,1],
            bass: [0,0,0,3, 0,0,0,5, 3,3,3,7, 5,3,2,0], mel: [12,15,12,10, 12,15,19,15, 12,15,12,10, 8,10,12,15],
            bassWave: 'sawtooth', melWave: 'sawtooth' },
- gunball:{ bpm: 144, root: 130.81, kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0], hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,1],
-           bass: [0,0,7,0, 0,0,7,0, 5,5,0,5, 3,3,0,3], mel: [24,19,15,19, 24,19,15,19, 22,19,15,19, 20,15,12,15],
-           bassWave: 'square', melWave: 'square' },
- shadow: { bpm: 120, root: 82.41,  kick: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0], hat: [0,0,1,0, 0,1,0,0, 0,0,1,0, 0,1,0,1],
-           bass: [0,OFF,OFF,0, OFF,OFF,0,OFF, OFF,0,OFF,OFF, 3,OFF,0,OFF], mel: [15,OFF,12,OFF, 15,17,OFF,12, OFF,15,OFF,19, 17,OFF,15,OFF],
-           bassWave: 'triangle', melWave: 'square' },
+ gunball:{ /* EYE OF CTHULHU-Vibe (Terraria, Hugo #44): dramatisch, treibend —
+              sawtooth-Brass + Ostinato-Bass + 16tel-Hats + doppelte Lead-Lage */
+           bpm: 140, root: 82.41, kick: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,1], hat: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1],
+           bass: [0,0,0,0, 3,3,3,3, -2,-2,-2,-2, 5,5,3,2], mel: [12,12,14,15, 12,OFF,12,OFF, 19,17,15,14, 12,10,12,OFF],
+           bassWave: 'sawtooth', melWave: 'sawtooth', melDouble: true },
+ shadow:  { /* GHOST FIGHT-Vibe (Undertale, Hugo #44): NES-Klangfarben —
+              Triangle-Bass (Oktav-Pump), Square-Lead, sprunghafte Moll-Hook */
+           bpm: 125, root: 73.42, kick: [1,0,0,0, 0,0,1,0, 1,0,0,0, 0,0,1,0], hat: [0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,1,1],
+           bass: [0,12,0,12, 0,12,0,12, -4,8,-4,8, -2,10,-2,10], mel: [24,26,27,26, 24,22,19,22, 24,26,27,29, 27,26,22,24],
+           bassWave: 'triangle', melWave: 'square', melDouble: true },
  snake:  { bpm: 150, root: 73.42,  kick: [1,0,0,1, 0,0,1,0, 1,0,0,1, 0,0,1,0], hat: [0,1,1,1, 0,1,1,1, 0,1,1,1, 0,1,1,1],
            bass: [0,0,7,0, 0,3,5,0, -2,-2,3,-2, -4,3,5,7], mel: [12,15,19,15, 12,10,12,15, 19,15,12,10, 12,15,12,10],
            bassWave: 'sawtooth', melWave: 'triangle' }
@@ -142,7 +146,12 @@ function scheduleStep(i, t, d){
  const bn = th.bass[j];
  if (bn > OFF) bassNote(root * Math.pow(2, bn / 12), t, d * 2.6, th.bassWave);
  const mn = th.mel[j];
- if (mn > OFF) melNote(root * Math.pow(2, mn / 12), t, d * 1.4, j % 4 === 0 ? .95 : .55, th.melWave)
+ if (mn > OFF){
+  melNote(root * Math.pow(2, mn / 12), t, d * 1.4, j % 4 === 0 ? .95 : .55, th.melWave);
+  /* ZWEITE Lead-Lage (Hugo #44: 'gleiche Geraeusche wie die Songs') —
+     eine Oktave darueber, leiser: macht den Lead dick wie ein echter Chiptune/Brass */
+  if (th.melDouble) melNote(root * Math.pow(2, (mn + 12) / 12), t, d * 1.4, .35, th.melWave)
+ }
 }
 
 function startMusicLoop(){
