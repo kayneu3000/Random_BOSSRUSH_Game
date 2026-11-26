@@ -2,6 +2,7 @@ import { state } from "../state.js";
 import { MAP, SKIN_HP, VENOM } from "../config.js";
 import { damagePlayer, duelTargetOf, particle } from "../entities.js";
 import { showGameMessage } from "../ui.js";
+import { sfx } from "../audio.js";
 
 export function createSnakeSkin(x,y){
  state.bosses.push({id:++state.spawnId,type:'snakeSkin',x,y,r:42,hp:SKIN_HP,maxHp:SKIN_HP,alive:true,flash:0,wobble:0,mode:'circle',sprintTimer:0,sprintDx:0,sprintDy:0,sprintCooldown:2,venomCooldown:1.2,attackCooldown:0,orbitDir:Math.random()<.5?1:-1,angle:0})
@@ -18,6 +19,7 @@ function fireVenom(b){
   const a=base+off;
   state.enemyProjectiles.push({x:b.x+Math.cos(a)*b.r,y:b.y+Math.sin(a)*b.r,vx:Math.cos(a)*VENOM.speed,vy:Math.sin(a)*VENOM.speed,r:VENOM.r,life:VENOM.life,damage:VENOM.damage,type:'venom',age:0})
  }
+ sfx('venom');
 }
 
 export function updateSnakeSkin(b,dt){

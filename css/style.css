@@ -245,3 +245,18 @@ canvas{width:100%;height:100%;display:block}
 #game.snakeTheme #attackBtn{background:linear-gradient(145deg,#2e8f2a,#0d2410);border-color:#a8e060}
 #game.snakeTheme #dashBtn{background:linear-gradient(145deg,#245c22,#0a1f0c);border-color:#5fc947}
 #game.snakeTheme #healBtn{background:linear-gradient(145deg,#1c4a1e,#051510);border-color:#58c947}
+/* KLANG-Update: ALLE UIs im Snake-Fight dunkelgruen (Hugo) */
+#game.snakeTheme #overlay{background:#020b04e6}
+#game.snakeTheme #overlay .panel{background:linear-gradient(160deg,#08220eee,#031407f2);border-color:#3f8c33;box-shadow:0 15px 60px #001,0 0 25px #2e8f2a44}
+#game.snakeTheme #overlay h2{color:#9fdf7a;text-shadow:0 0 14px #3fae4a}
+#game.snakeTheme #overlay p{color:#b9dcae}
+#game.snakeTheme .mainButton{background:linear-gradient(100deg,#1c4a1e,#2e8f2a,#124019);border:1px solid #5fc947;box-shadow:0 0 16px #2e8f2a44;color:#e8ffdd}
+#game.snakeTheme #pauseBtn{background:#0d2410;border-color:#3f8c33;color:#9fdf7a}
+#game.snakeTheme #muteBtn{background:#0d2410;border-color:#3f8c33;color:#9fdf7a}
+#game.snakeTheme #bossBarLabel{color:#a7e77a}
+#game.snakeTheme #errBox{background:#200708ee;border-color:#8cf83866;color:#c9ff9f}
+#game.snakeTheme #commandBar{background:#071d0cf0;border-color:#3f8c33}
+#game.snakeTheme #commandHint{color:#7cba62}
+#game.snakeTheme #commandInput{color:#d9ffbe}
+#game.snakeTheme #commandSend{background:#124019;border-color:#3f8c33;color:#9fdf7a}
+#muteBtn{position:absolute;right:12px;top:143px;pointer-events:auto;padding:8px 11px;background:#222;border-color:#aaa;font-size:14px;cursor:pointer}

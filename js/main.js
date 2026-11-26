@@ -15,6 +15,7 @@ import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } fro
 import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { initBossPreviews } from "./previews.js";
+import { initAudio } from "./audio.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 import { showErrBox } from "./ui.js";
 
@@ -28,6 +29,7 @@ applyUnlocksToUI();
 attachUI({ startGame });
 attachInput();
 attachConsole(startGame);
+['pointerdown','touchstart','keydown'].forEach(ev => window.addEventListener(ev, initAudio, { passive: true })); /* KLANG: iOS-Geste abwarten */
 initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 
 function startGame() {

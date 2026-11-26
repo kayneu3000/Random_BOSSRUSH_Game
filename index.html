@@ -34,7 +34,7 @@
   <button class="mainButton" id="selectGunball">GUNBALL AUSWÄHLEN →</button>
 
   <div class="levelDivider">level 2</div>
- <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 40 · PEITSCHE</div>
+ <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 41 · KLANG</div>
 
  <div class="bossCard snakeCard">
    <div class="snakePreview"></div>
@@ -53,7 +53,7 @@
    <div class="classCard" data-class="tank"><div class="classIcon">🔨</div><h3>Tank</h3><p class="stats">350 HP · 65 Schaden</p><p>Langsam und robust. 50% Resistenz.</p></div>
    <div class="classCard" data-class="sword"><div class="classIcon">⚔️</div><h3>Schwertkämpfer</h3><p class="stats">200 HP · 30 Schaden</p><p>1 Sekunde Cooldown. Schneller Dash.</p></div>
    <div class="classCard" data-class="assassin"><div class="classIcon">🗡️</div><h3>Assassin</h3><p class="stats">200 HP · 10 Schaden</p><p>Sehr schnell. Kurze Reichweite.</p></div>
-   <div class="classCard" data-class="whip"><div class="classIcon"><svg class="whipSvg" viewBox="0 0 44 44" width="36" height="36" aria-hidden="true"><rect x="6" y="30" width="17" height="7.5" rx="3.5" transform="rotate(-42 14 34)" fill="#5a3413" stroke="#241105" stroke-width="1.5"/><rect x="8" y="31.5" width="4" height="4.5" rx="1.5" transform="rotate(-42 10 34)" fill="#8a5a26"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#a86f2e" stroke-width="5" stroke-linecap="round"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#e6b877" stroke-width="2.2" stroke-linecap="round"/><circle cx="37" cy="6" r="3.4" fill="#ffe14d" stroke="#a86f12" stroke-width="1.2"/></svg></div><h3>Peitsche</h3><p class="stats">220 HP · 30 Schaden</p><p>Peitscht in einer langen Linie. 0,5 Sekunden Cooldown. Sehr weiter Dash.</p></div>
+   <div class="classCard locked" data-class="whip" id="whipCard"><div class="classIcon"><svg class="whipSvg" viewBox="0 0 44 44" width="36" height="36" aria-hidden="true"><rect x="6" y="30" width="17" height="7.5" rx="3.5" transform="rotate(-42 14 34)" fill="#5a3413" stroke="#241105" stroke-width="1.5"/><rect x="8" y="31.5" width="4" height="4.5" rx="1.5" transform="rotate(-42 10 34)" fill="#8a5a26"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#a86f2e" stroke-width="5" stroke-linecap="round"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#e6b877" stroke-width="2.2" stroke-linecap="round"/><circle cx="37" cy="6" r="3.4" fill="#ffe14d" stroke="#a86f12" stroke-width="1.2"/></svg></div><h3>Peitsche 🔒</h3><p class="stats">220 HP · 40 Schaden</p><p>Peitscht in einer langen Linie. 0,5 Sekunden Cooldown. Sehr weiter Dash. Besiege SNAKE zum Freischalten!</p></div>
    <div class="classCard locked" data-class="healer" id="healerCard"><div class="classIcon">💚</div><h3>Healer 🔒</h3><p class="stats">100 HP · Heiltrank +75 HP</p><p>Besiege den Slime zum Freischalten. Heilung alle 30 Sekunden.</p></div>
    <div class="classCard locked" data-class="ember" id="emberCard"><div class="classIcon">🐲🔥</div><h3>Ember 🔒</h3><p class="stats">200 HP · Feuerstrahl</p><p>Ein Drachenkopf als Hand. 5 Sekunden Feuerstrahl, danach 4 Sekunden Aufladung. Besiege den Drachen!</p></div>
    <div class="classCard locked" data-class="gunner" id="gunnerCard"><div class="classIcon">🔫</div><h3>Gunner 🔒</h3><p class="stats">200 HP · 40 Schaden</p><p>5 Patronen im Magazin. Schießt in Blickrichtung. 5 Sekunden Nachladen. Besiege Gunball!</p></div>
@@ -87,6 +87,7 @@
  <div id="commandHint">ENTER / CMD = KONSOLE</div>
  <div id="commandBar"><span id="commandPrompt">CMD&gt;</span><input id="commandInput" autocomplete="off" spellcheck="false" placeholder="help"><button id="commandSend" type="button">▶</button></div>
  <button id="pauseBtn">Ⅱ PAUSE</button>
+ <button id="muteBtn" title="Musik &amp; Sounds">🔊</button>
  <div id="controls">
   <div id="stickArea"><div id="stickBase"></div><div id="stickKnob"></div></div>
   <div class="actionButtons"><button class="action" id="cmdBtn"><strong>💻</strong>CMD</button><button class="action" id="healBtn"><strong>🧪</strong>HEILEN</button><button class="action" id="dashBtn"><strong>➤</strong>DASH</button><button class="action" id="attackBtn"><strong id="attackIcon">⚔</strong><span id="attackLabel">ANGRIFF</span></button></div>
