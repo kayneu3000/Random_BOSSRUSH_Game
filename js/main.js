@@ -33,7 +33,8 @@ function startGame() {
  s.isAdmin = s.selected === 'admin' || s.adminMode;
  if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
- s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0 };
+ // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
+ s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
@@ -96,7 +97,11 @@ function movePlayer(dt) {
  const s = state;
  if (s.dashDuration > 0) {
   const dv = s.selected === 'sword' ? 1275 : 850;
-  s.player.x += s.player.dashX*dv*dt; s.player.y += s.player.dashY*dv*dt
+  // Read-Guard: ohne dashX/dashY oder mit NaN sicher 0 bewegen statt NaN bauen
+  const dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
+  const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
+  const step = (Number.isFinite(dv) ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
+  s.player.x += dX*step; s.player.y += dY*step
  } else {
   const v = getInput();
   s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
@@ -130,6 +135,7 @@ function update(dt) {
  }
  s.elapsed += dt;
  s.attackTimer = Math.max(0, s.attackTimer-dt); s.dashTimer = Math.max(0, s.dashTimer-dt);
+ if(!Number.isFinite(s.dashDuration))s.dashDuration=0; if(!Number.isFinite(s.dashTimer))s.dashTimer=0; if(!Number.isFinite(s.invuln))s.invuln=0;
  s.dashDuration = Math.max(0, s.dashDuration-dt); s.invuln = Math.max(0, s.invuln-dt);
  s.healerHealCooldown = Math.max(0, s.healerHealCooldown-dt);
  s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
@@ -180,7 +186,10 @@ function update(dt) {
 function loop(now) {
  const s = state;
  if (!s.gameRunning) return;
- const dt = Math.min((now-s.last)/1000, .035); s.last = now;
+ // dt-Guard: Math.min(NaN,.035) waere NaN
+ let dt = (now-s.last)/1000; s.last = now;
+ if(!Number.isFinite(dt)||dt<=0)dt=1/60;
+ dt=Math.min(dt,.035);
  try {
   if (!s.paused) { update(dt); draw() }
  } catch (err) {
