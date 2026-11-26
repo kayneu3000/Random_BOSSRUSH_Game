@@ -12,7 +12,7 @@ import { createShadow, updateShadow } from "./bosses/shadow.js";
 import { createSnake, updateSnake } from "./bosses/snake.js";
 import { createSnakeSkin, updateSnakeSkin } from "./bosses/snakeSkin.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
-import { resizeCanvas } from "./canvas.js";
+import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 import { showErrBox } from "./ui.js";
@@ -190,6 +190,14 @@ function loop(now) {
  let dt = (now-s.last)/1000; s.last = now;
  if(!Number.isFinite(dt)||dt<=0)dt=1/60;
  dt=Math.min(dt,.035);
+ if (!s.paused && !s.finished) {
+  // KLARBLICK-Nudge: setzt alle ~0,75 s die Canvas-Groesse neu (gleicher Wert).
+  // Der Minuten-Beweis (ZEUGE): der Boden kommt an, aber Safari komponiert nur die
+  // ERSTE Frame und friert die Textur ein (Spawnpause als Standbild). Das
+  // width-Set erzwingt eine Neuupload der Textur — billig und ortlos.
+  s.texNudge=(s.texNudge||0)+1;
+  if (s.texNudge>=45){ s.texNudge=0; canvas.width=canvas.width }
+ }
  try {
   if (!s.paused) { update(dt); draw() }
  } catch (err) {

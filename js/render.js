@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
-import { ctx } from "./canvas.js";
+import { ctx, canvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
 
@@ -552,9 +552,9 @@ function safeDraw(label, fn){
 
 export function draw(){
  const s=state;
- // SAFARI-PLAN C: exakte Flaeche statt 99999x99999 — riesige Off-Clip-Rechtecke
- // koennen den iOS-Rasterizer zum Streiken bringen, ohne Benachrichtigung.
- ctx.clearRect(0,0,s.W,s.H);
+ // SAFARI-KLARBLICK: Voll-Clr ueber Identitaet-Transform mit der echten
+ // Backing-Store-Groesse — immun gegen veraltete W/H und Kamera-NaN.
+ ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.restore();
  ctx.save();ctx.translate(-s.camera.x+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0),-s.camera.y+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0));
  drawBackground();
  if(s.arena.w<MAP.w||s.arena.h<MAP.h){ctx.fillStyle='#000000c6';if(s.arena.w<MAP.w)ctx.fillRect(s.arena.w,0,MAP.w-s.arena.w,MAP.h);if(s.arena.h<MAP.h)ctx.fillRect(0,s.arena.h,MAP.w,MAP.h-s.arena.h)}
