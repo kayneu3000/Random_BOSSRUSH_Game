@@ -10,8 +10,11 @@ export function headRadiusOf(snake){
 }
 
 export function createSnake(x,y){
- const segments=SNAKE_START_SEGMENTS, maxHp=segments*SNAKE_SEGMENT_HP;
- state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:maxHp,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],appleTimer:.5,skinRespawn:-1,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1,wanderAngle:Math.random()*Math.PI*2});
+ // HUGO-SKALA: Bossleiste in Zehnteln — maxHp ist IMMER 10 Segment-Schritte,
+ // hp ist Segmente*100. Ein verlorenes Segment = -1/10 Leiste, eine gegessene
+ // kleine Schlange = +1/10 Leiste.
+ const segments=SNAKE_START_SEGMENTS, maxHp=SNAKE_MAX_SEGMENTS*SNAKE_SEGMENT_HP;
+ state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:segments*SNAKE_SEGMENT_HP,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],appleTimer:.5,skinRespawn:-1,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1,wanderAngle:Math.random()*Math.PI*2});
  createSnakeSkin(x+320,y);
  showGameMessage('SNAKE H\u00c4UTET SICH \u2014 DIE HAUT JAGT DICH! ZERST\u00d6RE DIE KLEINEN SCHLANGEN!',3.4)
 }
@@ -56,7 +59,7 @@ function snakeEatsSmall(snake){
   if(Math.hypot(a.x-snake.x,a.y-snake.y)<snake.r+a.r){
    a.destroyed=true;
    if(snake.segments<SNAKE_MAX_SEGMENTS)snake.segments+=1;
-   snake.maxHp+=SNAKE_SEGMENT_HP;snake.hp=Math.min(snake.maxHp,snake.hp+SNAKE_SEGMENT_HP);
+   snake.hp=snake.segments*SNAKE_SEGMENT_HP /* +1/10 Leiste pro Fang */;
    snake.r=headRadiusOf(snake);
    for(let i=0;i<22;i++)particle(a.x,a.y,'#9be15d',3+Math.random()*4);
    showGameMessage('SNAKE HAT EINE KLEINE SCHLANGE GEGESSEN \u2014 ER W\u00c4CHST!',2)
@@ -67,8 +70,7 @@ function snakeEatsSmall(snake){
 
 function hungryDamage(snake){
  snake.segments-=1;
- snake.maxHp=Math.max(SNAKE_SEGMENT_HP,snake.maxHp-SNAKE_SEGMENT_HP);
- snake.hp=Math.max(0,snake.hp-SNAKE_SEGMENT_HP);
+ snake.hp=snake.segments*SNAKE_SEGMENT_HP /* -1/10 Leiste pro Hunger-Schlag */;
  snake.r=headRadiusOf(snake);
  snake.flash=.15;
  for(let i=0;i<20;i++)particle(snake.x,snake.y,Math.random()<.5?'#7dff3f':'#b6ff4e',3+Math.random()*4);
