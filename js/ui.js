@@ -118,9 +118,12 @@ export function updateHUD() {
  setText(getCooldownEl(s), getCooldownText(s));
 
  const living = s.bosses.filter(b => b.alive);
- const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'SNAKE', snakeSkin: 'DIE HAUT' };
+ const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'Snake', snakeSkin: 'DIE HAUT' };
  const barsArea = $('bossBars');
- const barBosses = living.filter(b => b.type !== 'snakeSkin');
+ // HAUT-HUD (Hugo-Fix 'unsterbliche Haut'): Die Haut bekommt ihre EIGENE Leiste,
+ // damit ihr Schaden sichtbar ist — vorher wirkte sie unsterblich, weil ihre 500
+ // HP nirgends angezeigt wurden.
+ const barBosses = living;
  // SAFARI-SCHUTZ: Die Leisten werden NICHT mehr jeden Frame neu gebaut (60
  // DOM-Rueckbaeue pro Sekunde waren der prime-Verdaechtige fuer den schwarzen
  // Bildschirm auf dem iPad). Neu bauen NUR, wenn sich die Menge der lebenden
