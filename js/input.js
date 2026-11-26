@@ -35,7 +35,6 @@ export function attachInput(){
  function updateStick(e){
   const r=stickArea.getBoundingClientRect();
   let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),max=43,l=Math.hypot(dx,dy);
-  if(!isFinite(dx)||!isFinite(dy)){state.lastNanSource='zeiger';state.nanSources=state.nanSources||{};state.nanSources.zeiger=(state.nanSources.zeiger||0)+1;dx=0;dy=0} // NaN-Feuerwehr mit Quelle
   if(l>max){dx=dx/l*max;dy=dy/l*max}
   state.stick.x=dx/max;state.stick.y=dy/max;knob.style.transform=`translate(${dx}px,${dy}px)`
  }

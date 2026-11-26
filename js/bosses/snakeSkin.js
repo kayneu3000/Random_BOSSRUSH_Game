@@ -14,7 +14,6 @@ function clampArena(b){
 function fireVenom(b){
  const T=duelTargetOf(b);
  const base=Math.atan2(T.y-b.y,T.x-b.x);
- if(!Number.isFinite(base)){state.lastNanSource='giftsalve';state.nanSources=state.nanSources||{};state.nanSources.giftsalve=(state.nanSources.giftsalve||0)+1;return} // NaN-Ziel -> keine Gift-Salve
  for(const off of [-.1,.1]){
   const a=base+off;
   state.enemyProjectiles.push({x:b.x+Math.cos(a)*b.r,y:b.y+Math.sin(a)*b.r,vx:Math.cos(a)*VENOM.speed,vy:Math.sin(a)*VENOM.speed,r:VENOM.r,life:VENOM.life,damage:VENOM.damage,type:'venom',age:0})
@@ -45,7 +44,6 @@ export function updateSnakeSkin(b,dt){
    if(Math.random()<.3)b.orbitDir*=-1
   }
  }
- if(!Number.isFinite(b.x)||!Number.isFinite(b.y)){state.lastNanSource='haut';state.nanSources=state.nanSources||{};state.nanSources.haut=(state.nanSources.haut||0)+1}
  clampArena(b);
  const tr=T===state.player?state.player.r:T.r;
  const contact=Math.hypot(T.x-b.x,T.y-b.y)<tr+b.r*.9;

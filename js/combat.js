@@ -68,8 +68,6 @@ export function attack(){
 export function dash(){
  if(!state.gameRunning||state.paused||state.finished||state.dashTimer>0)return;
  let v=getInput(),x=v.x,y=v.y;if(Math.hypot(x,y)<.1){x=Math.cos(state.player.angle);y=Math.sin(state.player.angle)}
- if(!isFinite(x))x=1;if(!isFinite(y))y=0; // NaN-Feuerwehr
- if(!isFinite(state.player.angle))state.player.angle=-Math.PI/2;
  const l=Math.hypot(x,y)||1;state.player.dashX=x/l;state.player.dashY=y/l;state.dashDuration=.22;state.dashTimer=1.15;state.invuln=.3
 }
 

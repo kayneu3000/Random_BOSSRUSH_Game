@@ -15,7 +15,7 @@ import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } fro
 import { resizeCanvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
-import { showErrBox, autoDebugChip } from "./ui.js";
+import { showErrBox } from "./ui.js";
 
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('orientationchange', () => { setTimeout(resizeCanvas, 120) });
@@ -33,8 +33,7 @@ function startGame() {
  s.isAdmin = s.selected === 'admin' || s.adminMode;
  if (s.isAdmin) s.selected = s.adminBaseClass;
  const c = classes[s.selected];
- // dashX/dashY VORAB initialisieren: undefined * dv * dt waere NaN (Hauptverdaechtiger
- // des schwarzen Bildschirms)
+ // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.kills = 0; $('kills').textContent = '0 besiegt';
@@ -84,8 +83,7 @@ function startGame() {
  $('overlay').style.display = 'none'; $('resume').style.display = 'block'; $('game').style.display = 'block';
  document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
 
- if (s.selectedBoss === 'snake') autoDebugChip(30); // Chip erscheint beim Snake-Start automatisch
-  resizeCanvas();
+ resizeCanvas();
  // iPad-Safari: Layout kann nach dem Anzeigen des Spiels noch nachlaufen —
  // deshalb resizeCanvas mehrfach erneut ausfuehren (schwarzer-Canvas-Alarm).
  requestAnimationFrame(resizeCanvas);
@@ -95,39 +93,20 @@ function startGame() {
  requestAnimationFrame(loop)
 }
 
-function markNaN(label){
- const s = state;
- s.lastNanSource = label;
- s.nanSources = s.nanSources || {};
- s.nanSources[label] = (s.nanSources[label]||0)+1;
- s.nanSaves = (s.nanSaves||0)+1
-}
-
-// NaN-Feuerwehr mit QUELLEN-DETEKTIV: jede Rettung merkt sich, WER das
-// 'keine Zahl' verursacht hat — der debug-Chip zeigt den Tater an.
 function movePlayer(dt) {
  const s = state;
- if (!Number.isFinite(s.player.x)) { s.player.x = MAP.w/2; markNaN('start-Spieler.x') }
- if (!Number.isFinite(s.player.y)) { s.player.y = MAP.h/2; markNaN('start-Spieler.y') }
- if (!Number.isFinite(s.player.angle)) s.player.angle = -Math.PI/2;
- if (!Number.isFinite(s.player.speed)) s.player.speed = classes[s.selected].speed;
- const quelle = s.dashDuration > 0 ? 'dash' : 'steuerknueppel';
  if (s.dashDuration > 0) {
   const dv = s.selected === 'sword' ? 1275 : 850;
-  // Read-Guard: falls ein altes/CACHE-misches Modul dashX/dashY undefiniert oder NaN hinterlaesst,
-  // wird hier nicht NaN bewegt, sondern sicher 0 + Quelle vermerkt (Chip zeigt 'leerer-dash').
-  let dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
-  let dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
-  if (!Number.isFinite(s.player.dashX) || !Number.isFinite(s.player.dashY)) markNaN('leerer-dash');
-  const step = (Number.isFinite(dv) && dv > 0 ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
+  // Read-Guard: ohne dashX/dashY oder mit NaN sicher 0 bewegen statt NaN bauen
+  const dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
+  const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
+  const step = (Number.isFinite(dv) ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
   s.player.x += dX*step; s.player.y += dY*step
  } else {
-  const v = getInput(); const vx = Number.isFinite(v.x)?v.x:0, vy = Number.isFinite(v.y)?v.y:0;
-  s.player.x += vx*s.player.speed*dt; s.player.y += vy*s.player.speed*dt;
-  if (Math.hypot(vx, vy) > .1) s.player.angle = Math.atan2(vy, vx)
+  const v = getInput();
+  s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
+  if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x)
  }
- if (!Number.isFinite(s.player.x)) { s.player.x = MAP.w/2; markNaN(quelle) }
- if (!Number.isFinite(s.player.y)) { s.player.y = MAP.h/2; markNaN(quelle) }
  s.player.x = Math.max(30, Math.min(s.arena.w-30, s.player.x));
  s.player.y = Math.max(30, Math.min(s.arena.h-30, s.player.y))
 }
@@ -136,20 +115,12 @@ function updateCamera() {
  const s = state;
  s.camera.x = s.arena.w >= s.W ? Math.max(0, Math.min(s.arena.w-s.W, s.player.x-s.W/2)) : (s.arena.w-s.W)/2;
  s.camera.y = s.arena.h >= s.H ? Math.max(0, Math.min(s.arena.h-s.H, s.player.y-s.H/2)) : (s.arena.h-s.H)/2;
- if (!Number.isFinite(s.camera.x) || !Number.isFinite(s.camera.y)) { s.camera = { x: 0, y: 0 }; markNaN('kamera') };
- if (!Number.isFinite(s.screenShake)) s.screenShake = 0
+ if (!Number.isFinite(s.camera.x) || !Number.isFinite(s.camera.y)) s.camera = { x: 0, y: 0 }
 }
 
 function update(dt) {
  const s = state;
  if (s.paused || s.finished) return;
- // Timer-NaN-Polizei: Math.max(0, NaN) bleibt naemlich NaN und vergiftet fuer immer.
- if (!Number.isFinite(s.elapsed)) { s.elapsed = 0; markNaN('elapsed') }
- if (!Number.isFinite(s.attackTimer)) s.attackTimer = 0;
- if (!Number.isFinite(s.dashTimer)) s.dashTimer = 0;
- if (!Number.isFinite(s.dashDuration)) { s.dashDuration = 0; markNaN('dash-timer') }
- if (!Number.isFinite(s.invuln)) s.invuln = 0;
- if (!Number.isFinite(s.screenShake)) s.screenShake = 0;
  if (s.timeFreeze) {
   movePlayer(dt);
   if (s.keys.KeyJ || s.keys.Space) attack();
@@ -164,6 +135,7 @@ function update(dt) {
  }
  s.elapsed += dt;
  s.attackTimer = Math.max(0, s.attackTimer-dt); s.dashTimer = Math.max(0, s.dashTimer-dt);
+ if(!Number.isFinite(s.dashDuration))s.dashDuration=0; if(!Number.isFinite(s.dashTimer))s.dashTimer=0; if(!Number.isFinite(s.invuln))s.invuln=0;
  s.dashDuration = Math.max(0, s.dashDuration-dt); s.invuln = Math.max(0, s.invuln-dt);
  s.healerHealCooldown = Math.max(0, s.healerHealCooldown-dt);
  s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
@@ -176,7 +148,6 @@ function update(dt) {
 
  for (const b of s.bosses) {
   if (!b.alive) continue;
-  if (!Number.isFinite(b.x) || !Number.isFinite(b.y)) { b.x = s.arena.w/2; b.y = s.arena.h/2; markNaN('boss:'+b.type) }
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   if (b.type === 'shadow') { updateShadow(b, dt); continue }
@@ -215,10 +186,10 @@ function update(dt) {
 function loop(now) {
  const s = state;
  if (!s.gameRunning) return;
- // dt-Guard: Math.min(NaN, .035) waere NaN und haette das ganze Update vergiftet.
+ // dt-Guard: Math.min(NaN,.035) waere NaN
  let dt = (now-s.last)/1000; s.last = now;
- if (!Number.isFinite(dt) || dt <= 0) dt = 1/60;
- dt = Math.min(dt, .035);
+ if(!Number.isFinite(dt)||dt<=0)dt=1/60;
+ dt=Math.min(dt,.035);
  try {
   if (!s.paused) { update(dt); draw() }
  } catch (err) {

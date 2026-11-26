@@ -4,7 +4,6 @@ import { damageSmallSnake } from "./bosses/snake.js";
 
 export function updatePlayerProjectiles(dt){
  for(const p of state.projectiles){
-  if(!isFinite(p.x+p.y+p.vx+p.vy)){p.life=0;state.lastNanSource=state.lastNanSource||'projektil:'+(p.type||'basic');state.nanSources=state.nanSources||{};state.nanSources[state.lastNanSource]=(state.nanSources[state.lastNanSource]||0)+1} // NaN-Feuerwehr mit Quelle
   p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)continue;
   for(const t of state.infernoTowers){if(!t.destroyed&&Math.hypot(p.x-t.x,p.y-t.y)<p.r+t.r){damageTower(t,p.damage);p.life=0;break}}
   if(p.life<=0)continue;
@@ -50,7 +49,6 @@ function moveEnemyProjectile(p,dt){
 
 export function updateEnemyProjectiles(dt){
  for(const p of state.enemyProjectiles){
-  if(!isFinite(p.x+p.y+p.vx+p.vy)&&p.type!=='planetMoon'){p.life=0;const q='projektil:'+(p.type||'basic');state.lastNanSource=q;state.nanSources=state.nanSources||{};state.nanSources[q]=(state.nanSources[q]||0)+1;continue} // NaN-Feuerwehr mit Quelle
   if(p.type==='fireball'||!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
   else moveEnemyProjectile(p,dt);
   if(p.life>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){damagePlayer(p.damage);p.life=0}

@@ -53,5 +53,3 @@ export const BULLET_STATS={
  blackhole:{speed:100,r:32,damage:35,life:6},
  core:{speed:90,r:13,damage:40,life:7}
 };
-
-export const VERSION = 31;

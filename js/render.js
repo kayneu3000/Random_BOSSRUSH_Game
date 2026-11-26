@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
-import { ctx, forceCanvasRealloc, repairCanvas, deepSwapCanvas, resizeCanvas } from "./canvas.js";
+import { ctx } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
 
@@ -185,7 +185,7 @@ function drawEmberHand(){
  ctx.fillStyle='#e5c49b';ctx.strokeStyle='#71321b';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(35,-18);ctx.lineTo(27,-35);ctx.lineTo(44,-22);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(52,-17);ctx.lineTo(61,-33);ctx.lineTo(59,-14);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.fillStyle='#ffe9b8';for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(53+i*5,5);ctx.lineTo(55+i*5,11);ctx.lineTo(57+i*5,5);ctx.fill()}
  for(let i=0;i<6;i++){const fx=24+Math.random()*35,fy=(Math.random()-.5)*28;ctx.fillStyle=i%2?'#ff4a0b':'#ffd84b';ctx.globalAlpha=.65+Math.random()*.35;ctx.beginPath();ctx.ellipse(fx,fy,3+Math.random()*3,6+Math.random()*7,Math.random()-.5,0,Math.PI*2);ctx.fill()}
- ctx.globalAlpha=1;ctx.restore();
+ ctx.globalAlpha=1;ctx.restore()
 }
 
 /* Inferno-Drache: klare Silhouette, Lava-Risse, gluehendes Maul */
@@ -323,9 +323,8 @@ function drawSnake(b){
   const nx=p.x+wob*.25,ny=p.y+wob;
   ctx.save();ctx.translate(nx,ny);ctx.rotate(ang);
   ctx.fillStyle='#04100a99';ctx.beginPath();ctx.ellipse(2,sr*.55,sr*1.05,sr*.36,0,0,Math.PI*2);ctx.fill();
-  const sg=ctx.createLinearGradient(0,-sr,0,sr);
-  sg.addColorStop(0,'#8fd64f');sg.addColorStop(.35,'#4f9c2e');sg.addColorStop(.7,'#2c6b21');sg.addColorStop(1,'#153a12');
-  ctx.fillStyle=sg;ctx.beginPath();ctx.ellipse(0,0,sr*1.12,sr,0,0,Math.PI*2);ctx.fill();
+  /* LIGHT: kein Verlauf pro Segment pro Frame (Safari-GPU-Schonung) */
+  ctx.fillStyle='#4f9c2e';ctx.beginPath();ctx.ellipse(0,0,sr*1.12,sr,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#cfe98a59';ctx.beginPath();ctx.ellipse(-sr*.1,sr*.42,sr*.72,sr*.3,0,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='#123a10aa';ctx.lineWidth=2.5;
   for(let k=0;k<3;k++){
@@ -342,31 +341,27 @@ function drawSnake(b){
  const fx=b.x,fy=b.y;
  ctx.save();ctx.translate(fx,fy);ctx.rotate(b.faceAngle);
  ctx.fillStyle='#04100a99';ctx.beginPath();ctx.ellipse(2,headR*.6,headR*1.15,headR*.4,0,0,Math.PI*2);ctx.fill();
- const hood=ctx.createRadialGradient(-headR*.2,0,4,0,0,headR*1.9);
- hood.addColorStop(0,'#5fae37');hood.addColorStop(.6,'#2e6b21');hood.addColorStop(1,'#122f10');
- ctx.fillStyle=hood;ctx.beginPath();ctx.ellipse(-headR*.35,0,headR*1.5,headR*1.12,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#2e6b21';ctx.beginPath();ctx.ellipse(-headR*.35,0,headR*1.5,headR*1.12,0,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle='#0e2810cc';ctx.lineWidth=4;
  for(let k=-2;k<=2;k++){
   if(k===0)continue;
   ctx.beginPath();ctx.moveTo(-headR*1.45,k*headR*.14);ctx.quadraticCurveTo(-headR*.4,k*headR*.44,headR*.25,k*headR*.15);ctx.stroke()
  }
  ctx.fillStyle='#d7a83e';ctx.beginPath();ctx.ellipse(-headR*1.15,0,headR*.16,headR*1.02,0,0,Math.PI*2);ctx.fill();
- const hg=ctx.createLinearGradient(0,-headR*.7,0,headR*.6);
- hg.addColorStop(0,'#9fe05a');hg.addColorStop(.4,'#57a639');hg.addColorStop(.8,'#2c6b21');hg.addColorStop(1,'#163a12');
- ctx.fillStyle=hg;ctx.strokeStyle='#0e2810';ctx.lineWidth=2.5;
+ ctx.fillStyle='#57a639';ctx.strokeStyle='#0e2810';ctx.lineWidth=2.5;
  ctx.beginPath();ctx.ellipse(-headR*.18,0,headR*.75,headR*.66,0,0,Math.PI*2);ctx.fill();ctx.stroke();
- ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(headR*.42,0,headR*.55,headR*.4,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#57a639';ctx.beginPath();ctx.ellipse(headR*.42,0,headR*.55,headR*.4,0,0,Math.PI*2);ctx.fill();ctx.stroke();
  ctx.strokeStyle='#0e2810';ctx.lineWidth=3;
  ctx.beginPath();ctx.moveTo(-headR*.72,-headR*.3);ctx.quadraticCurveTo(headR*.2,-headR*.78,headR*.75,-headR*.34);ctx.stroke();
  ctx.beginPath();ctx.moveTo(-headR*.72,headR*.3);ctx.quadraticCurveTo(headR*.2,headR*.78,headR*.75,headR*.34);ctx.stroke();
  ctx.fillStyle='#123a10';ctx.beginPath();ctx.ellipse(headR*.7,-headR*.16,2.4,1.6,0,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(headR*.7,headR*.16,2.4,1.6,0,0,Math.PI*2);ctx.fill();
  ctx.save();
- ctx.shadowColor='#ffe14d';ctx.shadowBlur=12;
+ /* LIGHT: kein Glow */
  ctx.fillStyle='#ffe14d';
  ctx.beginPath();ctx.ellipse(headR*.18,-headR*.34,headR*.17,headR*.1,-.25,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(headR*.18,headR*.34,headR*.17,headR*.1,.25,0,Math.PI*2);ctx.fill();
- ctx.shadowBlur=0;ctx.fillStyle='#0a0f08';
+ ctx.fillStyle='#0a0f08';
  ctx.beginPath();ctx.ellipse(headR*.24,-headR*.34,headR*.045,headR*.085,0,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(headR*.24,headR*.34,headR*.045,headR*.085,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#ffffff99';
@@ -380,13 +375,13 @@ function drawSnake(b){
  ctx.beginPath();ctx.moveTo(headR*.5,headR*.02);ctx.lineTo(headR*.56,headR*.16);ctx.lineTo(headR*.64,headR*.02);ctx.closePath();ctx.fill();
  const flick=Math.max(0,Math.sin(s.elapsed*7))*headR*.55;
  if(flick>2){
-  ctx.strokeStyle='#ff5638';ctx.shadowColor='#f26a0e';ctx.shadowBlur=10;ctx.lineWidth=3.5;
+  ctx.strokeStyle='#ff5638';ctx.lineWidth=3.5;
   ctx.beginPath();ctx.moveTo(headR*.95,0);ctx.lineTo(headR*.95+flick,0);ctx.stroke();
   ctx.lineWidth=2.5;
   ctx.beginPath();
   ctx.moveTo(headR*.95+flick,0);ctx.lineTo(headR*.95+flick+6,-4.5);
   ctx.moveTo(headR*.95+flick,0);ctx.lineTo(headR*.95+flick+6,4.5);
-  ctx.stroke();ctx.shadowBlur=0
+  ctx.stroke()
  }
  if(b.flash>0){ctx.fillStyle='#fff';ctx.globalAlpha=b.flash*4;ctx.beginPath();ctx.arc(0,0,headR*.95,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
  ctx.restore();
@@ -407,9 +402,7 @@ function drawSkin(b){
   ctx.save();ctx.translate(-dist,side);
   ctx.globalAlpha=.9;
   ctx.fillStyle='#04100a55';ctx.beginPath();ctx.ellipse(3,sr*.5,sr,sr*.35,0,0,Math.PI*2);ctx.fill();
-  const sg=ctx.createLinearGradient(0,-sr,0,sr);
-  sg.addColorStop(0,'#efe9d4');sg.addColorStop(.4,'#cfc4a0');sg.addColorStop(.8,'#a99d78');sg.addColorStop(1,'#7d7357');
-  ctx.fillStyle=sg;ctx.strokeStyle='#6b6350';ctx.lineWidth=2;
+  ctx.fillStyle='#cfc4a0';ctx.strokeStyle='#6b6350';ctx.lineWidth=2;
   ctx.beginPath();ctx.ellipse(0,0,sr*1.2,sr,0,0,Math.PI*2);ctx.fill();ctx.stroke();
   ctx.strokeStyle='#8d8265aa';ctx.lineWidth=1.5;
   for(let k=0;k<3;k++){
@@ -423,11 +416,9 @@ function drawSkin(b){
  ctx.save();
  ctx.globalAlpha=.95;
  ctx.fillStyle='#04100a55';ctx.beginPath();ctx.ellipse(3,r*.55,r*1.15,r*.4,0,0,Math.PI*2);ctx.fill();
- const hg=ctx.createRadialGradient(-r*.2,-r*.2,4,0,0,r);
- hg.addColorStop(0,'#f7f2e0');hg.addColorStop(.4,'#d9cfad');hg.addColorStop(.75,'#b3a888');hg.addColorStop(1,'#857b5e');
- ctx.fillStyle=hg;ctx.strokeStyle='#6b6350';ctx.lineWidth=2.5;
+ ctx.fillStyle='#d9cfad';ctx.strokeStyle='#6b6350';ctx.lineWidth=2.5;
  ctx.beginPath();ctx.ellipse(-r*.15,0,r*.85,r*.68,0,0,Math.PI*2);ctx.fill();ctx.stroke();
- ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(r*.45,0,r*.6,r*.42,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#d9cfad';ctx.beginPath();ctx.ellipse(r*.45,0,r*.6,r*.42,0,0,Math.PI*2);ctx.fill();ctx.stroke();
  ctx.strokeStyle='#8d8265';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(-r*.55,-r*.25);ctx.lineTo(-r*.15,-r*.42);
  ctx.moveTo(-r*.55,r*.25);ctx.lineTo(-r*.15,r*.42);
@@ -435,7 +426,7 @@ function drawSkin(b){
  ctx.fillStyle='#1a1a14';
  ctx.beginPath();ctx.ellipse(r*.2,-r*.3,r*.12,r*.1,0,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.ellipse(r*.2,r*.3,r*.12,r*.1,0,0,Math.PI*2);ctx.fill();
- ctx.save();ctx.shadowColor='#f26a0e';ctx.shadowBlur=10;ctx.fillStyle='rgba(242,106,14,.65)';
+ ctx.save();ctx.fillStyle='rgba(242,106,14,.65)';
  ctx.beginPath();ctx.arc(r*.2,-r*.3,r*.045,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.arc(r*.2,r*.3,r*.045,0,Math.PI*2);ctx.fill();ctx.restore();
  ctx.fillStyle='#b9ab7f';ctx.strokeStyle='#6b6350';ctx.lineWidth=1.5;
@@ -476,20 +467,16 @@ function drawSmallSnake(a){
   const dist=r*(i*.75)+r;
   const side=Math.sin(a.wobble-i*.8)*r*.4;
   const sr=r*(.8-i*.14);
-  const sg=ctx.createLinearGradient(0,-sr,0,sr);
-  sg.addColorStop(0,'#a8e060');sg.addColorStop(.5,'#6cae38');sg.addColorStop(1,'#2e6b21');
-  ctx.fillStyle=sg;
+  ctx.fillStyle='#6cae38';
   ctx.beginPath();ctx.ellipse(-dist,side,sr*1.2,sr,a.wobble+i,0,Math.PI*2);ctx.fill();
  }
  ctx.fillStyle='#04100a55';ctx.beginPath();ctx.ellipse(r*.4,r*.5,r*1.1,r*.35,0,0,Math.PI*2);ctx.fill();
- const hg=ctx.createRadialGradient(-r*.2,-r*.2,2,0,0,r*1.15);
- hg.addColorStop(0,'#c6f07d');hg.addColorStop(.4,'#7fbe42');hg.addColorStop(.8,'#3f7a26');hg.addColorStop(1,'#1d4418');
- ctx.fillStyle=hg;ctx.strokeStyle='#0e2810';ctx.lineWidth=2;
+ ctx.fillStyle='#7fbe42';ctx.strokeStyle='#0e2810';ctx.lineWidth=2;
  ctx.beginPath();ctx.ellipse(r*.35,0,r*1.05,r*.8,0,0,Math.PI*2);ctx.fill();ctx.stroke();
- ctx.fillStyle='#ffe14d';ctx.shadowColor='#ffe14d';ctx.shadowBlur=6;
+ ctx.fillStyle='#ffe14d';
  ctx.beginPath();ctx.arc(r*.75,-r*.3,r*.13,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.arc(r*.75,r*.3,r*.13,0,Math.PI*2);ctx.fill();
- ctx.shadowBlur=0;ctx.fillStyle='#111';
+ ctx.fillStyle='#111';
  ctx.beginPath();ctx.arc(r*.78,-r*.3,r*.06,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.arc(r*.78,r*.3,r*.06,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle='#0e2810';ctx.lineWidth=2;
@@ -552,105 +539,15 @@ function drawPlayer(){
 
 // Resilientes Zeichnen: ein kaputter Abschnitt darf nie den ganzen
 // Bildschirm leeren — Hintergrund und Rest bleiben immer sichtbar.
-// Fehler werden gezählt (der debug-Chip zeigt sie an) statt sie zu verstecken.
-export const drawStats = { ok: 0, errors: {}, restarts: 0, heal: 0, black: 'unausgescannt', coveredBy: '-', rect: '-' };
 function safeDraw(label, fn){
- try{fn();drawStats.ok++}catch(e){drawStats.errors[label]=(drawStats.errors[label]||0)+1;console.error('draw['+label+']',e)}
-}
-// CANVAS-WACHE: malt jedes Frame-Ende ein unsichtbares 1px-Testpixel und liest
-// es im naechsten Frame zurueck. Antwortet es falsch, hat iPad-Safari die
-// Zeichenflaeche stillgelegt — dann wird sie zwangsweise neu angelegt und das
-// Spiel malt sofort weiter (Zaehler: CanvasNeustarten im debug-Chip).
-let sentinelArmed=false,sentinelFrames=0,blackInRow=0;
-// KOMPOSITING-NUDGE (v30): Der v29-Chip hat es bewiesen - die Backing-Store-
-// Lesung klappt (Sentinel armiert, Bild=bunt), aber der BILDSCHIRM zeigt schwarz:
-// iPad-Safari verliert die Kompositing-Schicht der Canvas. Detection ist unmoeglich
-// (wir lesen nur den Store, nicht den Schirm) -> deshalb heilen wir ZEITGESTEUERT:
-// alle 20 s einmal die Canvas still aus dem DOM nehmen und zurueckhaengen.
-// Zwingt Safari, die GPU-Schicht neu zu bauen. Inhalt bleibt erhalten, kein Flackern.
-let nudgeFrames=0,nudgeCycles=0;
-function nudgeCompositing(){
- if(++nudgeFrames<1200)return;
- nudgeFrames=0;
- nudgeCycles++;
- try{
-  // Kaskade: alle 20 s Umhaengen; nach dem 3. Nudge (alle 60 s) der tiefe Tausch
-  // mit brandneuem Canvas-Element und frischem 2D-Kontext.
-  if(nudgeCycles%3===0){
-   if(deepSwapCanvas()){drawStats.heal=(drawStats.heal||0)+1;drawStats.tiefaustausch=(drawStats.tiefaustausch||0)+1;resizeCanvas();return}
-  }
-  repairCanvas();
-  drawStats.heal=(drawStats.heal||0)+1
- }catch(e){}
-}
-function canvasHealthCheck(){
- try{
-  sentinelFrames++;
-  const d=ctx.getImageData(0,0,1,1);
-  if(!d||!d.data)return;
-  const r=d.data[0];
-  if(!sentinelArmed){if(r===255)sentinelArmed=true;return}
-  if(sentinelFrames%45!==0)return;
-  if(r!==255){forceCanvasRealloc();drawStats.restarts=(drawStats.restarts||0)+1}
-  autopsyScreen();
-  nudgeCompositing()
- }catch(e){/*Canvas-Wache darf niemals Probleme machen*/}
-}
-// SCHWARZ-AUTOPSIE: 9 Punkte uebers ganze Bild abtasten. Alle fast-schwarz
-// obwohl das Spiel malt? -> Safari komponiert nicht mehr. Dann: Reparatur.
-// 2 aufeinanderfolgende schwarze Scans noetig -> keine Fehlalarme bei dunklen
-// Hintergrunden. Themen-Fuellungen (#0a1c0d co) sind alle heller als Schwelle 14.
-function autopsyScreen(){
- try{
-  const s=state,W=Math.max(1,s.W||1),H=Math.max(1,s.H||1),dpr=s.dpr||1;
-  let black=0;
-  for(let i=0;i<9;i++){
-   const fx=i%3,fy=Math.floor(i/3);
-   const px=Math.min(W-1,Math.floor(fx*W/2)),py=Math.min(H-1,Math.floor(fy*H/2));
-   const d=ctx.getImageData(Math.floor(px*dpr),Math.floor(py*dpr),1,1);
-   if(!d||!d.data||d.data.length<4){drawStats.black='unlesbar';blackInRow=0;return}
-   const a=d.data[3],mx=Math.max(d.data[0],d.data[1],d.data[2]);
-   if(a===0||mx<14)black++
-  }
-  drawStats.black=black===9?'schwarz':'bunt';
-  domCheck();
-  if(black===9){
-   blackInRow++;
-   // Nur heilen, wenn auch die Canvas-Flaeche und das Deckverhaeltnis normal sind
-   const obendrauf=String(drawStats.coveredBy);
-   const decktCanvas=obendrauf===''||obendrauf==='?'||/#?canvas/i.test(obendrauf)||obendrauf==='-';
-   if(blackInRow>=2&&decktCanvas){repairCanvas();drawStats.heal=(drawStats.heal||0)+1;drawStats.restarts=(drawStats.restarts||0)+1}
-  }else blackInRow=0
- }catch(e){drawStats.black='unlesbar';blackInRow=0}
-}
-// Verdeckt etwas die Leinwand? Wie gross ist sie sichtbar?
-function domCheck(){
- try{
-  const cv=document.getElementById&&document.getElementById('canvas');
-  if(cv&&cv.getBoundingClientRect){
-   const r=cv.getBoundingClientRect();
-   drawStats.rect=Math.round(r.width)+'x'+Math.round(r.height);
-   let f=null;
-   try{f=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)}catch(e){}
-   drawStats.coveredBy=f?(f.id?'#'+f.id:(f.tagName||'?')):'-'
-  }
- }catch(e){drawStats.coveredBy='?'}
-}
-
-function themeFallback(){
- const b=state.selectedBoss;
- return b==='dragon'?'#1d0908':b==='gunball'?'#080510':b==='snake'?'#0a1c0d':b==='shadow'?'#0b0714':'#63dff5'
+ try{fn()}catch(e){console.error('draw['+label+']',e)}
 }
 
 export function draw(){
  const s=state;
- canvasHealthCheck();
  ctx.clearRect(0,0,99999,99999);
- // Sicherheit: Canvas bekommt IMMER zuerst die Themen-Farbe voll gemalt —
- // selbst wenn danach alles andere fehlschlaegt, ist es nicht mehr "schwarz-leer".
- ctx.fillStyle=themeFallback();ctx.fillRect(0,0,Math.max(s.W,1),Math.max(s.H,1));
  ctx.save();ctx.translate(-s.camera.x+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0),-s.camera.y+(s.screenShake>0?(Math.random()-.5)*s.screenShake:0));
- safeDraw('hintergrund',()=>drawBackground());
+ drawBackground();
  if(s.arena.w<MAP.w||s.arena.h<MAP.h){ctx.fillStyle='#000000c6';if(s.arena.w<MAP.w)ctx.fillRect(s.arena.w,0,MAP.w-s.arena.w,MAP.h);if(s.arena.h<MAP.h)ctx.fillRect(0,s.arena.h,MAP.w,MAP.h-s.arena.h)}
  const dragon=s.bosses.find(b=>b.type==='dragon'&&b.alive), shadowB=s.bosses.find(b=>b.type==='shadow'&&b.alive), hero=dragon||shadowB;
  if(hero)for(const t of s.infernoTowers)if(!t.destroyed){const beamColor=hero.type==='shadow'?'#8f5cff':'#ff3219',beamGlow=hero.type==='shadow'?'#b79aff':'#ff3517',beamCore=hero.type==='shadow'?'#e2d6ff':'#ffbd58';ctx.save();ctx.strokeStyle=beamColor;ctx.shadowColor=beamGlow;ctx.shadowBlur=18;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(t.x,t.y-9);ctx.lineTo(hero.x,hero.y);ctx.stroke();ctx.strokeStyle=beamCore;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(t.x,t.y-9);ctx.lineTo(hero.x,hero.y);ctx.stroke();ctx.restore()}
@@ -679,12 +576,10 @@ export function draw(){
  }
  safeDraw('spieler',()=>drawPlayer());
  safeDraw('projektile',()=>{for(const p of s.projectiles){
-  if(!isFinite(p.x)||!isFinite(p.y))continue;
   if(p.gunner){ctx.fillStyle='#e2caff';ctx.shadowColor='#a66cff';ctx.shadowBlur=18;ctx.beginPath();ctx.ellipse(p.x,p.y,10,4,Math.atan2(p.vy,p.vx),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
   else{ctx.fillStyle='#b9fbff';ctx.shadowColor='#36dfff';ctx.shadowBlur=14;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
  }});
  safeDraw('feind-projektile',()=>{for(const p of s.enemyProjectiles){
-  if(!isFinite(p.x)||!isFinite(p.y))continue;
   ctx.save();
   if(p.type==='shuriken'){
    ctx.translate(p.x,p.y);ctx.rotate(s.elapsed*16);
@@ -695,15 +590,21 @@ export function draw(){
   }
   const colors={venom:'#8cf838',snake:'#7ee0c2',boomerang:'#e0c7ff',growth:'#a4e87b',mirror:'#d6d0ff',teleport:'#b36bff',giant:'#ffb06c',splitter:'#ffcf75',planet:'#a9bfff',chain:'#d8aaff',time:'#79e6ff',rain:'#d2b3ff',fusion:'#ff8dce',magnet:'#ff5c8a',blackhole:'#28143f',core:'#ffdc75',shard:'#ffe5a3',chainLink:'#bfa4ff',planetMoon:'#b6d5ff'};
   const color=colors[p.type]||'#ff9c36';
-  ctx.shadowColor=color;ctx.shadowBlur=p.type==='blackhole'?45:22;
-  const g=ctx.createRadialGradient(p.x-p.r*.2,p.y-p.r*.2,2,p.x,p.y,p.r);
-  g.addColorStop(0,'#ffffff');g.addColorStop(.25,color);g.addColorStop(1,'#1a1028');
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  if(p.type==='venom'){
+   /* LIGHT: Venom flach ohne Glow — Safari-GPU-Schonung */
+   ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#ffffff55';ctx.beginPath();ctx.arc(p.x-p.r*.3,p.y-p.r*.3,p.r*.4,0,Math.PI*2);ctx.fill();
+  }else{
+   ctx.shadowColor=color;ctx.shadowBlur=p.type==='blackhole'?45:22;
+   const g=ctx.createRadialGradient(p.x-p.r*.2,p.y-p.r*.2,2,p.x,p.y,p.r);
+   g.addColorStop(0,'#ffffff');g.addColorStop(.25,color);g.addColorStop(1,'#1a1028');
+   ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
   if(p.type==='chainLink'){ctx.strokeStyle='#e2caff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.r+4,0,Math.PI*2);ctx.stroke()}
   if(p.type==='blackhole'){ctx.fillStyle='#080510';ctx.beginPath();ctx.arc(p.x,p.y,p.r*.65,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
- safeDraw('partikel',()=>{for(const p of s.particles){if(!isFinite(p.x)||!isFinite(p.y))continue;ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()}});
+ safeDraw('partikel',()=>{for(const p of s.particles){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()}});
  ctx.globalAlpha=1;
  safeDraw('effekte',()=>{for(const e of s.effects){
   if(e.type==='slash'){ctx.strokeStyle=e.weapon==='tank'?'#ff9c58':e.weapon==='assassin'?'#e0d2ff':'#ffbba0';ctx.lineWidth=e.weapon==='tank'?12:7;ctx.globalAlpha=e.life/.2;ctx.beginPath();ctx.arc(e.x,e.y,e.r,e.angle-.85,e.angle+.85);ctx.stroke()}
@@ -711,11 +612,5 @@ export function draw(){
   if(e.type==='towerDestroy'){ctx.globalAlpha=e.life;ctx.strokeStyle='#ff632d';ctx.lineWidth=7;ctx.beginPath();ctx.arc(e.x,e.y,60*(1-e.life)+15,0,Math.PI*2);ctx.stroke()}
   if(e.type==='companionHit'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#70faff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();ctx.shadowBlur=0}
  }});
- ctx.globalAlpha=1;ctx.restore();
- // CANVAS-WACHEN-SENTINEL (v29-Fix): muss im IDENTITAETS-Raum gemalt werden!
- // Er haengte vorher am Ende von drawEmberHand - mitten im Kamera-Raum. Bei
- // Kamera=560,844 lag der Testpunkt 560 px ausser Sicht, die Lesung oben links
- // fand NIE Magenta, die Wache war vom 2. Frame an toter Code (deshalb
- // Neustarten=0 und Bild=unausgescannt). Jetzt: Device-Pixel (0,0) oben links.
- try{ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,1,1);ctx.restore()}catch(e){}
+ ctx.globalAlpha=1;ctx.restore()
 }
