@@ -244,8 +244,7 @@ test('admin class persists across restarts and console is admin-only by design',
   state.adminBaseClass = 'gunner';
   startGame();
   assert.equal(state.isAdmin, true, 'admin session active');
-  assert.equal(state.selected, 'admin', 'Hugo #42: ADMIN bleibt ADMIN (eigene Klasse)');
-  assert.equal(state.player.maxHp, 300, 'ADMIN hat eigene 300 HP');
+  assert.equal(state.selected, 'gunner', 'Hugo #46: Admin remappt auf Basisklasse (wie frueher)');
   runCommand('hp 300');
   assert.equal(state.player.maxHp, 300);
   for (let i = 0; i < 10 && !state.finished; i++) update(1 / 60);
@@ -420,12 +419,12 @@ test('admin mode sticks across lobby/restart until a normal class is picked', as
   state.adminBaseClass = 'tank';
   startGame();
   assert.equal(state.isAdmin, true);
-  assert.equal(state.selected, 'admin', 'Hugo #42: ADMIN bleibt gewaehlt');
+  assert.equal(state.selected, 'tank', 'Hugo #46: Admin remappt auf Basisklasse (wie frueher)');
   for (let i = 0; i < 5 && !state.finished; i++) update(1 / 60);
   state.selected = 'archer';
   startGame();
   assert.equal(state.isAdmin, true, 'admin mode survives second start');
-  assert.equal(state.selected, 'archer', 'Hugo #42: kein Zwangs-Remap mehr — gewaehlte Klasse bleibt');
+  assert.equal(state.selected, 'archer', 'gewaehlte Klasse bleibt (isAdmin + adminMode)');
   state.adminMode = false;
   state.isAdmin = false;
   state.selected = 'archer';
@@ -763,70 +762,31 @@ test('the whip class is locked until the snake is beaten (Hugo)', async () => {
   state.unlocks.whip = false;
 });
 
-test('admin mode: own skin, no attacks for now (Hugo)', async () => {
+test('admin attacks like before — no special skin anymore (Hugo #46 WIE-FRUEHER)', async () => {
   const { attack } = await import('../js/combat.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.isAdmin = true; state.selected = 'faust'; state.attackTimer = 0; state.cooldownOverride = 0;
+  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
   state.player = { x: 500, y: 500, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0, dashX: 0, dashY: 0 };
   state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.effects = []; state.projectiles = [];
   const dummy = { id: 9, type: 'slime', x: 560, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
   state.bosses.push(dummy);
   attack();
-  assert.equal(dummy.hp, 100, 'ADMIN greift (noch) nicht an');
-  assert.equal(state.attackTimer, 0, 'ADMIN loest keinen Cooldown aus');
+  assert.equal(dummy.hp, 90, 'ADMIN greift wie eine normale Klasse an (Faust 10)');
   state.isAdmin = false;
 });
 
-test('admin gets a random SIDE CLASS on start — skin stays ADMIN (Hugo #45)', async () => {
+test('admin has NO own class anymore: remaps to base class (Hugo #46 WIE-FRUEHER)', async () => {
   const { classes } = await import('../js/config.js');
-  state.selected = 'admin'; state.selectedBoss = 'slime';
-  state.adminMode = false; state.isAdmin = false; state.sideClass = null;
-  for (let i = 0; i < 10; i++) {
-    startGame();
-    assert.ok(state.sideClass, 'Admin bekommt IMMER eine Nebenklasse zugelost');
-    assert.notEqual(state.sideClass, 'admin', 'Nebenklasse ist nie admin selbst');
-    assert.notEqual(state.sideClass, 'healer', 'Nebenklasse ist nie der nutzlose Healer');
-    assert.ok(classes[state.sideClass], 'Nebenklasse ist eine echte Klasse');
-    assert.equal(state.selected, 'admin', 'Admin BEHAELT seinen Skin/ seine Klasse');
-    assert.equal(state.player.maxHp, 300, 'Admin-Stats bleiben (300 HP)');
-    assert.ok(document.getElementById('className').textContent.indexOf('ADMIN · ') === 0, 'HUD zeigt ADMIN · <Nebenklasse>');
-  }
-  state.isAdmin = false; state.sideClass = null;
-});
-
-test('admin attacks through his side class (Hugo #45)', async () => {
-  const { attack } = await import('../js/combat.js');
-  state.gameRunning = true; state.paused = false; state.finished = false;
-  state.isAdmin = true; state.selected = 'admin'; state.sideClass = 'faust';
-  state.attackTimer = 0; state.cooldownOverride = 0;
-  state.notMe = false; state.peace = false; state.invincible = false; state.dmgMultiplier = 1;
-  state.player = { x: 500, y: 500, r: 17, hp: 300, maxHp: 300, speed: 250, angle: 0, dashX: 0, dashY: 0 };
-  state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.fireTrails = []; state.projectiles = []; state.effects = [];
-  const dummy = { id: 11, type: 'slime', x: 560, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
-  state.bosses.push(dummy);
-  attack();
-  assert.equal(dummy.hp, 90, 'Admin schlaegt mit FAUST-Nebenklasse (10 Schaden)');
-  assert.ok(Math.abs(state.attackTimer - .5) < 1e-9, 'Cooldown der Nebenklasse (0,5s)');
-  /* Whip-Nebenklasse: Linien-Angriff */
-  state.attackTimer = 0; state.sideClass = 'whip';
-  const far = { id: 12, type: 'slime', x: 700, y: 502, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
-  state.bosses.push(far);
-  attack();
-  assert.equal(far.hp, 60, 'Admin-peitscht mit WHIP-Nebenklasse (40 Schaden, Linie)');
-  state.isAdmin = false; state.sideClass = null;
-});
-
-test('admin is a real class now: own stats, stays selected, no remap (Hugo #42)', async () => {
-  const { classes } = await import('../js/config.js');
-  assert.ok(classes.admin, 'ADMIN ist eine echte Klasse');
-  assert.equal(classes.admin.hp, 300, 'ADMIN hat 300 HP');
-  assert.equal(classes.admin.damage, 0, 'ADMIN hat erstmal keinen Angriff');
+  assert.ok(!classes.admin, 'ADMIN ist keine eigene Klasse mehr (kein Eigen-Design)');
   state.selected = 'admin'; state.selectedBoss = 'snake';
   state.adminMode = false; state.isAdmin = false;
+  state.adminBaseClass = 'archer';
   startGame();
-  assert.equal(state.selected, 'admin', 'ADMIN bleibt gewaehlt (kein Remap)');
-  assert.equal(state.player.maxHp, 300, 'ADMIN-Spieler hat 300 HP');
-  assert.ok(document.getElementById('className').textContent.indexOf('ADMIN') >= 0, 'HUD zeigt ADMIN');
+  assert.equal(state.isAdmin, true, 'Admin-Modus aktiv');
+  assert.equal(state.selected, 'archer', 'Admin spielt als Basisklasse (Bogen)');
+  assert.equal(state.player.maxHp, 100, 'Basisklassen-HP (kein 300-HP-Eigen-Design)');
+  assert.ok(document.getElementById('className').textContent.indexOf('ADMIN') >= 0, 'HUD zeigt ADMIN · Basisklasse');
   state.isAdmin = false;
 });
 

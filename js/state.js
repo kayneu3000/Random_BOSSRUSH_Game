@@ -49,7 +49,6 @@ export const state = {
 
  isAdmin: false,
  adminMode: false,
- sideClass: null, /* ADMIN-NEBENKLASSE (Hugo #45): zufaellige Klasse zum Angreifen, Skin bleibt ADMIN */
  adminBaseClass: 'archer',
  peace: false,
  brutal: false,
