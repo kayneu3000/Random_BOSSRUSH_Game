@@ -14,7 +14,7 @@ export function createSnake(x,y){
  // hp ist Segmente*100. Ein verlorenes Segment = -1/10 Leiste, eine gegessene
  // kleine Schlange = +1/10 Leiste.
  const segments=SNAKE_START_SEGMENTS, maxHp=SNAKE_MAX_SEGMENTS*SNAKE_SEGMENT_HP;
- state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:segments*SNAKE_SEGMENT_HP,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],appleTimer:.5,skinRespawn:-1,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1,wanderAngle:Math.random()*Math.PI*2});
+ state.bosses.push({id:++state.spawnId,type:'snake',x,y,r:headRadiusOf({segments}),hp:segments*SNAKE_SEGMENT_HP,maxHp,alive:true,flash:0,wobble:0,segments,trail:[],appleTimer:.5,hungerTimer:0,skinRespawn:-1,attackCooldown:0,faceAngle:Math.random()*Math.PI*2,faceTarget:0,faceTimer:1,wanderAngle:Math.random()*Math.PI*2});
  createSnakeSkin(x+320,y);
  showGameMessage('SNAKE H\u00c4UTET SICH \u2014 DIE HAUT JAGT DICH! ZERST\u00d6RE DIE KLEINEN SCHLANGEN!',3.4)
 }
@@ -60,6 +60,7 @@ function snakeEatsSmall(snake){
    a.destroyed=true;
    if(snake.segments<SNAKE_MAX_SEGMENTS)snake.segments+=1;
    snake.hp=snake.segments*SNAKE_SEGMENT_HP /* +1/10 Leiste pro Fang */;
+   snake.hungerTimer=0 /* Fang resettet den Hunger-Timer */;
    snake.r=headRadiusOf(snake);
    for(let i=0;i<22;i++)particle(a.x,a.y,'#9be15d',3+Math.random()*4);
    showGameMessage('SNAKE HAT EINE KLEINE SCHLANGE GEGESSEN \u2014 ER W\u00c4CHST!',2)
@@ -104,6 +105,10 @@ export function updateSnake(b,dt){
  b.wobble+=dt*3;b.flash=Math.max(0,b.flash-dt);
  updateSmallSnakes(dt);
  snakeEatsSmall(b);
+ /* HUNGER-DRUCK (Hugo #43): 7 Sekunden nichts gefressen -> Snake verliert
+   ein Zehntel (1 Segment) — derselbe Weg wie beim Hunger-Schlag. */
+ b.hungerTimer=(b.hungerTimer||0)+dt;
+ if(b.hungerTimer>=7){b.hungerTimer=0;hungryDamage(b)}
 
  let target=null,dist=Infinity;
  for(const a of state.smallSnakes){if(a.destroyed)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<dist){dist=d;target=a}}

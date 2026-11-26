@@ -30,6 +30,9 @@ attachUI({ startGame });
 attachInput();
 attachConsole(startGame);
 ['pointerdown','touchstart','keydown'].forEach(ev => window.addEventListener(ev, initAudio, { passive: true })); /* KLANG: iOS-Geste abwarten */
+/* ANTI-ZOOM (Hugo #43): Pinch/Geste + Doppelklick-Level hart unterbinden */
+['gesturestart','gesturechange','gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+document.addEventListener('dblclick', e => e.preventDefault());
 initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 
 function startGame() {
@@ -203,11 +206,17 @@ function loop(now) {
   s.texNudge=(s.texNudge||0)+1;
   if (s.texNudge>=45){
    s.texNudge=0; canvas.width=canvas.width;
-   /* DOM-KICK (Hugo-Beweis #42): DOM-Churn (wie sein 'ember'-Befehl) weckt
-      Safaris eingefrorene Komposition zuverlaessig — width-Set allein tut es
-      im Admin-Fall nicht. Mini-Stil-Puls auf HUD-Text, unsichtbar klein. */
-   try{ const hn=document.getElementById('className');
-    if(hn) hn.style.letterSpacing = hn.style.letterSpacing==='0.02px' ? '0px' : '0.02px'
+   /* DOM-KICK (Hugo-Beweise #42/#43): NUR Style-Puls war zu schwach (Admin blieb
+      dunkel). Hugos 'ember'-Befehl aenderte echten TEXT — genau das tun wir jetzt:
+      Nullbreiten-Zeichen an/aus + Kompositionschicht-Toggle (translateZ). */
+   try{
+    const hn=document.getElementById('className');
+    if(hn){ const base=hn.getAttribute('data-kick')||hn.textContent;
+     hn.setAttribute('data-kick',base);
+     hn.textContent = hn.textContent.length===base.length ? base+'\u200b' : base }
+    const st=canvas.style; st.transform = st.transform==='' ? 'translateZ(0)' : '';
+    const hud=document.getElementById('hud');
+    if(hud) hud.style.transform = hud.style.transform==='' ? 'translateZ(0)' : '';
    }catch(err){}
   }
  }
