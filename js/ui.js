@@ -86,47 +86,79 @@ export function backToLobby() {
  showScreen('lobby')
 }
 
+// Schreibt einen Text nur, wenn er sich wirklich geaendert hat (kein DOM-Churn).
+function setText(el, val) {
+ if (el && el.textContent !== val) el.textContent = val
+}
+
+// Cooldown-Zeile des Spieler-HUDs.
+function getCooldownEl(s) { return $('attackCooldownText') }
+function getCooldownText(s) {
+ if (s.selected === 'ember') return s.emberBeamTimer > 0 ? 'FEUERSTRAHL ' + Math.max(0, s.emberBeamTimer).toFixed(1) + 's' : s.emberCooldown > 0 ? 'AUFLADEN ' + s.emberCooldown.toFixed(1) + 's' : 'FEUERSTRAHL BEREIT';
+ if (s.selected === 'healer') return s.healerHealCooldown > 0 ? 'HEILUNG IN ' + s.healerHealCooldown.toFixed(1) + 's' : 'HEILUNG BEREIT';
+ if (s.selected === 'gunner') return s.gunnerReload > 0 ? 'NACHLADEN ' + s.gunnerReload.toFixed(1) + 's' : 'PATRONEN: ' + s.gunnerAmmo + '/5';
+ return s.attackTimer > 0 ? 'ANGRIFF IN ' + s.attackTimer.toFixed(1) + 's' : 'ANGRIFF BEREIT'
+}
+
+// Cache der Bossleisten: bleibt zwischen den Frames bestehen, wird nur bei
+// Aenderung der Boss-Menge (Spawn/Tod) neu aufgebaut.
+let barCache = []; // { boss, row, label, fill }
+
 export function updateHUD() {
  const s = state, p = s.player;
  if (p) {
-  $('playerHPFill').style.width = p.hp / p.maxHp * 100 + '%';
-  $('playerHPText').textContent = Math.ceil(p.hp) + ' / ' + p.maxHp + ' HP';
+  const pw = p.hp / p.maxHp * 100 + '%';
+  if ($('playerHPFill').style.width !== pw) $('playerHPFill').style.width = pw;
+  setText($('playerHPText'), Math.ceil(p.hp) + ' / ' + p.maxHp + ' HP');
  }
 
  const msg = $('gameMessage');
  if (s.message.until !== Infinity && s.elapsed >= s.message.until && msg.textContent !== '') msg.textContent = '';
 
- if (s.selected === 'ember') $('attackCooldownText').textContent = s.emberBeamTimer > 0 ? 'FEUERSTRAHL ' + Math.max(0, s.emberBeamTimer).toFixed(1) + 's' : s.emberCooldown > 0 ? 'AUFLADEN ' + s.emberCooldown.toFixed(1) + 's' : 'FEUERSTRAHL BEREIT';
- else if (s.selected === 'healer') $('attackCooldownText').textContent = s.healerHealCooldown > 0 ? 'HEILUNG IN ' + s.healerHealCooldown.toFixed(1) + 's' : 'HEILUNG BEREIT';
- else if (s.selected === 'gunner') $('attackCooldownText').textContent = s.gunnerReload > 0 ? 'NACHLADEN ' + s.gunnerReload.toFixed(1) + 's' : 'PATRONEN: ' + s.gunnerAmmo + '/5';
- else $('attackCooldownText').textContent = s.attackTimer > 0 ? 'ANGRIFF IN ' + s.attackTimer.toFixed(1) + 's' : 'ANGRIFF BEREIT';
+ setText(getCooldownEl(s), getCooldownText(s));
 
  const living = s.bosses.filter(b => b.alive);
  const BOSS_NAMES = { slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', shadow: 'SCHATTEN', snake: 'SNAKE', snakeSkin: 'DIE HAUT' };
  const barsArea = $('bossBars');
  const barBosses = living.filter(b => b.type !== 'snakeSkin');
- while (barsArea.firstChild) barsArea.removeChild(barsArea.firstChild);
- for (const b of barBosses) {
-  const row = document.createElement('div'); row.className = 'bossBarRow';
-  const label = document.createElement('div'); label.className = 'bossBarLabel'; label.textContent = BOSS_NAMES[b.type] || b.type.toUpperCase();
-  const bar = document.createElement('div'); bar.className = 'bossHP';
-  const fill = document.createElement('div'); fill.className = 'bossHPFill'; fill.style.width = (b.maxHp ? b.hp / b.maxHp * 100 : 0) + '%';
-  bar.appendChild(fill); row.appendChild(label); row.appendChild(bar);
-  barsArea.appendChild(row);
+ // SAFARI-SCHUTZ: Die Leisten werden NICHT mehr jeden Frame neu gebaut (60
+ // DOM-Rueckbaeue pro Sekunde waren der prime-Verdaechtige fuer den schwarzen
+ // Bildschirm auf dem iPad). Neu bauen NUR, wenn sich die Menge der lebenden
+ // Boss-Objekte aendert (Spawn/Tod) — sonst nur Breite + Label aktualisieren.
+ const sameSet = barCache.length === barBosses.length && barBosses.every((b, i) => barCache[i] && barCache[i].boss === b);
+ if (!sameSet) {
+  while (barsArea.firstChild) barsArea.removeChild(barsArea.firstChild);
+  barCache = barBosses.map(b => {
+   const row = document.createElement('div'); row.className = 'bossBarRow';
+   const label = document.createElement('div'); label.className = 'bossBarLabel'; label.textContent = BOSS_NAMES[b.type] || b.type.toUpperCase();
+   const bar = document.createElement('div'); bar.className = 'bossHP';
+   const fill = document.createElement('div'); fill.className = 'bossHPFill'; fill.style.width = (b.maxHp ? b.hp / b.maxHp * 100 : 0) + '%';
+   bar.appendChild(fill); row.appendChild(label); row.appendChild(bar);
+   barsArea.appendChild(row);
+   return { boss: b, row, label, fill };
+  });
+ }
+ for (let i = 0; i < barBosses.length && i < barCache.length; i++) {
+  const c = barCache[i], b = barBosses[i];
+  if (!c || c.boss !== b) continue;
+  const w = (b.maxHp ? b.hp / b.maxHp * 100 : 0) + '%';
+  if (c.fill.style.width !== w) c.fill.style.width = w;
+  const name = BOSS_NAMES[b.type] || b.type.toUpperCase();
+  if (c.label.textContent !== name) c.label.textContent = name;
  }
  const bossTypes = [...new Set(living.map(b => b.type))];
  if (bossTypes.length > 1) {
-  $('bossName').textContent = bossTypes.map(t => BOSS_NAMES[t]).join(' + ');
-  $('bossCount').textContent = living.length + ' BOSSE AKTIV'
+  setText($('bossName'), bossTypes.map(t => BOSS_NAMES[t]).join(' + '));
+  setText($('bossCount'), living.length + ' BOSSE AKTIV')
  } else if (bossTypes.length === 1) {
-  $('bossName').textContent = BOSS_NAMES[bossTypes[0]];
+  setText($('bossName'), BOSS_NAMES[bossTypes[0]]);
   const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow'), sn = living.find(q => q.type === 'snake'), sk = living.find(q => q.type === 'snakeSkin');
-  if (d) $('bossCount').textContent = d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV';
-  else if (g) $('bossCount').textContent = g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`;
-  else if (sh) $('bossCount').textContent = sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase;
-  else if (sk) $('bossCount').textContent = sk.mode === 'sprint' ? 'SPRINT!' : sk.mode === 'circle' ? 'UMKREIST DICH — ' + Math.ceil(sk.hp) + ' HP' : 'JAGT DICH — ' + Math.ceil(sk.hp) + ' HP';
-  else if (sn) $('bossCount').textContent = sn.segments + (sn.segments === 1 ? ' SEGMENT ÜBRIG' : ' SEGMENTE ÜBRIG');
- else $('bossCount').textContent = living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend'
+  if (d) setText($('bossCount'), d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV');
+  else if (g) setText($('bossCount'), g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`);
+  else if (sh) setText($('bossCount'), sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase);
+  else if (sk) setText($('bossCount'), sk.mode === 'sprint' ? 'SPRINT!' : sk.mode === 'circle' ? 'UMKREIST DICH — ' + Math.ceil(sk.hp) + ' HP' : 'JAGT DICH — ' + Math.ceil(sk.hp) + ' HP');
+  else if (sn) setText($('bossCount'), sn.segments + (sn.segments === 1 ? ' SEGMENT ÜBRIG' : ' SEGMENTE ÜBRIG'));
+ else setText($('bossCount'), living.length + ' Schleim' + (living.length === 1 ? '' : 'e') + ' verbleibend')
  }
 }
 
