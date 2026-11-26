@@ -735,7 +735,7 @@ test('the whip class: 220 hp, long line attack, 0.5s cooldown, 30 damage (Hugo)'
   const { classes } = await import('../js/config.js');
   const w = classes.whip;
   assert.equal(w.hp, 220, 'Peitsche hat 220 HP');
-  assert.equal(w.damage, 30, 'Peitsche macht 30 Schaden');
+  assert.equal(w.damage, 40, 'Peitsche macht 40 Schaden');
   assert.equal(w.cool, .5, 'Peitsche hat 0,5s Angriffscooldown');
   assert.equal(w.speed, 270, 'Peitsche ist etwas schneller als normale Klassen');
   assert.ok(w.line, 'Peitsche greift in einer Linie an');
@@ -749,9 +749,31 @@ test('the whip class: 220 hp, long line attack, 0.5s cooldown, 30 damage (Hugo)'
   const farAway = { id: 3, type: 'slime', x: 900, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
   state.bosses.push(onLine, offLine, farAway);
   attack();
-  assert.equal(onLine.hp, 70, 'Peitsche trifft das Ziel in der Linie (30 Schaden)');
+  assert.equal(onLine.hp, 60, 'Peitsche trifft das Ziel in der Linie (40 Schaden)');
   assert.equal(offLine.hp, 100, 'Peitsche trifft Ziele neben der Linie NICHT');
   assert.equal(farAway.hp, 100, 'Peitsche trifft Ziele ausserhalb der Reichweite NICHT');
   assert.ok(Math.abs(state.attackTimer - .5) < 1e-9, '0,5s Cooldown gesetzt');
   assert.ok(state.effects.some(e => e.type === 'slash' && e.weapon === 'whip'), 'Peitschen-Schlag-Effekt sichtbar');
+});
+
+test('the whip class is locked until the snake is beaten (Hugo)', async () => {
+  const { state } = await import('../js/state.js');
+  assert.ok(!state.unlocks.whip, 'Peitsche startet gesperrt');
+  state.unlocks.whip = true; // Simulierte Snake-Sieg-Freischaltung
+  assert.equal(state.unlocks.whip, true);
+  state.unlocks.whip = false;
+});
+
+test('admin mode: own skin, no attacks for now (Hugo)', async () => {
+  const { attack } = await import('../js/combat.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.isAdmin = true; state.selected = 'faust'; state.attackTimer = 0; state.cooldownOverride = 0;
+  state.player = { x: 500, y: 500, r: 17, hp: 100, maxHp: 100, speed: 260, angle: 0, dashX: 0, dashY: 0 };
+  state.bosses = []; state.smallSnakes = []; state.infernoTowers = []; state.effects = []; state.projectiles = [];
+  const dummy = { id: 9, type: 'slime', x: 560, y: 500, r: 40, hp: 100, maxHp: 100, alive: true, flash: 0, wobble: 0, attackCooldown: 0, tier: 4 };
+  state.bosses.push(dummy);
+  attack();
+  assert.equal(dummy.hp, 100, 'ADMIN greift (noch) nicht an');
+  assert.equal(state.attackTimer, 0, 'ADMIN loest keinen Cooldown aus');
+  state.isAdmin = false;
 });

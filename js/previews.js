@@ -1,5 +1,6 @@
 import { beginPreviewCtx, endPreviewCtx } from "./canvas.js";
 import { drawSnake, drawShadow, drawGunball, drawDragon } from "./render.js";
+import { state } from "./state.js";
 
 /* ECHTE BOSS-BILDER in der Lobby (Hugo-Wunsch): die Karten zeigen die
    Original-Texturen aus render.js auf Mini-Canvases statt CSS-Emojis. */
@@ -16,6 +17,7 @@ export function initBossPreviews(){
    {sel:'.dragonPreview',paint:g=>{g.translate(102,88);g.scale(.92,.92);drawDragon({type:'dragon',x:0,y:0,r:34,angle:-.55,wobble:0,mode:'guarded',beamAngle:0,beamCharge:0,beamTimer:0,exhaustedTimer:0,fireCooldown:1,attackCooldown:0,infernoCooldown:5})}},
    {sel:'.gunballPreview',paint:g=>{g.translate(95,85);g.scale(.9,.9);drawGunball({type:'gunball',x:0,y:0,r:32,rotation:.5,mode:'attacking',phaseTimer:10,weaponIndex:0,weaponTimer:0,fireTimer:0,attackCooldown:0,wobble:0})}}
   ];
+  const live=[];
   for(const spec of specs){
    const el=document.querySelector(spec.sel);
    if(!el||!el.appendChild||!el.classList||!el.classList.add)continue; /* Test-Umgebung / fehlendes DOM */
@@ -27,8 +29,34 @@ export function initBossPreviews(){
    el.classList.add('realPreview');
    const g=c.getContext('2d');
    if(!g)continue;
-   beginPreviewCtx(g);
-   try{spec.paint(g)}finally{endPreviewCtx()}
+   live.push({g,paint:spec.paint})
   }
+  startLiveLoop(live)
  }catch(e){/* Lobby-Bilder sind dekorativ — niemals das Spiel blockieren */}
+}
+
+/* LIVE-Vorschau (Hugo): die Karten zeigen die Bosse so wie im Kampf —
+   animiert ueber rAF, nur solange die Lobby sichtbar ist. */
+let liveStarted=false;
+function startLiveLoop(live){
+ if(liveStarted||typeof requestAnimationFrame!=='function')return;
+ liveStarted=true;
+ const tick=()=>{
+  requestAnimationFrame(tick);
+  try{
+   const lobby=document.getElementById('lobby');
+   if(!lobby||!lobby.classList||!lobby.classList.contains('active'))return;
+   const t=performance.now()/1000, old=state.elapsed;
+   state.elapsed=t;
+   try{
+    for(const l of live){
+     l.g.setTransform(1,0,0,1,0,0);
+     l.g.clearRect(0,0,190,170);
+     beginPreviewCtx(l.g);
+     try{l.paint(l.g)}finally{endPreviewCtx()}
+    }
+   }finally{state.elapsed=old}
+  }catch(e){}
+ };
+ tick()
 }

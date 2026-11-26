@@ -52,9 +52,12 @@ export function particle(x,y,color,size){
  state.particles.push({x,y,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*240,life:.4+Math.random()*.6,max:.8,color,size})
 }
 
+import { sfx } from "./audio.js";
+
 export function damageBoss(b,amount,ignoreGuard){
  if(!b.alive)return;
  if(!ignoreGuard){if(b.type==='dragon'&&b.mode!=='exhausted')return;if(b.type==='gunball'&&b.mode!=='vulnerable')return;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))return;if(b.type==='snake')return}
+ sfx('bossHit');
  b.hp-=amount*(state.dmgMultiplier||1);b.flash=.13;
  for(let i=0;i<3;i++)particle(b.x,b.y,b.type==='dragon'?'#ffad55':b.type==='gunball'?'#c7a2ff':'#a7f7ff',3+Math.random()*3);
  if(b.hp<=0){
@@ -75,6 +78,7 @@ export function damagePlayer(amount){
  if(state.invincible||state.peace||state.invuln>0||state.finished)return;
  if(state.brutal)amount*=1.5;
  if(state.selected==='tank')amount*=.5;
+ sfx('playerHit');
  state.player.hp-=amount;state.invuln=.65;state.screenShake=9;
  for(let i=0;i<12;i++)particle(state.player.x,state.player.y,'#ff725f',4);
  if(state.player.hp<=0){state.player.hp=0;endGame(false)}

@@ -1,5 +1,6 @@
 import { $ } from "./utils.js";
 import { ADMIN_UNLOCK_CODE } from "./config.js";
+import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
@@ -28,6 +29,14 @@ export function applyUnlocksToUI() {
   card.classList.remove('locked');
   card.querySelector('h3').textContent = labels[cls][1]
  }
+ const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)] };
+ for (const cls of Object.keys(whipLabels)) {
+  if (!state.unlocks[cls]) continue;
+  const wcard = $(whipLabels[cls][0]);
+  wcard.classList.remove('locked');
+  wcard.querySelector('h3').textContent = whipLabels[cls][1]
+ }
+ if (state.unlocks.whip) $('whipCard').classList.add('whipUnlocked');
  if (state.unlocks.ember) $('emberCard').classList.add('emberUnlocked');
  if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked');
  $('selectSnake').classList.toggle('snakeLocked', !(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner));
@@ -61,6 +70,7 @@ export function showGameMessage(text, durationSeconds = Infinity) {
 export function endGame(win) {
  state.finished = true; state.paused = true; $('overlay').style.display = 'flex';
  $('overlayTitle').textContent = win ? 'SIEG!' : 'BESIEGT';
+ sfx(win ? 'victory' : 'defeat');
  state.kills = 0; $('kills').textContent = '0 besiegt';
  if (win && state.selectedBoss === 'shadow') { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } $('overlayText').textContent = 'Tutorial geschafft! Ab jetzt warten alle Bosse in der Lobby auf dich!' }
  if (win && state.selectedBoss === 'slime') {
@@ -73,7 +83,8 @@ export function endGame(win) {
   state.unlocks.gunner = true;
   $('overlayText').textContent = 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.'
  } else if (win && state.selectedBoss === 'snake') {
-  $('overlayText').textContent = 'SNAKE ist besiegt! Du hast ihn mit seinen eigenen Äpfeln ausgetrickst — Hunger! Level 2 geschafft!'
+  state.unlocks.whip = true;
+  $('overlayText').textContent = 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag!'
  } else $('overlayText').textContent = win ? 'Der Boss wurde besiegt!' : 'Der Boss hat dich besiegt. Versuche es erneut!';
  applyUnlocksToUI();
  saveUnlocks();
@@ -174,6 +185,7 @@ export function attachUI({ startGame }) {
   if (!(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner)) return;
   state.selectedBoss = 'snake'; showScreen('classScreen')
  };
+ $('muteBtn').onclick = () => { $('muteBtn').textContent = toggleMute() ? '\U0001F507' : '\U0001F50A' };
  $('tutStart').onclick = () => { state.selectedBoss = 'shadow'; state.selected = 'faust'; state.adminMode = false; state.isAdmin = false; startGame() };
  $('tutSkip').onclick = () => { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } showScreen('lobby') };
  $('backLobby').onclick = () => showScreen('lobby');
@@ -183,6 +195,7 @@ export function attachUI({ startGame }) {
   if (dc === 'healer' && !state.unlocks.healer) return;
   if (dc === 'ember' && !state.unlocks.ember) return;
   if (dc === 'gunner' && !state.unlocks.gunner) return;
+  if (dc === 'whip' && !state.unlocks.whip) return;
   if (dc === 'admin' && !state.unlocks.admin) {
    const code = prompt("ADMIN-CODE EINGEBEN:");
    if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;

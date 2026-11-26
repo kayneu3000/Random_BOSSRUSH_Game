@@ -8,7 +8,7 @@ export const classes = {
  sword:{name:'SCHWERTKÄMPFER',hp:200,damage:30,cool:1,range:100,speed:235,icon:'⚔'},
  assassin:{name:'ASSASSIN',hp:200,damage:10,cool:.2,range:47,speed:345,icon:'🗡'},
  /* PEITSCHE (Hugo): 220 HP, 30 Schaden, 0,5s Cooldown, langer LINIEN-Angriff, weiter Dash, etwas schneller als normale Klassen */
- whip:{name:'PEITSCHE',hp:220,damage:30,cool:.5,range:230,speed:270,icon:'🗡',line:true},
+ whip:{name:'PEITSCHE',hp:220,damage:40,cool:.5,range:230,speed:270,icon:'🗡',line:true}, /* Hugo: 40 Schaden */
  faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
  healer:{name:'HEALER',hp:100,damage:0,cool:0,range:0,speed:235,icon:'💚'},
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},

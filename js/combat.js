@@ -4,6 +4,7 @@ import { damageBoss, damageTower, damagePlayer, particle } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
 import { getInput } from "./input.js";
 import { showGameMessage } from "./ui.js";
+import { sfx } from "./audio.js";
 import { pointSegmentDistance, rayMapLength } from "./utils.js";
 
 function pickRangedTarget(){
@@ -46,6 +47,7 @@ function pickMeleeTarget(c){
 function shootGunner(){
  if(state.gunnerReload>0||state.gunnerAmmo<=0||state.gunnerShotTimer>0)return;
  const a=state.player.angle;
+ sfx('gun');
  state.projectiles.push({x:state.player.x+Math.cos(a)*25,y:state.player.y+Math.sin(a)*25,vx:Math.cos(a)*950,vy:Math.sin(a)*950,life:1.2,damage:40,r:7,gunner:true});
  state.effects.push({type:'weapon',x:state.player.x,y:state.player.y,angle:a,life:.22,weapon:'gun'});
  state.gunnerAmmo--;state.gunnerShotTimer=.2;
@@ -54,6 +56,7 @@ function shootGunner(){
 
 export function attack(){
  if(!state.gameRunning||state.paused||state.finished)return;
+ if(state.isAdmin)return; /* ADMIN (Hugo): erstmal kein Angriff */
  if(state.selected==='ember'){
   if(state.emberBeamTimer>0||state.emberCooldown>0)return;
   state.emberBeamTimer=5;state.emberTick=.3;state.emberBeamAngle=state.player.angle;showGameMessage('EMBER — FEUERSTRAHL!');return
@@ -62,10 +65,12 @@ export function attack(){
  if(state.selected==='gunner'){shootGunner();return}
  if(state.attackTimer>0)return;
  const c=classes[state.selected];state.attackTimer=state.cooldownOverride>0?state.cooldownOverride:c.cool;
+ sfx(c.line?'whip':'slash');
  if(state.selected==='archer'){
   const { target, isSnakeFood }=pickRangedTarget();
   if(!target)return;
   const a=Math.atan2(target.y-state.player.y,target.x-state.player.x);state.player.angle=a;state.player.weaponAngle=a;
+  sfx('bow');
   state.projectiles.push({x:state.player.x+Math.cos(a)*25,y:state.player.y+Math.sin(a)*25,vx:Math.cos(a)*760,vy:Math.sin(a)*760,life:.9,damage:c.damage,r:6});
   state.effects.push({type:'weapon',x:state.player.x,y:state.player.y,angle:a,life:.22,weapon:'bow'});return
  }
@@ -86,6 +91,7 @@ export function attack(){
 
 export function dash(){
  if(!state.gameRunning||state.paused||state.finished||state.dashTimer>0)return;
+ sfx('dash');
  let v=getInput(),x=v.x,y=v.y;if(Math.hypot(x,y)<.1){x=Math.cos(state.player.angle);y=Math.sin(state.player.angle)}
  const l=Math.hypot(x,y)||1;state.player.dashX=x/l;state.player.dashY=y/l;state.dashDuration=.22;state.dashTimer=1.15;state.invuln=.3
 }
