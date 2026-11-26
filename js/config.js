@@ -14,7 +14,6 @@ export const classes = {
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},
  gunner:{name:'GUNNER',hp:200,damage:40,cool:0,range:900,speed:235,icon:'🔫'},
  /* ADMIN (Hugo #42): echte Klasse, eigener Skin (schwarz + dunkelblauer Hammer), erstmal kein Angriff */
- admin:{name:'ADMIN',hp:300,damage:0,cool:0,range:0,speed:250,icon:'🖥️'}
 };
 
 export const SLIME_HP=[1600,680,330,150,65];

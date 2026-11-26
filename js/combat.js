@@ -54,26 +54,18 @@ function shootGunner(){
  if(state.gunnerAmmo<=0){state.gunnerAmmo=0;state.gunnerReload=5;showGameMessage('GUNNER — NACHLADEN!')}
 }
 
-/* ADMIN-NEBENKLASSE (Hugo #45): Admin behaelt seinen Skin, greift aber mit der
-   automatisch zugelosten Zufalls-Klasse an. Ohne Nebenklasse: kein Angriff. */
-function effSelected(){
- return state.isAdmin && state.sideClass && classes[state.sideClass] ? state.sideClass : state.selected
-}
-
 export function attack(){
  if(!state.gameRunning||state.paused||state.finished)return;
- if(state.isAdmin&&(!state.sideClass||!classes[state.sideClass]))return; /* Admin ohne Nebenklasse greift nicht an */
- const eff=effSelected();
- if(eff==='ember'){
+ if(state.selected==='ember'){
   if(state.emberBeamTimer>0||state.emberCooldown>0)return;
   state.emberBeamTimer=5;state.emberTick=.3;state.emberBeamAngle=state.player.angle;showGameMessage('EMBER — FEUERSTRAHL!');return
  }
- if(eff==='healer')return;
- if(eff==='gunner'){shootGunner();return}
+ if(state.selected==='healer')return;
+ if(state.selected==='gunner'){shootGunner();return}
  if(state.attackTimer>0)return;
- const c=classes[eff];state.attackTimer=state.cooldownOverride>0?state.cooldownOverride:c.cool;
+ const c=classes[state.selected];state.attackTimer=state.cooldownOverride>0?state.cooldownOverride:c.cool;
  sfx(c.line?'whip':'slash');
- if(eff==='archer'){
+ if(state.selected==='archer'){
   const { target, isSnakeFood }=pickRangedTarget();
   if(!target)return;
   const a=Math.atan2(target.y-state.player.y,target.x-state.player.x);state.player.angle=a;state.player.weaponAngle=a;
@@ -92,7 +84,7 @@ export function attack(){
   return
  }
  const { target, isTower, isSnakeFood } = pickMeleeTarget(c);
- state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:eff});
+ state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:state.selected});
  if(target){if(isSnakeFood)damageSmallSnake(target,c.damage);else if(isTower)damageTower(target,c.damage);else damageBoss(target,c.damage)}
 }
 

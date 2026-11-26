@@ -509,16 +509,6 @@ function drawSauronTower(t){
 function drawWeapon(){
  const s=state,p=s.player;
  if(s.selected==='ember'){drawEmberHand();return}
- if(s.isAdmin){/* ADMIN (Hugo): eigener Skin — dunkelblauer HAMMER */
-  ctx.save();ctx.rotate(-swing);
-  ctx.fillStyle='#1b2a4a';ctx.strokeStyle='#0a1428';ctx.lineWidth=2;
-  ctx.beginPath();ctx.roundRect(14,-4,52,8,3);ctx.fill();ctx.stroke();
-  const hg=ctx.createLinearGradient(60,-16,84,16);hg.addColorStop(0,'#24457c');hg.addColorStop(.5,'#16305c');hg.addColorStop(1,'#0d1f42');
-  ctx.fillStyle=hg;ctx.strokeStyle='#091428';
-  ctx.beginPath();ctx.roundRect(58,-16,26,32,5);ctx.fill();ctx.stroke();
-  ctx.fillStyle='#4a76c9';ctx.fillRect(62,-12,4,24);ctx.fillRect(76,-12,4,24);
-  ctx.restore();return
- }
  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
  const swing=s.attackTimer>0?Math.sin((s.attackTimer/classes[s.selected].cool)*Math.PI)*.8:0;
  if(s.selected==='gunner'){
@@ -589,8 +579,7 @@ function drawPlayer(){
  if(s.invuln>0&&Math.floor(s.elapsed*18)%2===0)ctx.globalAlpha=.45;
  ctx.fillStyle='#07121e99';ctx.beginPath();ctx.ellipse(0,10,20,9,0,0,Math.PI*2);ctx.fill();
  if(s.selected==='tank'){ctx.fillStyle='#778b9c';ctx.fillRect(-13,-13,26,27);ctx.fillStyle='#c4d5dc';ctx.fillRect(-9,-10,18,13);ctx.strokeStyle='#465765';ctx.lineWidth=2;ctx.strokeRect(-13,-13,26,27)}
- else if(s.isAdmin){/* ADMIN-Skin: schwarz mit dunkelblauem Visier */ctx.fillStyle='#0b0b10';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1b3a75';ctx.beginPath();ctx.arc(0,-1,9,Math.PI*1.05,Math.PI*1.95);ctx.fill();ctx.fillStyle='#4a76c9';ctx.beginPath();ctx.arc(-5,-2,2.2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(5,-2,2.2,0,Math.PI*2);ctx.fill()}
- else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
+  else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
  ctx.restore();drawWeapon()
 }
 

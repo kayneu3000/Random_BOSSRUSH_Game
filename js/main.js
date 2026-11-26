@@ -47,16 +47,10 @@ document.addEventListener('touchend', e => {
 }, { passive: false });
 initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 
-/* ADMIN-NEBENKLASSE (Hugo #45): dieser Pool wird zufaellig zugelost */
-const SIDE_POOL = Object.keys(classes).filter(k => k !== 'admin' && k !== 'healer');
-
 function startGame() {
  const s = state;
  s.isAdmin = s.selected === 'admin' || s.adminMode;
- /* Admin behaelt seinen Skin (schwarz + dunkelblauer Hammer), kriegt aber
-   AUTOMATISCH eine zufaellige Nebenklasse zum Angreifen zugelost. */
- s.sideClass = s.isAdmin ? SIDE_POOL[Math.floor(Math.random() * SIDE_POOL.length)] : null;
- /* ADMIN #42: classes.admin existiert jetzt — kein Remap mehr, HUD zeigt sauber ADMIN */
+ /* WIE FRUEHER (Hugo #46): classes.admin existiert nicht mehr — Remap auf die Basisklasse */
  if (s.isAdmin && !classes[s.selected]) s.selected = s.adminBaseClass || 'faust';
  const c = classes[s.selected];
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
@@ -69,7 +63,6 @@ function startGame() {
  s.emberBeamTimer = 0; s.emberCooldown = 0; s.emberTick = 0; s.emberBeamAngle = s.player.angle;
  s.healerHealCooldown = 0; s.gunnerAmmo = 5; s.gunnerReload = 0; s.gunnerShotTimer = 0;
  s.message = { text: '', until: Infinity };
- if (s.isAdmin && s.sideClass) showGameMessage('ADMIN · NEBENKLASSE: ' + classes[s.sideClass].name, 3);
 
  $('game').classList.toggle('dragonTheme', s.selectedBoss === 'dragon');
  $('game').classList.toggle('slimeTheme', s.selectedBoss === 'slime');
@@ -101,10 +94,8 @@ function startGame() {
 
  if (s.selected === 'healer') createHealerSlimes();
 
- $('className').textContent = s.isAdmin
-  ? 'ADMIN' + (s.sideClass && classes[s.sideClass] ? ' · ' + classes[s.sideClass].name : '')
-  : c.name; /* ADMIN-NEBENKLASSE (Hugo #45): HUD zeigt die zugeloste Klasse */
- $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : s.selected === 'admin' ? '🔨' : c.icon;
+ $('className').textContent = (s.isAdmin && s.selected !== 'admin' ? 'ADMIN · ' : '') + c.name;
+ $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : c.icon;
  $('attackLabel').textContent = s.selected === 'ember' ? 'FEUERSTRAHL' : s.selected === 'gunner' ? 'SCHUSS' : 'ANGRIFF';
  $('attackBtn').style.display = s.selected === 'healer' ? 'none' : 'flex';
  $('healBtn').style.display = s.selected === 'healer' ? 'flex' : 'none';
@@ -125,8 +116,7 @@ function startGame() {
 function movePlayer(dt) {
  const s = state;
  if (s.dashDuration > 0) {
-  const eff = s.isAdmin && s.sideClass ? s.sideClass : s.selected;
-  const dv = (eff === 'sword' || eff === 'whip') ? 1275 : 850; /* Peitsche: sehr weiter Dash (Hugo) */
+  const dv = (s.selected === 'sword' || s.selected === 'whip') ? 1275 : 850; /* Peitsche: sehr weiter Dash (Hugo) */
   // Read-Guard: ohne dashX/dashY oder mit NaN sicher 0 bewegen statt NaN bauen
   const dX = Number.isFinite(s.player.dashX) ? s.player.dashX : 0;
   const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
@@ -158,7 +148,7 @@ function update(dt) {
   s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
   s.healerHealCooldown = Math.max(0, s.healerHealCooldown-dt);
   if (s.emberBeamTimer <= 0) s.emberCooldown = Math.max(0, s.emberCooldown-dt);
-  if ((s.selected === 'gunner' || (s.isAdmin && s.sideClass === 'gunner')) && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER \u2014 GELADEN') }
+  if (s.selected === 'gunner' && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER \u2014 GELADEN') }
   updateCamera();
   updateHUD();
   return
@@ -169,7 +159,7 @@ function update(dt) {
  s.dashDuration = Math.max(0, s.dashDuration-dt); s.invuln = Math.max(0, s.invuln-dt);
  s.healerHealCooldown = Math.max(0, s.healerHealCooldown-dt);
  s.gunnerReload = Math.max(0, s.gunnerReload-dt); s.gunnerShotTimer = Math.max(0, s.gunnerShotTimer-dt);
- if ((s.selected === 'gunner' || (s.isAdmin && s.sideClass === 'gunner')) && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER — GELADEN') }
+ if (s.selected === 'gunner' && s.gunnerReload === 0 && s.gunnerAmmo === 0) { s.gunnerAmmo = 5; showGameMessage('GUNNER — GELADEN') }
 
  movePlayer(dt);
  if (s.keys.KeyJ || s.keys.Space) attack();
@@ -239,15 +229,10 @@ function loop(now) {
     const st=canvas.style; st.transform = st.transform==='' ? 'translateZ(0)' : '';
     const hud=document.getElementById('hud');
     if(hud) hud.style.transform = hud.style.transform==='' ? 'translateZ(0)' : '';
-    /* ADMIN-ESKALATION (Hugo #44: IMMER NOCH dunkel): Canvas einmal aus dem DOM
-       nehmen und sofort wieder einhaengen — zwingt Safari, die Layer-Komposition
-       komplett neu zu bauen (starkeste unschaedliche Stufe nach Text-Kick). */
-    if (s.isAdmin && canvas.parentNode){
-     const nxt=canvas.nextSibling;
-     canvas.parentNode.removeChild(canvas);
-     if(nxt&&nxt.parentNode===canvas.parentNode) canvas.parentNode.insertBefore(canvas,nxt);
-     else canvas.parentNode.appendChild(canvas);
-    }
+    /* RE-APPEND ENTFERNT (Hugo #46 ALARM 'alle Bosse schwarz'): der #44-Re-Append
+       war das GIFT — Safari toetet die Kompositionsschicht eines Canvas, das aus
+       dem DOM genommen und wieder eingehaengt wurde. Einmal Admin gespielt = Canvas
+       dauerhaft tot = ALLES schwarz. Nie wieder Re-Append. */
    }catch(err){}
   }
  }
