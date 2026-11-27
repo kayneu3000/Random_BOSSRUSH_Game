@@ -1204,8 +1204,44 @@ test('REPLAY-VIDEO (Hugo #57): Sieg speichert Aufnahme, Niederlage verwirft, Lob
   await replay.refreshReplayUI();
   const box = document.getElementById('replayBox');
   assert.ok(box.children.length >= 1, 'Lobby-Liste gebaut');
-  const btn = box.children.find(c => (c.textContent || '').includes('SLIME'));
-  assert.ok(btn, 'SLIME-Video-Button vorhanden');
+  const row = box.children.find(c => c.children && c.children.some(b => (b.textContent || '').includes('SLIME')));
+  assert.ok(row, 'SLIME-Video-Zeile vorhanden');
+  replay.replayClose();
+});
+
+test('VIDEOTHEK (Hugo #59): UNENDLICH viele Sieges-Videos pro Boss + Loesch-Button', async () => {
+  const replay = await import('../js/replay.js');
+  const cv = document.getElementById('canvas');
+  const beforeSlime = (await replay.listReplays()).filter(r => r.boss === 'slime').length;
+  const beforeSnake = (await replay.listReplays()).filter(r => r.boss === 'snake').length;
+  /* Zwei Siege gegen slime UND einer gegen snake — alle bleiben! */
+  replay.replayStart('slime', cv); replay.replayWin();
+  await new Promise(r => setTimeout(r, 5)); /* id aus Date.now() eindeutig */
+  replay.replayStart('slime', cv); replay.replayWin();
+  replay.replayStart('snake', cv); replay.replayWin();
+  const list = await replay.listReplays();
+  assert.equal(list.filter(r => r.boss === 'slime').length, beforeSlime + 2, 'beide neuen Slime-Videos bleiben');
+  assert.equal(list.filter(r => r.boss === 'snake').length, beforeSnake + 1, 'Snake-Video dabei');
+  /* Neueste zuerst */
+  const slimes = list.filter(r => r.boss === 'slime');
+  assert.ok(slimes[0].ts >= slimes[1].ts, 'neuestes zuerst');
+  /* Lobby-Liste: Zeilen mit Play-Button + Loesch-X */
+  await replay.refreshReplayUI();
+  const box = document.getElementById('replayBox');
+  const rows = box.children.filter(c => c.className === 'replayRow');
+  assert.ok(rows.length >= 3, 'mindestens drei Video-Zeilen');
+  for (const r of rows) {
+    assert.ok(r.children.some(b => (b.textContent || '').startsWith('\u25B6')), 'Play-Button in Zeile');
+    assert.ok(r.children.some(b => b.className === 'replayDel'), 'Loesch-X in Zeile');
+  }
+  /* Loeschen: das aelteste neue Slime-Video weg, der Rest bleibt */
+  const oldest = slimes[slimes.length - 1];
+  await replay.deleteReplay(oldest.id);
+  const after = await replay.listReplays();
+  assert.equal(after.filter(r => r.boss === 'slime').length, beforeSlime + 1, 'ein Slime-Video geloescht, Rest bleibt');
+  assert.equal(after.filter(r => r.boss === 'snake').length, beforeSnake + 1, 'Snake-Video unangetastet');
+  /* Play nach Loesch-Versuch auf geloeschte ID tut nichts (aber auch kein Crash) */
+  await replay.replayPlay(oldest.id);
   replay.replayClose();
 });
 
