@@ -1061,22 +1061,34 @@ test('KLASSEN-GRUPPEN in der Auswahl: ADMIN oben, dann STARTER, LEVEL 1, LEVEL 2
     .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger'].includes(s.slice(5)));
   assert.deepEqual(seq, [
     'HEAD:ADMIN', 'CARD:admin',
-    'HEAD:STARTER', 'CARD:faust', 'CARD:sword', 'CARD:archer', 'CARD:tank', 'CARD:assassin',
-    'HEAD:LEVEL 1', 'CARD:ember', 'CARD:gunner', 'CARD:healer',
+    'HEAD:STARTER', 'CARD:faust', 'CARD:archer', 'CARD:sword', 'CARD:tank', 'CARD:assassin',
+    'HEAD:LEVEL 1', 'CARD:healer', 'CARD:ember', 'CARD:gunner',
     'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger'
-  ], 'Klassen-Reihenfolge: ADMIN / STARTER / LEVEL 1 / LEVEL 2 (Hugo #52)');
+  ], 'Klassen-Reihenfolge in BOSS-Reihenfolge: ADMIN / STARTER (Schlaeger->Bogen->Schwert->Tank->Assassin) / LEVEL 1 (Healer->Ember->Gunner) / LEVEL 2 (Peitsche->Sauger) (Hugo #53)');
 });
 
 test('PLANT-Cooldowns deutlich groesser (Hugo #52)', async () => {
   const { createPlant } = await import('../js/bosses/plant.js');
+  const { readFileSync } = await import('node:fs');
   createPlant(900, 400);
   const b = state.bosses[state.bosses.length - 1];
   assert.ok(b && b.type === 'plant', 'createPlant hat den Boss erzeugt');
-  assert.ok(b.vineTimer >= 3, 'vine Start-CD >= 3');
+  assert.ok(b.vineTimer >= 7, 'Ranken-CD 7 SEKUNDEN (Hugo #53)');
   assert.ok(b.acidSpitTimer >= 5.5, 'acid Start-CD >= 5.5');
   assert.ok(b.seedTimer >= 5.5, 'seed Start-CD >= 5.5');
   assert.ok(b.tongueTimer >= 9, 'tongue Start-CD >= 9');
   assert.ok(b.beamTimer >= 12, 'beam Start-CD >= 12');
   assert.ok(b.burrowTimer >= 18, 'burrow Start-CD >= 18');
   assert.ok(b.screamTimer >= 12, 'scream Start-CD >= 12');
+  /* Schaden runter (Hugo #53) */
+  const psrc = readFileSync(new URL('../js/bosses/plant.js', import.meta.url), 'utf8');
+  assert.ok(psrc.includes('dmg:10'), 'Ranken-Sweep 14->10');
+  assert.ok(psrc.includes('plantAttackDamage(b,16)'), 'Biss 22->16');
+  assert.ok(psrc.includes('damagePlayer(18)'), 'Schallwelle 25->18');
+  assert.ok(psrc.includes('damagePlayer(25);state.invuln=1'), 'Zungen-Schleuder 35->25');
+  assert.ok(psrc.includes('plantAttackDamage(b,22)'), 'Saeurestrahl 30->22');
+  assert.ok(psrc.includes('poolDmg:7'), 'Saeure-Pfuetzen 9->7');
+  assert.ok(psrc.includes('damagePlayer(6)'), 'Mini-Biss 8->6');
+  assert.ok(!psrc.includes('damagePlayer(35)'), 'kein 35er-Schaden mehr');
+  assert.ok(!psrc.includes('damagePlayer(8);'), 'kein 8er-Mini-Biss mehr');
 });

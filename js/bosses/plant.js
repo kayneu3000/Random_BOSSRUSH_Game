@@ -48,7 +48,7 @@ function plantAttackDamage(b,dmg){
 export function createPlant(x,y){
  state.bosses.push({id:++state.spawnId,type:'plant',x,y,r:62,hp:700,maxHp:700,alive:true,flash:0,wobble:0,
   attackCooldown:0,shieldHits:0,vulnerable:false,vulnTimer:0,burrowed:false,burrowSub:0,mouthOpen:0,chew:0,
-  vineTimer:3,acidSpitTimer:5.5,seedTimer:5.5,tongueTimer:9,beamTimer:12,burrowTimer:18,screamTimer:12,biteTimer:0, /* Cooldowns deutlich groesser (Hugo #52) */
+  vineTimer:7,acidSpitTimer:5.5,seedTimer:5.5,tongueTimer:9,beamTimer:12,burrowTimer:18,screamTimer:12,biteTimer:0, /* Ranken 7s! (Hugo #53), Rest #52 */
   beamCharge:0,beamFire:0,beamAngle:0,
   tongue:{active:false,mode:'out',t:0,x:0,y:0,ex:0,ey:0,dir:1,edge:'',caught:false},
   faceAngle:0})
@@ -86,7 +86,7 @@ export function updateMiniPlants(dt){
   if(d<MINI_PLANT_RANGE&&a.biteCd<=0){
    a.biteCd=1.15;
    const pb=livingPlant();if(pb)plantSurviveHit(pb); /* ihr Biss zaehlt */
-   damagePlayer(8);sfx('bite');
+   damagePlayer(6);sfx('bite'); /* Mini-Biss 8->6 (Hugo #53) */
    for(let k=0;k<8;k++)particle(p.x,p.y,'#9be15d',3)
   }
  }
@@ -101,7 +101,7 @@ export function updateAcidPools(dt){
   if(a.life<=0){state.acidPools.splice(i,1);continue}
   if(a.tick<=0&&Math.hypot(p.x-a.x,p.y-a.y)<a.r+p.r*.4){
    const pb=livingPlant();if(pb)plantSurviveHit(pb);
-   damagePlayer(a.dmg||9);a.tick=a.tickRate||.55
+   damagePlayer(a.dmg||7);a.tick=a.tickRate||.55 /* Pfuetzen-Tick 9->7 (Hugo #53) */
   }
  }
 }
@@ -122,7 +122,7 @@ export function updateShockwaves(dt){
    if(Math.abs(d-w.r)<26){
     w.hit=true;
     const pb=livingPlant();if(pb)plantSurviveHit(pb);
-    damagePlayer(25);sfx('sling');
+    damagePlayer(18);sfx('sling'); /* Schallwelle 25->18 (Hugo #53) */
     const ang=Math.atan2(p.y-w.y,p.x-w.x);
     p.x+=Math.cos(ang)*90;p.y+=Math.sin(ang)*90;
     state.screenShake=10
@@ -165,7 +165,7 @@ function updateTongue(b,dt){
     plantSurviveHit(b);
     const fa=Math.atan2(p.y-hy,p.x-hx),FLING=1400;
     p.flingX=Math.cos(fa)*FLING;p.flingY=Math.sin(fa)*FLING;p.flingT=1.1;
-    damagePlayer(35);state.invuln=1;sfx('sling');state.screenShake=14;
+    damagePlayer(25);state.invuln=1;sfx('sling');state.screenShake=14; /* Zungen-Schleuder 35->25 (Hugo #53) */
     showGameMessage('WEGMITDIR!',1.2)
    }
    t.mode='back';t.t=.35
@@ -218,7 +218,7 @@ export function updatePlant(b,dt){
   b.vulnTimer-=dt;
   if(b.vulnTimer<=0){
    b.vulnerable=false;b.shieldHits=0;
-   b.vineTimer=3;b.acidSpitTimer=4.5;b.seedTimer=6;b.beamTimer=10;b.screamTimer=9.5;b.burrowTimer=14; /* K.O.-Reset groesser (Hugo #52) */
+   b.vineTimer=7;b.acidSpitTimer=4.5;b.seedTimer=6;b.beamTimer=10;b.screamTimer=9.5;b.burrowTimer=14; /* Ranken 7s (Hugo #53) */
    showGameMessage('DIE PFLANZE HAT WIEDER ZU!',1.6)
   }
   return
@@ -257,7 +257,7 @@ export function updatePlant(b,dt){
   const length=rayMapLength(b.x,b.y-30,b.beamAngle),ex=b.x+Math.cos(b.beamAngle)*length,ey=b.y-30+Math.sin(b.beamAngle)*length;
   if(b.beamTick<=0){
    b.beamTick=.35;
-   if(pointSegmentDistance(p.x,p.y,b.x,b.y-30,ex,ey)<p.r+30)plantAttackDamage(b,30);
+   if(pointSegmentDistance(p.x,p.y,b.x,b.y-30,ex,ey)<p.r+30)plantAttackDamage(b,22); /* Saeurestrahl 30->22 (Hugo #53) */
    for(let k=0;k<6;k++){const dd=Math.random()*Math.min(length,520);particle(b.x+Math.cos(b.beamAngle)*dd,b.y-30+Math.sin(b.beamAngle)*dd,'#c8f75a',4+Math.random()*5)}
   }
   if(b.beamFire<=0)b.beamTimer=15+Math.random()*5 /* groesser (Hugo #52) */
@@ -270,11 +270,11 @@ export function updatePlant(b,dt){
     SCHLAGEN wie Peitschen bis zum Maprand — erst blinkende Ziel-Linien! */
  b.vineTimer-=dt;
  if(b.vineTimer<=0){
-  b.vineTimer=3.8+Math.random()*1.8;b.mouthOpen=1;sfx('slash'); /* groesser (Hugo #52) */
+  b.vineTimer=7+Math.random()*2;b.mouthOpen=1;sfx('slash'); /* 7 SEKUNDEN! (Hugo #53) */
   showGameMessage('RANKEN — ACHTUNG!',.8);
   for(let k=0;k<2;k++){
    const a=b.faceAngle+(k?1:-1)*(.35+Math.random()*.5);
-   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:1.8,delay:.6+k*.3,hit:false,dmg:14,curAng:a,len:0}) /* NOCH VIEL langsamer (Hugo #50) */
+   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:1.8,delay:.6+k*.3,hit:false,dmg:10,curAng:a,len:0}) /* 1.8s langsam (#50), Schaden 14->10 (Hugo #53) */
   }
  }
 
@@ -286,7 +286,7 @@ export function updatePlant(b,dt){
  }
  if(b.biteWind>0){
   b.biteWind-=dt;
-  if(b.biteWind<=0&&Math.hypot(p.x-b.x,p.y-b.y)<270)plantAttackDamage(b,22)
+  if(b.biteWind<=0&&Math.hypot(p.x-b.x,p.y-b.y)<270)plantAttackDamage(b,16) /* Schaden 22->16 (Hugo #53) */
  }
 
  /* SAEURE-SPUCKE: Pfuetze bleibt auf dem Boden */
@@ -294,7 +294,7 @@ export function updatePlant(b,dt){
  if(b.acidSpitTimer<=0){
   b.acidSpitTimer=5.5+Math.random()*2.5;b.mouthOpen=1;sfx('acid'); /* groesser (Hugo #52) */
   const fl=dist; /* auf die aktuelle Spielerposition zielen */
-  state.enemyProjectiles.push({type:'acid',plant:true,x:b.x,y:b.y-30,vx:dx/dist*260,vy:dy/dist*260,life:fl/260+.02,damage:0,r:11,pool:true,poolR:34,poolLife:ACID_POOL_LIFE,poolDmg:9,poolTickRate:.55})
+  state.enemyProjectiles.push({type:'acid',plant:true,x:b.x,y:b.y-30,vx:dx/dist*260,vy:dy/dist*260,life:fl/260+.02,damage:0,r:11,pool:true,poolR:34,poolLife:ACID_POOL_LIFE,poolDmg:7,poolTickRate:.55}) /* poolDmg 9->7 (Hugo #53) */
  }
 
  /* SAMEN -> Mini-Fresspflanzen (jetzt OEFFTER + mit Ansage, Hugo #48) */
