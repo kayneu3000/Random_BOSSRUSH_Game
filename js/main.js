@@ -95,7 +95,7 @@ function startGame() {
  } else if (s.selectedBoss === 'plant') {
   createPlant(MAP.w/2, MAP.h/2-200);
   $('bossName').textContent = 'PFLANZE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 PLANT';
-  showGameMessage('DIE FRESSPFLANZE! UEBERLEBT 10 ANGRIFFE!', 2.4)
+  showGameMessage('DIE FRESSPFLANZE! IMMER ANGREIFBAR — 1300 HP!', 2.4) /* Schild entfernt (Hugo #55) */
  } else {
   createSlime(MAP.w/2, MAP.h/2-200, 0);
   $('bossName').textContent = 'SLIME'; $('huntTitle').textContent = 'SLIME HUNT';

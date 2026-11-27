@@ -1,5 +1,5 @@
 import { $ } from "./utils.js";
-import { ADMIN_UNLOCK_CODE, PLANT_SHIELD_HITS } from "./config.js";
+import { ADMIN_UNLOCK_CODE } from "./config.js";
 import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
 
@@ -171,7 +171,7 @@ export function updateHUD() {
  } else if (bossTypes.length === 1) {
   setText($('bossName'), BOSS_NAMES[bossTypes[0]]);
   const d = living.find(b => b.type === 'dragon'), g = living.find(q => q.type === 'gunball'), sh = living.find(q => q.type === 'shadow'), sn = living.find(q => q.type === 'snake'), sk = living.find(q => q.type === 'snakeSkin'), pl = living.find(q => q.type === 'plant');
-  if (pl) setText($('bossCount'), pl.burrowed ? 'VERGRABEN' : pl.vulnerable ? 'VERWUNDBAR — ' + Math.ceil(pl.vulnTimer) + 's' : 'UEBERLEBT ' + pl.shieldHits + '/' + PLANT_SHIELD_HITS + ' IHRER ANGRIFFE');
+  if (pl) setText($('bossCount'), pl.burrowed ? 'VERGRABEN' : 'ANGRIFF — IMMER ANGREIFBAR!'); /* Schild entfernt (Hugo #55) */
   else if (d) setText($('bossCount'), d.mode === 'exhausted' ? 'ERSCHÖPFT — ' + Math.ceil(d.exhaustedTimer) + 's VERWUNDBAR' : d.mode === 'fireDash' ? 'DRACHEN ATEM!' : d.mode === 'beamCharge' ? 'INFERNO STRAHL — AUFLADEN' : d.mode === 'beamActive' ? 'INFERNO STRAHL!' : 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV');
   else if (g) setText($('bossCount'), g.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(g.phaseTimer) + 's' : `ANGRIFF — ${Math.ceil(g.phaseTimer)}s · ${g.attackName || 'WAFFEN BEREIT'}`);
   else if (sh) setText($('bossCount'), sh.mode === 'throwing' ? 'WIRFT — UNVERWUNDBAR · ' + Math.ceil(sh.throwTimer) + 's' : sh.mode === 'guarded' ? 'UNVERWUNDBAR — ' + s.infernoTowers.filter(t => !t.destroyed).length + ' TÜRME AKTIV' : sh.mode === 'vulnerable' ? 'VERWUNDBAR — ' + Math.ceil(sh.vulnerTimer) + 's' : 'PHASE ' + sh.phase);

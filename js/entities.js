@@ -64,7 +64,7 @@ export function damageBoss(b,amount,ignoreGuard){
   /* PLANT-SCHILD (Hugo #48, GEDREHT): DU musst 12 IHRER Angriffe ueberleben
      (Zaehler in plant.js) — erst dann ist sie 8 Sekunden lang angreifbar.
      Vorher und vergraben: sie nimmt GAR NICHTS. */
-  if(b.type==='plant'&&(!b.vulnerable||b.burrowed))return;
+  if(b.type==='plant'&&b.burrowed)return; /* Plant IMMER angreifbar (Hugo #55) */
  }
  sfx('bossHit');
  b.hp-=amount*(state.dmgMultiplier||1);b.flash=.13;

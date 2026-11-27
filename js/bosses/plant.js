@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { MAP, PLANT_SHIELD_HITS, PLANT_VULN_TIME, MINI_PLANT_HP, MINI_PLANT_RANGE, ACID_POOL_LIFE } from "../config.js";
+import { MAP, MINI_PLANT_HP, MINI_PLANT_RANGE, ACID_POOL_LIFE } from "../config.js";
 import { damagePlayer, particle, damageBoss } from "../entities.js";
 import { showGameMessage } from "../ui.js";
 import { sfx } from "../audio.js";
@@ -27,16 +27,9 @@ function clampArena(o){
 /* Schild-Zaehler: ein UEBERLEBTER Angriff der Pflanze (der Schaden wirklich
    gezogen hat — nicht geblockt durch invuln/Dash) zaehlt hoch. */
 export function plantSurviveHit(b){
- if(!b||b.type!=='plant'||!b.alive||b.vulnerable)return;
- if(state.invuln>0||state.invincible||state.peace||state.finished)return;
- b.shieldHits++;
- if(b.shieldHits>=PLANT_SHIELD_HITS){
-  b.vulnerable=true;b.vulnTimer=PLANT_VULN_TIME;
-  if(b.tongue.active){b.tongue.active=false;state.player.stuckTimer=0}
-  b.beamCharge=0;b.beamFire=0; /* K.O.: kein Saeurestrahl mehr (Hugo #49) */
-  sfx('sling');state.screenShake=8;
-  showGameMessage('SCHILD OFFEN — JETZT ANGRIFF!',2)
- }else showGameMessage('UEBERLEBT '+b.shieldHits+'/'+PLANT_SHIELD_HITS,1)
+ /* SCHILD ENTFERNT (Hugo #55): Plant ist JETZT IMMER angreifbar (dafuer 1300 HP)
+    und greift DIE GANZE ZEIT an. Kein Zaehlen, keine K.O.-Phase mehr.
+    Die Funktion bleibt als no-op erhalten (wird an mehreren Stellen gerufen). */
 }
 
 /* Schaden einer Plant-Attacke + Ueberlebens-Zaehler in einem Rutsch */
@@ -46,8 +39,8 @@ function plantAttackDamage(b,dmg){
 }
 
 export function createPlant(x,y){
- state.bosses.push({id:++state.spawnId,type:'plant',x,y,r:62,hp:700,maxHp:700,alive:true,flash:0,wobble:0,
-  attackCooldown:0,shieldHits:0,vulnerable:false,vulnTimer:0,burrowed:false,burrowSub:0,mouthOpen:0,chew:0,
+ state.bosses.push({id:++state.spawnId,type:'plant',x,y,r:62,hp:1300,maxHp:1300,alive:true,flash:0,wobble:0, /* 1300 HP, IMMER angreifbar (Hugo #55) */
+  attackCooldown:0,burrowed:false,burrowSub:0,mouthOpen:0,chew:0, /* Schild-Felder entfernt (Hugo #55) */
   vineTimer:7,acidSpitTimer:5.5,seedTimer:5.5,tongueTimer:9,beamTimer:12,burrowTimer:18,screamTimer:12,biteTimer:0, /* Ranken 7s! (Hugo #53), Rest #52 */
   beamCharge:0,beamFire:0,beamAngle:0,
   tongue:{active:false,mode:'out',t:0,x:0,y:0,ex:0,ey:0,dir:1,edge:'',caught:false},
@@ -208,7 +201,7 @@ export function updateVineSweeps(dt){
   const k=v.t/v.dur,ang=v.a0+(v.a1-v.a0)*k;
   v.curAng=ang;v.len=rayMapLength(v.x,v.y,ang); /* bis zum MAPRAND */
   /* Treffer entlang der GANZEN Ranke */
-  if(!v.hit&&pb&&!pb.vulnerable&&!pb.burrowed&&state.invuln<=0&&state.dashDuration<=0&&
+  if(!v.hit&&pb&&!pb.burrowed&&state.invuln<=0&&state.dashDuration<=0&&
      pointSegmentDistance(p.x,p.y,v.x,v.y,v.x+Math.cos(ang)*v.len,v.y+Math.sin(ang)*v.len)<p.r+22){
    v.hit=true;plantAttackDamage(pb,v.dmg);state.screenShake=7;
    for(let q=0;q<10;q++)particle(p.x,p.y,'#8cf838',3+Math.random()*3)
@@ -220,16 +213,7 @@ export function updateVineSweeps(dt){
 export function updatePlant(b,dt){
  b.wobble+=dt*2.4;b.flash=Math.max(0,b.flash-dt);
  b.mouthOpen=Math.max(0,b.mouthOpen-dt*2);b.chew=Math.max(0,b.chew-dt);
- if(b.vulnerable){
-  /* Schild-Fenster: sie ruht sich aus und greift NICHT an (wie Gunball) */
-  b.vulnTimer-=dt;
-  if(b.vulnTimer<=0){
-   b.vulnerable=false;b.shieldHits=0;
-   b.vineTimer=7;b.acidSpitTimer=4.5;b.seedTimer=6;b.beamTimer=10;b.screamTimer=9.5;b.burrowTimer=14; /* Ranken 7s (Hugo #53) */
-   showGameMessage('DIE PFLANZE HAT WIEDER ZU!',1.6)
-  }
-  return
- }
+ /* IMMER ANGREIFBAR + greift DIE GANZE ZEIT an (Hugo #55) */
  updateTongue(b,dt);
 
  if(b.burrowed){
