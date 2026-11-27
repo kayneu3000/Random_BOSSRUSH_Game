@@ -3,7 +3,7 @@ import { MAP, classes } from "./config.js";
 import { $ } from "./utils.js";
 import { loadUnlocks, applyUnlocksToUI, attachUI, showGameMessage, endGame, updateHUD } from "./ui.js";
 import { attachInput, getInput } from "./input.js";
-import { attack, updateEmber, updatePulls } from "./combat.js";
+import { attack, updateEmber, updatePulls, updateCraters } from "./combat.js";
 import { createHealerSlimes, updateCompanions, damagePlayer, damageBoss, updateVisualEffects } from "./entities.js";
 import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
@@ -11,7 +11,7 @@ import { createGunball, updateGunball } from "./bosses/gunball.js";
 import { createShadow, updateShadow } from "./bosses/shadow.js";
 import { createSnake, updateSnake } from "./bosses/snake.js";
 import { createSnakeSkin, updateSnakeSkin } from "./bosses/snakeSkin.js";
-import { createPlant, updatePlant, updateMiniPlants, updateAcidPools, updateShockwaves } from "./bosses/plant.js";
+import { createPlant, updatePlant, updateMiniPlants, updateAcidPools, updateShockwaves, updateVineSweeps } from "./bosses/plant.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
@@ -58,6 +58,7 @@ function startGame() {
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.acidPools = []; s.miniPlants = []; s.shockwaves = []; /* PLANT (Hugo #47) */
+ s.vineSweeps = []; s.craters = []; /* HUGO #49: Ranken-Schwaenge + Krater */
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
@@ -209,7 +210,9 @@ function update(dt) {
  updateMiniPlants(dt);
  updateAcidPools(dt);
  updateShockwaves(dt);
+ updateVineSweeps(dt); /* HUGO #49: Ranken schwingen bis zum Maprand */
  updatePulls(dt);
+ updateCraters(dt); /* HUGO #49: Schleuder-Flug + Krater */
  updateVisualEffects(dt);
 
  updateCamera();

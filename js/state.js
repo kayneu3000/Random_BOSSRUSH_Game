@@ -14,6 +14,7 @@ export const state = {
  infernoTowers: [],
  fireTrails: [],
  acidPools: [], miniPlants: [], shockwaves: [], /* PLANT (Hugo #47) */
+ vineSweeps: [], craters: [], /* HUGO #49: Ranken-Schwaenge + Schleuder-Krater */
 
  camera: { x: 0, y: 0 },
  keys: {},

@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { classes, MAP, PLANT_SHIELD_HITS, ACID_POOL_LIFE } from "./config.js";
+import { classes, MAP, PLANT_SHIELD_HITS, ACID_POOL_LIFE, MINI_PLANT_RANGE } from "./config.js";
 import { ctx, canvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
@@ -547,11 +547,24 @@ export function drawPlant(b){
   ctx.fillStyle='#8cf838';
   for(let d=1;d<=3;d++){const u=d/3.2,dx2=cx*u,dy2=cy*u+Math.sin(ph*2+d)*6;ctx.beginPath();ctx.arc(dx2,dy2,2.4,0,Math.PI*2);ctx.fill()}
  }
- /* DUNKELGRUENER STIEL */
- ctx.strokeStyle=stemC;ctx.lineWidth=16;
- ctx.beginPath();ctx.moveTo(0,36);ctx.quadraticCurveTo(Math.sin(b.wobble)*6,12,0,-8);ctx.stroke();
- ctx.strokeStyle=vuln?'#2c4a18':'#0c2a08';ctx.lineWidth=4;
- ctx.beginPath();ctx.moveTo(5,36);ctx.quadraticCurveTo(Math.sin(b.wobble)*6+5,12,5,-8);ctx.stroke();
+ /* DUNKELGRUENER STIEL: unten BREITER, oben schmal (Hugo #49) */
+ const sw=Math.sin(b.wobble)*5;
+ ctx.fillStyle=stemC;
+ ctx.beginPath();
+ ctx.moveTo(-22,42);
+ ctx.quadraticCurveTo(sw-6,14,-7,-6);
+ ctx.lineTo(7,-6);
+ ctx.quadraticCurveTo(sw+6,14,22,42);
+ ctx.closePath();ctx.fill();
+ ctx.strokeStyle=vuln?'#2c4a18':'#0c2a08';ctx.lineWidth=3;ctx.stroke();
+ /* kleine WURZEL-FITZEL am unteren Stiel (Hugo #49) */
+ ctx.strokeStyle=stemC;ctx.lineCap='round';ctx.lineWidth=4;
+ for(let k=-2;k<=2;k++){
+  if(k===0)continue;
+  ctx.beginPath();ctx.moveTo(k*6,18+Math.abs(k)*4);
+  ctx.quadraticCurveTo(k*11+Math.sin(s.elapsed*2+k)*4,30,k*14,42+Math.abs(k)*3);
+  ctx.stroke()
+ }
  /* ROSA ROSEN-KOPF: Bluetenblaetter in Schichten */
  ctx.fillStyle=petalA;
  for(let k=0;k<7;k++){const a=k*Math.PI*2/7+s.elapsed*.15;ctx.save();ctx.translate(Math.cos(a)*30,-34+Math.sin(a)*30);ctx.rotate(a);ctx.beginPath();ctx.ellipse(0,0,24,14,0,0,Math.PI*2);ctx.fill();ctx.restore()}
@@ -577,14 +590,7 @@ export function drawPlant(b){
  ctx.stroke();
  ctx.fillStyle='#ff7ab8';ctx.beginPath();ctx.moveTo(Math.sin(s.elapsed*3)*11,-2+Math.sin(s.elapsed*4)*3);
  ctx.lineTo(Math.sin(s.elapsed*3)*11+4,4);ctx.lineTo(Math.sin(s.elapsed*3)*11-4,4);ctx.closePath();ctx.fill();
- /* Augen: zornig — verwundbar: X-Augen */
- if(vuln){
-  ctx.strokeStyle='#3a1020';ctx.lineWidth=3;
-  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*26-5,-58);ctx.lineTo(side*26+5,-48);ctx.moveTo(side*26+5,-58);ctx.lineTo(side*26-5,-48);ctx.stroke()}
- }else{
-  ctx.fillStyle='#ffffff';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*26,-53,6,0,Math.PI*2);ctx.fill()}
-  ctx.fillStyle='#1d0a12';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*26+side*2,-52,3,0,Math.PI*2);ctx.fill()}
- }
+ /* KEINE AUGEN mehr (Hugo #49) — die Rose ist das Gesicht */
  /* SCHILD-Ring: wie nah bist du an den 12 ueberlebten Angriffen */
  if(!vuln){
   ctx.globalAlpha=.2+(b.shieldHits/PLANT_SHIELD_HITS)*.5;
@@ -595,18 +601,26 @@ export function drawPlant(b){
  ctx.restore()
 }
 
-/* MINI-FRESSPFLANZE (Samen): unsterblich, aber nur 10 Sekunden da */
+/* MINI-FRESSPFLANZE (Hugo #49): bleibt auf der Stelle, GROSSE Reichweite
+   (gestrichelter Ring!), JE 60 HP mit HP-Balken — unendlich lange da */
 export function drawMiniPlant(a){
  const s=state;
  ctx.save();ctx.translate(a.x,a.y);
- ctx.globalAlpha=Math.max(.15,Math.min(1,a.life/2));
+ /* GROSSE REICHWEITE sichtbar machen */
+ ctx.globalAlpha=.16+Math.sin(s.elapsed*3)*.05;
+ ctx.strokeStyle='#9be15d';ctx.lineWidth=2;ctx.setLineDash([8,10]);
+ ctx.beginPath();ctx.arc(0,0,MINI_PLANT_RANGE,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+ ctx.globalAlpha=1;
  const puls=1+Math.sin(a.wobble)*.1;
  ctx.fillStyle='#3d7a22';ctx.fillRect(-3,0,6,14);
- ctx.fillStyle=Math.sin(a.wobble*2)>.6?'#e7ffa8':'#9be15d';
+ ctx.fillStyle=a.flash>0?'#ffffff':(Math.sin(a.wobble*2)>.6?'#e7ffa8':'#9be15d');
  ctx.beginPath();ctx.ellipse(0,-8,13*puls,11*puls,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#1d4a12';ctx.beginPath();ctx.ellipse(0,-4,8,3.5,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#fff8e0';for(const tx of [-4,0,4]){ctx.beginPath();ctx.moveTo(tx-1.5,-7);ctx.lineTo(tx,-4.5);ctx.lineTo(tx+1.5,-7);ctx.closePath();ctx.fill()}
  ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(-4,-13,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-13,2,0,Math.PI*2);ctx.fill();
+ /* HP-BALKEN (60 HP, toetbar) */
+ ctx.fillStyle='#140706';ctx.fillRect(-14,-22,28,5);
+ ctx.fillStyle='#ff4b20';ctx.fillRect(-14,-22,28*Math.max(0,a.hp/a.maxHp),5);
  ctx.restore()
 }
 
@@ -741,6 +755,15 @@ export function draw(){
   for(let flame=0;flame<15;flame++){const a=flame*Math.PI*2/15+s.elapsed*1.5,fx=f.x+Math.cos(a)*f.r*.8,fy=f.y+Math.sin(a)*f.r*.65;ctx.fillStyle=flame%3===0?'#ffe65a':'#ff7822';ctx.beginPath();ctx.ellipse(fx,fy,f.r*.13,f.r*.27,a,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
+ safeDraw('krater',()=>{for(const c of s.craters){
+  /* SCHLEUDER-KRATER (Hugo #49): Aufprall-Delle mit Rissen */
+  ctx.save();ctx.globalAlpha=Math.min(.85,c.life/c.max+.25);
+  ctx.fillStyle='#0d0a07';ctx.beginPath();ctx.ellipse(c.x,c.y,c.r,c.r*.55,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#241a10';ctx.lineWidth=5;ctx.stroke();
+  ctx.strokeStyle='#1a120a';ctx.lineWidth=3;
+  for(let k=0;k<5;k++){const a2=k*1.256+.4;ctx.beginPath();ctx.moveTo(c.x+Math.cos(a2)*c.r*.4,c.y+Math.sin(a2)*c.r*.22);ctx.lineTo(c.x+Math.cos(a2)*c.r*.95,c.y+Math.sin(a2)*c.r*.55);ctx.stroke()}
+  ctx.restore()
+ }});
  safeDraw('pfuetzen',()=>{for(const a of s.acidPools){
   /* SAEURE-PFUETZEN (Hugo #47): bleiben liegen, blubbern, verblassen */
   const puls=1+Math.sin(s.elapsed*6+a.x*.1)*.08;
@@ -751,6 +774,23 @@ export function draw(){
   ctx.restore()
  }});
  safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){if(b.type==='dragon')drawDragon(b);else if(b.type==='gunball')drawGunball(b);else if(b.type==='shadow')drawShadow(b);else if(b.type==='snake')drawSnake(b);else if(b.type==='snakeSkin')drawSkin(b);else if(b.type==='plant')drawPlant(b);else drawSlime(b)}});
+ safeDraw('ranken',()=>{for(const v of s.vineSweeps){
+  /* RANKEN-SCHWAG (Hugo #49): Peitsche bis zum Maprand, mit Dornen */
+  if(v.delay>0)continue;
+  const k=Math.min(1,v.t/v.dur),ang=v.curAng,len=v.len||rayMapLength(v.x,v.y,ang);
+  ctx.save();ctx.lineCap='round';
+  ctx.globalAlpha=.95*(1-Math.max(0,k-.75)/.25);
+  const bend=Math.sin(k*Math.PI)*36;
+  const mx=v.x+Math.cos(ang)*len*.5-Math.sin(ang)*bend,
+        my=v.y+Math.sin(ang)*len*.5+Math.cos(ang)*bend;
+  ctx.strokeStyle='#2e6b1a';ctx.lineWidth=10;
+  ctx.beginPath();ctx.moveTo(v.x,v.y);ctx.quadraticCurveTo(mx,my,v.x+Math.cos(ang)*len,v.y+Math.sin(ang)*len);ctx.stroke();
+  ctx.strokeStyle='#8cf838';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(v.x,v.y);ctx.quadraticCurveTo(mx,my,v.x+Math.cos(ang)*len,v.y+Math.sin(ang)*len);ctx.stroke();
+  ctx.fillStyle='#8cf838';
+  for(let d=1;d<=6;d++){const u=d/6.5;ctx.beginPath();ctx.arc(v.x+Math.cos(ang)*len*u,v.y+Math.sin(ang)*len*u,3,0,Math.PI*2);ctx.fill()}
+  ctx.restore()
+ }});
  safeDraw('zunge',()=>{for(const b of s.bosses){
   /* ZUNGE (Hugo #47): bis zum Maprand, schwingt die Wand entlang */
   if(!b.alive||b.type!=='plant'||!b.tongue||!b.tongue.active)continue;
@@ -852,6 +892,23 @@ export function draw(){
   }
   if(e.type==='weapon'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#ffbd91';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,35,e.angle-.4,e.angle+.4);ctx.stroke()}
   if(e.type==='towerDestroy'){ctx.globalAlpha=e.life;ctx.strokeStyle='#ff632d';ctx.lineWidth=7;ctx.beginPath();ctx.arc(e.x,e.y,60*(1-e.life)+15,0,Math.PI*2);ctx.stroke()}
+  if(e.type==='suckWind'){
+   /* SAUG-WIND-WELLE (Hugo #49): wirbelt Richtung Spielerin */
+   ctx.save();ctx.globalAlpha=e.life/.32*.7;ctx.strokeStyle='#c9ffe0';ctx.lineWidth=2.5;
+   const wa=Math.atan2(state.player.y-e.y,state.player.x-e.x);
+   ctx.beginPath();ctx.arc(e.x,e.y,7+(e.life/.32)*11,wa-.7,wa+.7);ctx.stroke();
+   ctx.restore()
+  }
+  if(e.type==='saugerBite'){
+   /* SICHTBADER BISS der Hand-Fresspflanze (Hugo #49): Maul schnappt zu */
+   ctx.save();ctx.globalAlpha=e.life/.45;
+   const open=e.life/.45;
+   ctx.fillStyle='#3d7a22';ctx.beginPath();ctx.ellipse(e.x,e.y,28,15*(.3+open),0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#1d4a12';ctx.beginPath();ctx.ellipse(e.x,e.y,20,10*open,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#fff8e0';
+   for(const tx of [-11,0,11]){ctx.beginPath();ctx.moveTo(tx-3,e.y-9*open);ctx.lineTo(tx,e.y);ctx.lineTo(tx+3,e.y-9*open);ctx.closePath();ctx.fill()}
+   ctx.restore()
+  }
   if(e.type==='companionHit'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#70faff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();ctx.shadowBlur=0}
  }});
  ctx.globalAlpha=1;ctx.restore()
