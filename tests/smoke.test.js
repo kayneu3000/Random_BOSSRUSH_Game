@@ -1092,3 +1092,22 @@ test('PLANT-Cooldowns deutlich groesser (Hugo #52)', async () => {
   assert.ok(!psrc.includes('damagePlayer(35)'), 'kein 35er-Schaden mehr');
   assert.ok(!psrc.includes('damagePlayer(8);'), 'kein 8er-Mini-Biss mehr');
 });
+
+test('ZUNGE VORGEWARNT (Hugo #54): warn-Phase mit blinkender Linie, dann schiesst sie LOS', async () => {
+  const { updatePlant } = await import('../js/bosses/plant.js');
+  state.bosses = []; state.vineSweeps = []; state.craters = []; state.miniPlants = []; state.acidPools = []; state.enemyProjectiles = []; state.shockwaves = []; state.effects = []; state.particles = [];
+  const b = { id: 71, type: 'plant', x: 600, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: .01, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: false, mode: 'out', t: 0, x: 0, y: 0, ex: 0, ey: 0, dir: 1, edge: '', caught: false }, faceAngle: 0, attackCooldown: 0 };
+  state.bosses.push(b);
+  updatePlant(b, 1/60);
+  assert.ok(b.tongue.active && b.tongue.mode === 'warn', 'Zunge startet in VORWARN-Phase');
+  assert.ok(b.tongue.warnT > 0, 'warnT gesetzt');
+  /* Spieler AUF der Ziel-Linie — aber die Warnung klebt noch NICHT */
+  state.player.x = 600 + (b.tongue.ex - 600) * .5; state.player.y = 500 + (b.tongue.ey - 500) * .5;
+  state.player.stuckTimer = 0; state.invuln = 0;
+  updatePlant(b, .3);
+  assert.ok(!b.tongue.caught && (state.player.stuckTimer || 0) === 0, 'Vorwarnung klebt NOCH NICHT');
+  updatePlant(b, .5); /* 0.7s Warnung abgelaufen */
+  assert.equal(b.tongue.mode, 'out', 'nach der Warnung schiesst die Zunge LOS');
+  assert.ok(b.tongue.t > 0, 'Ausfahren laeuft');
+  state.bosses = [];
+});
