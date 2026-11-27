@@ -824,10 +824,10 @@ test('sauger class + plant constants exist per Hugo spec (#47/#49)', async () =>
   assert.equal(sg.damage, 40, 'Sauger macht MEHR Schaden (Hugo #49)');
   assert.ok(sg.pull, 'Sauger zieht Gegner an');
   assert.equal(PLANT_HP, 700, 'Plant hat 700 HP');
-  assert.equal(PLANT_SHIELD_HITS, 12, 'Schild ueberlebt 12 Angriffe');
+  assert.equal(PLANT_SHIELD_HITS, 10, 'Schild: nur noch 10 Angriffe ueberleben (Hugo #50)');
   assert.equal(PLANT_VULN_TIME, 8, 'Danach 8 Sekunden angreifbar');
   assert.equal(MINI_PLANT_HP, 60, 'Mini-Fresspflanzen haben JE 60 HP (Hugo #49)');
-  assert.equal(MINI_PLANT_RANGE, 170, 'Minis haben GROSSE Reichweite (Hugo #49)');
+  assert.equal(MINI_PLANT_RANGE, 110, 'Minis haben etwas kleinere Reichweite (Hugo #50)');
   assert.equal(ACID_POOL_LIFE, 6, 'Saeure-Pfuetzen bleiben 6s liegen');
 });
 
@@ -896,13 +896,16 @@ test('mini plants: STATIONAER, grosse Reichweite, je 60 HP, unendlich da (Hugo #
   for (let i = 0; i < 60; i++) updateMiniPlants(1/60);
   assert.equal(a.x, x0, 'Mini bleibt auf der Stelle (x)');
   assert.equal(a.y, y0, 'Mini bleibt auf der Stelle (y)');
-  /* GROSSE Reichweite: Biss aus ~160px Entfernung */
-  state.player.x = 505; state.player.y = 505 - 160; state.player.hp = 500;
-  state.invuln = 0; /* fruehere Bisse haben invuln gesetzt */
-  a.biteCd = 0;
+  /* Etwas KLEINERE Reichweite (Hugo #50): bei 150px NICHT mehr, bei 100px ja */
+  state.player.x = 505; state.player.y = 505 - 150; state.player.hp = 500;
+  state.invuln = 0; a.biteCd = 0;
+  const hpFar = state.player.hp;
+  updateMiniPlants(1/60);
+  assert.equal(state.player.hp, hpFar, '150px: ausser Reichweite');
+  state.player.y = 505 - 100; state.player.hp = 500; state.invuln = 0; a.biteCd = 0;
   const hp0 = state.player.hp;
   updateMiniPlants(1/60);
-  assert.ok(state.player.hp < hp0, 'grosse Reichweite: Biss aus ~160px');
+  assert.ok(state.player.hp < hp0, '100px: Biss trifft');
   /* Toetbar: 60 Schaden -> weg */
   damageMiniPlant(a, 60);
   updateMiniPlants(1/60);
@@ -952,6 +955,7 @@ test('sauger pull: moving boss is dragged, grabbed (stun + damage) and flung; ro
   assert.ok(mover.hp < 200, 'Gegner nimmt Griff-Schaden (45 + 30)');
   assert.ok(mover.stunTimer > 0, 'Gegner kann kurz keinen Schaden machen');
   assert.ok(mover.flinging && Math.hypot(mover.kbx, mover.kby) > 0, 'echter Schleuder-Flug statt Teleport (Hugo #49)');
+  assert.ok(mover.kbx < 0, 'HINTER SICH geschleudert (entgegen Blickrichtung, Hugo #50)'); /* Spieler schaut nach +x */
   let cratered = false;
   for (let i = 0; i < 240; i++) { updateCraters(1/60); if (state.craters.length) { cratered = true; break } }
   assert.ok(cratered, 'Aufprall hinterlaesst einen KRATER (Hugo #49)');
@@ -982,6 +986,14 @@ test('ranken SCHWINGEN bis zum Maprand und schlagen auf der ganzen Linie (Hugo #
   assert.equal(b.shieldHits, 1, 'ueberlebter Ranken-Schlag zaehlt aufs Schild');
   const v = state.vineSweeps[0];
   assert.ok(v.len > 1000, 'Ranke reicht BIS ZUM MAPRAND');
+  /* VORWARNUNG: waehrend der Delay-Phase trifft noch nichts (Hugo #50) */
+  state.invuln = 0; state.dashDuration = 0; state.player.hp = 200; state.player.x = 900;
+  const vw = { x: 600, y: 500, a0: -0.02, a1: 0.02, t: 0, dur: 1.05, delay: .6, hit: false, dmg: 14, curAng: 0, len: 0 };
+  state.vineSweeps = [vw];
+  const hpW = state.player.hp;
+  updateVineSweeps(1/60);
+  assert.equal(state.player.hp, hpW, 'Vorwarnung: blinkende Linien, aber noch kein Treffer');
+  assert.ok(vw.delay < .6, 'Vorwarnung laeuft ab');
   /* Dash = sicher */
   state.invuln = 0; state.dashDuration = .2;
   const v2 = { x: 600, y: 500, a0: -0.02, a1: 0.02, t: 0, dur: .6, delay: 0, hit: false, dmg: 14, curAng: 0, len: 0 };
@@ -1009,6 +1021,25 @@ test('schallwelle macht Schaden (Hugo #49: dashDuration-Bug behoben)', async () 
   updateShockwaves(1/60);
   assert.equal(state.player.hp, hp1, 'drueber dashen ist sicher');
   state.shockwaves = [];
+});
+
+test('zunge: GANZE Zunge faengt + schleudert wie Sauger (Hugo #50)', async () => {
+  const { updatePlant } = await import('../js/bosses/plant.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.invincible = false; state.peace = false; state.invuln = 0; state.brutal = false;
+  state.player = { x: 900, y: 500, r: 17, hp: 200, maxHp: 200, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0, flingX: 0, flingY: 0, flingT: 0 };
+  state.vineSweeps = []; state.bosses = []; state.particles = []; state.effects = []; state.acidPools = []; state.miniPlants = []; state.shockwaves = []; state.enemyProjectiles = [];
+  const b = { id: 61, type: 'plant', x: 600, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: 99, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: true, mode: 'sweep', t: 2, x: 1200, y: 500, ex: 1200, ey: 500, dir: 1, edge: 'right', caught: false }, faceAngle: 0, attackCooldown: 0 };
+  state.bosses = [b];
+  updatePlant(b, 1/60);
+  assert.ok(b.tongue.caught, 'MITTE der Zunge faengt (nicht nur Spitze, Hugo #50)');
+  assert.ok(state.player.stuckTimer > 0, 'fest geklebt');
+  assert.ok(Math.abs(state.player.x - 900) < 40, 'klebt am eigenen Punkt, wird nicht zur Spitze gezerrt');
+  updatePlant(b, 2.4); /* Swing endet */
+  assert.ok(state.player.flingT > 0, 'WEGGESCHLEUDERT wie bei Sauger (echter Flug)');
+  assert.ok(state.player.hp < 200, 'Schleuder-Schaden');
+  assert.ok(state.player.x < 1400, 'KEIN Spiegel-Teleport zur anderen Map-Seite mehr');
+  state.bosses = [];
 });
 
 test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {
