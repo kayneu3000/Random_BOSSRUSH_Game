@@ -128,11 +128,14 @@ export function updatePulls(dt){
    delete b.saugerPull;
    b.stunTimer=1.2; /* kurz keinen Schaden machen */
    damageBoss(b,45);sfx('bite'); /* MEHR SCHADEN (Hugo #49) */
-   state.effects.push({type:'saugerBite',x:b.x,y:b.y,life:.45}); /* sichtbarer BISS */
+   /* AUSGESTRECKTER HALS + BISS (Hugo #56): die Hand-Pflanze streckt ihren
+      Hals zum Gegner, der Kopf schnappt an IHMER Position zu */
+   state.effects.push({type:'saugerBite',x:b.x,y:b.y,sx:p.x+Math.cos(p.angle)*38,sy:p.y+Math.sin(p.angle)*38,life:.55});
    /* SCHLEUDERN: KEIN Teleport, echte Wucht — und HINTER SICH (Hugo #50):
       Richtung entgegen der eigenen Blickrichtung (Wurf ueber die Schulter) */
    const fa=p.angle,FLING=1500;
    b.kbx=-Math.cos(fa)*FLING;b.kby=-Math.sin(fa)*FLING;b.flinging=true;
+   b.flingV0=Math.hypot(b.kbx,b.kby);b.arcLift=0; /* BOGEN-Flug (Hugo #56) */
    damageBoss(b,30);state.screenShake=12; /* Schleudern + nochmal Schaden */
    showGameMessage('WEGMITDIR!',1);
    continue
@@ -141,10 +144,15 @@ export function updatePulls(dt){
   /* ANZIEHEN: 430 px/s Richtung Spieler */
   const sp=430*dt;
   b.x+=dx/d*sp;b.y+=dy/d*sp;
-  /* SICHTBARE SAUG-WIND-WELLEN (Hugo #49): Luft wirbelt vom Gegner zur Pflanze */
-  if(Math.random()<.75){
-   const u=.15+Math.random()*.75;
+  /* SICHTBARE SAUG-WIND-WELLEN (Hugo #49, dichter #56): Luft wirbelt
+     vom Gegner zur Pflanze — Spiral-Wind um ihn UND entlang der Linie */
+  if(Math.random()<.95){
+   const u=.1+Math.random()*.8;
    state.effects.push({type:'suckWind',x:b.x+dx*u+(Math.random()-.5)*30,y:b.y+dy*u+(Math.random()-.5)*30,life:.32})
+  }
+  if(Math.random()<.6){
+   const wa=Math.atan2(dy,dx)+Math.random()*6.28,wr=b.r+8+Math.random()*26;
+   state.effects.push({type:'suckSpiral',x:b.x+Math.cos(wa)*wr,y:b.y+Math.sin(wa)*wr,life:.4,max:.4})
   }
  }
 }
@@ -157,11 +165,19 @@ export function updateCraters(dt){
   b.x+=b.kbx*dt;b.y+=b.kby*dt;
   const dec=Math.max(0,1-2.4*dt);b.kbx*=dec;b.kby*=dec;
   b.x=Math.max(60,Math.min(MAP.w-60,b.x));b.y=Math.max(60,Math.min(MAP.h-60,b.y));
-  if(Math.hypot(b.kbx,b.kby)<60){
-   b.flinging=false;b.kbx=0;b.kby=0;
+  /* BOGEN-Flug (Hugo #56): er steigt in einem Bogen — arcLift hebt den KOERPER
+     beim Zeichnen an, der SCHATTEN am Boden wird groesser und dann wieder kleiner */
+  const v=Math.hypot(b.kbx,b.kby),k=Math.max(0,Math.min(1,1-v/(b.flingV0||1)));
+  b.arcLift=Math.sin(Math.PI*k)*90;
+  if(Math.random()<.5){const wa=Math.random()*6.28,wr=b.r*(1-k*.4);state.effects.push({type:'suckSpiral',x:b.x+Math.cos(wa)*wr,y:b.y+Math.sin(wa)*wr+b.arcLift,life:.3,max:.3})} /* Wind wirbelt im Flug mit */
+  if(v<60){
+   b.flinging=false;b.kbx=0;b.kby=0;b.arcLift=0;
    state.craters.push({x:b.x,y:b.y+b.r*.35,r:b.r*1.2,life:20,max:20});
-   state.screenShake=10;sfx('scream');
-   for(let k=0;k<18;k++)particle(b.x+(Math.random()-.5)*b.r*2,b.y+(Math.random()-.5)*b.r,'#b9a58a',3+Math.random()*4)
+   state.screenShake=14;sfx('scream');
+   state.effects.push({type:'crashImpact',x:b.x,y:b.y+b.r*.3,r:b.r,life:.55,max:.55}) /* EINSCHLAG! */
+   b.stunTimer=Math.max(b.stunTimer||0,.9);b.flash=.25; /* er liegt kurz betaeubt im Krater */
+   for(let q=0;q<26;q++)particle(b.x+(Math.random()-.5)*b.r*2.4,b.y+(Math.random()-.5)*b.r*1.6,'#b9a58a',3+Math.random()*5)
+   for(let q=0;q<10;q++)particle(b.x+(Math.random()-.5)*b.r,b.y+(Math.random()-.5)*b.r,'#e8d8b8',2+Math.random()*3)
   }
  }
  for(let i=state.craters.length-1;i>=0;i--){state.craters[i].life-=dt;if(state.craters[i].life<=0)state.craters.splice(i,1)}

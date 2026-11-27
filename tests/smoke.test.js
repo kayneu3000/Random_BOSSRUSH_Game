@@ -938,17 +938,31 @@ test('sauger pull: moving boss is dragged, grabbed (stun + damage) and flung; ro
   state.bosses.push(mover);
   attack();
   assert.ok(mover.saugerPull, 'beweglicher Gegner wird angesaugt');
-  let winds = 0;
-  for (let i = 0; i < 60 && mover.saugerPull; i++) { updatePulls(1/60); winds += state.effects.filter(e => e.type === 'suckWind').length; state.effects = []; }
+  let winds = 0, spirals = 0, biteFx = null;
+  for (let i = 0; i < 60 && mover.saugerPull; i++) {
+    updatePulls(1/60);
+    winds += state.effects.filter(e => e.type === 'suckWind').length;
+    spirals += state.effects.filter(e => e.type === 'suckSpiral').length;
+    if (!biteFx) { const sb = state.effects.find(e => e.type === 'saugerBite'); if (sb) biteFx = sb; }
+    state.effects = [];
+  }
   assert.ok(!mover.saugerPull, 'Griff abgeschlossen');
   assert.ok(winds > 0, 'SICHTBARE Saug-Wind-Wellen (Hugo #49)');
+  assert.ok(spirals > 0, 'SPIRAL-Wind-Partikel kreisen um den Gegner (Hugo #56)');
+  assert.ok(biteFx && biteFx.sx != null, 'AUSGESTRECKTER HALS: Biss-Effekt mit Hand-Anker (Hugo #56)');
   assert.ok(mover.hp < 200, 'Gegner nimmt Griff-Schaden (45 + 30)');
   assert.ok(mover.stunTimer > 0, 'Gegner kann kurz keinen Schaden machen');
   assert.ok(mover.flinging && Math.hypot(mover.kbx, mover.kby) > 0, 'echter Schleuder-Flug statt Teleport (Hugo #49)');
   assert.ok(mover.kbx < 0, 'HINTER SICH geschleudert (entgegen Blickrichtung, Hugo #50)'); /* Spieler schaut nach +x */
-  let cratered = false;
-  for (let i = 0; i < 240; i++) { updateCraters(1/60); if (state.craters.length) { cratered = true; break } }
+  assert.ok(mover.flingV0 > 0, 'flingV0 fuer BOGEN-Flug gesetzt (Hugo #56)');
+  updateCraters(1/60);
+  assert.ok(mover.arcLift > 0, 'BOGEN: Koerper steigt im Flug (arcLift, Hugo #56)');
+  let cratered = false, crashFx = false;
+  for (let i = 0; i < 240; i++) { updateCraters(1/60); if (state.effects.some(e => e.type === 'crashImpact')) crashFx = true; if (state.craters.length) { cratered = true; break } }
   assert.ok(cratered, 'Aufprall hinterlaesst einen KRATER (Hugo #49)');
+  assert.ok(crashFx, 'EINSCHLAG-Effekt beim Aufprall (Hugo #56)');
+  assert.equal(mover.arcLift, 0, 'Schatten am Ende wieder normal (Hugo #56)');
+  assert.ok(mover.stunTimer > 0, 'Gegner liegt kurz betaebt im Krater (Hugo #56)');
   assert.ok(!mover.flinging, 'Flug endet am Stillstand');
   // unbeweglicher Boss: PFLANZE bekommt nur Schaden, kein Pull (Hugo #55: immer angreifbar!)
   state.selected = 'sauger'; state.attackTimer = 0;

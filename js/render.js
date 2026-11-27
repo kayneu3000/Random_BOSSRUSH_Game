@@ -790,7 +790,28 @@ export function draw(){
   ctx.fillStyle='#e7ffa8';for(let k=0;k<5;k++){const ba=s.elapsed*2+k*1.3;ctx.beginPath();ctx.arc(a.x+Math.cos(ba)*a.r*.5,a.y+Math.sin(ba)*a.r*.25,2+Math.sin(ba*3)*1,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
- safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){if(b.type==='dragon')drawDragon(b);else if(b.type==='gunball')drawGunball(b);else if(b.type==='shadow')drawShadow(b);else if(b.type==='snake')drawSnake(b);else if(b.type==='snakeSkin')drawSkin(b);else if(b.type==='plant')drawPlant(b);else drawSlime(b)}});
+ safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){
+  /* SAUGER-BOGEN-Flug (Hugo #56): SCHATTEN am Boden (wird groesser und dann
+     wieder kleiner), KOERPER steigt im Bogen (arcLift hebt beim Zeichnen an) */
+  if(b.flinging&&b.arcLift>=0&&b.flingV0){
+   const v=Math.hypot(b.kbx||0,b.kby||0),k=Math.max(0,Math.min(1,1-v/b.flingV0));
+   const sc=1+Math.sin(Math.PI*k)*.85;
+   ctx.save();ctx.globalAlpha=.38*(1-k*.4);
+   ctx.fillStyle='#000';
+   ctx.beginPath();ctx.ellipse(b.x,b.y+b.r*.4,b.r*sc,b.r*.42*sc,0,0,Math.PI*2);ctx.fill();
+   ctx.restore()
+  }
+  const lift=b.arcLift||0;
+  if(lift){ctx.save();ctx.translate(0,-lift)}
+  if(b.type==='dragon')drawDragon(b);
+  else if(b.type==='gunball')drawGunball(b);
+  else if(b.type==='shadow')drawShadow(b);
+  else if(b.type==='snake')drawSnake(b);
+  else if(b.type==='snakeSkin')drawSkin(b);
+  else if(b.type==='plant')drawPlant(b);
+  else drawSlime(b);
+  if(lift){ctx.restore()}
+ }});
  safeDraw('ranken',()=>{for(const v of s.vineSweeps){
   if(v.delay>0){
    /* VORWARNUNG (Hugo #50): blinkende Ziel-Linien zeigen, WO die Ranken zuschlagen */
@@ -934,14 +955,40 @@ export function draw(){
    ctx.beginPath();ctx.arc(e.x,e.y,7+(e.life/.32)*11,wa-.7,wa+.7);ctx.stroke();
    ctx.restore()
   }
+  if(e.type==='suckSpiral'){
+   /* SPIRAL-WIND (Hugo #56): Partikel kreisen um den Gegner und ziehen ihn ein */
+   ctx.save();ctx.globalAlpha=(e.life/(e.max||.4))*.85;ctx.strokeStyle='#aefde0';ctx.lineWidth=2;
+   const ang=(1-e.life/(e.max||.4))*5+Math.atan2(e.y-state.player.y,e.x-state.player.x),rr=26*(e.life/(e.max||.4));
+   ctx.beginPath();ctx.arc(e.x,e.y,Math.max(2,rr),ang,ang+1.6);ctx.stroke();
+   ctx.restore()
+  }
   if(e.type==='saugerBite'){
-   /* SICHTBADER BISS der Hand-Fresspflanze (Hugo #49): Maul schnappt zu */
-   ctx.save();ctx.globalAlpha=e.life/.45;
-   const open=e.life/.45;
+   /* AUSGESTRECKTER HALS + BISS (Hugo #56): gruener Hals von der Hand zum Gegner,
+      der Pflanzenkopf schnappt an SEINER Position zu */
+   ctx.save();ctx.globalAlpha=Math.min(1,e.life/.55*1.4);
+   if(e.sx!=null){
+    ctx.strokeStyle='#2e6b1a';ctx.lineWidth=9;ctx.lineCap='round';
+    const mx=(e.sx+e.x)/2+(Math.random()-.5)*4,my=(e.sy+e.y)/2-18;
+    ctx.beginPath();ctx.moveTo(e.sx,e.sy);ctx.quadraticCurveTo(mx,my,e.x,e.y);ctx.stroke();
+    ctx.strokeStyle='#3d7a22';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(e.sx,e.sy);ctx.quadraticCurveTo(mx,my,e.x,e.y);ctx.stroke()
+   }
+   const open=e.life/.55;
    ctx.fillStyle='#3d7a22';ctx.beginPath();ctx.ellipse(e.x,e.y,28,15*(.3+open),0,0,Math.PI*2);ctx.fill();
    ctx.fillStyle='#1d4a12';ctx.beginPath();ctx.ellipse(e.x,e.y,20,10*open,0,0,Math.PI*2);ctx.fill();
    ctx.fillStyle='#fff8e0';
    for(const tx of [-11,0,11]){ctx.beginPath();ctx.moveTo(tx-3,e.y-9*open);ctx.lineTo(tx,e.y);ctx.lineTo(tx+3,e.y-9*open);ctx.closePath();ctx.fill()}
+   ctx.restore()
+  }
+  if(e.type==='crashImpact'){
+   /* EINSCHLAG (Hugo #56): Staub-Ring + Impakt-Stern, Gegner landet im Krater */
+   ctx.save();ctx.globalAlpha=e.life/(e.max||.55);
+   const kk=1-e.life/(e.max||.55);
+   ctx.strokeStyle='#e8d8b8';ctx.lineWidth=5;ctx.globalAlpha*= .9;
+   ctx.beginPath();ctx.arc(e.x,e.y,e.r*1.3*kk+6,0,Math.PI*2);ctx.stroke();
+   ctx.strokeStyle='#b9a58a';ctx.lineWidth=3;
+   for(let q=0;q<8;q++){const a=q*Math.PI/4+kk;
+    ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*e.r*.5,e.y+Math.sin(a)*e.r*.5);
+    ctx.lineTo(e.x+Math.cos(a)*(e.r*(1+kk*.9)),e.y+Math.sin(a)*(e.r*(1+kk*.9)));ctx.stroke()}
    ctx.restore()
   }
   if(e.type==='companionHit'){ctx.globalAlpha=e.life/.22;ctx.strokeStyle='#70faff';ctx.shadowColor='#00dfff';ctx.shadowBlur=15;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.tx,e.ty);ctx.stroke();ctx.shadowBlur=0}
