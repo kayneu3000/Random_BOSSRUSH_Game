@@ -843,6 +843,8 @@ test('plant fight boots: rooted boss with 700 hp, arrays reset, frames stable', 
   assert.equal(b.hp, 700, 'Plant hat 700 HP');
   assert.ok(state.acidPools.length === 0 && state.miniPlants.length === 0 && state.shockwaves.length === 0, 'Pfuetzen/Minis/Wellen werden beim Start geleert');
   assert.ok(state.vineSweeps.length === 0 && state.craters.length === 0, 'Ranken-Schwaenge/Krater werden beim Start geleert (Hugo #49)');
+  assert.equal(state.player.stuckTimer, 0, 'HUGO-BUG #50: stuckTimer MUSS initialisiert sein (sonst faengt die Zunge NIE)');
+  assert.equal(state.player.flingT, 0, 'flingT initialisiert (Schleuder-Physik)');
   state.keys.KeyJ = false; state.keys.Space = false;
   for (let i = 0; i < 180 && !state.finished; i++) update(1/60);
   assert.ok(state.elapsed > 1, 'Plant-Fight laeuft stabil');
