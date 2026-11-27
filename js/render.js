@@ -204,7 +204,10 @@ export function drawDragon(b){
  const r=b.r,s=state;
  const charging=b.mode==='beamCharge'||b.mode==='beamActive';
  const exhausted=b.mode==='exhausted';
- ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.translate(0,Math.sin(b.wobble)*3);
+ /* DRACHEN-RICHTUNGS-ANSICHT (Hugo #58): Gesichtsteile (Maul, Zaehne, Auge)
+    nur wenn er zur Kamera BLICKT — sonst sieht man den Hinterkopf */
+ const dragonFace=Math.max(0,facingViewOf(b.angle));
+ ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.translate(0,Math.sin(b.wobble)*5);
  if(!exhausted){
   const aura=ctx.createRadialGradient(0,0,r*.3,0,0,r*2.1);
   aura.addColorStop(0,'rgba(255,90,20,'+(charging?.42:.2)+')');
@@ -213,7 +216,7 @@ export function drawDragon(b){
   ctx.fillStyle=aura;ctx.beginPath();ctx.arc(0,0,r*2.1,0,Math.PI*2);ctx.fill()
  }
  /* DRACHEN-ANIMATION (Hugo #57): der Schwanz schwingt lebendig mit */
- const sway=Math.sin(b.wobble*.9)*r*.16;
+ const sway=Math.sin(b.wobble*.9)*r*.24;
  const tail=ctx.createLinearGradient(-r*1.9,0,-r*.3,0);
  tail.addColorStop(0,'#2a060a');tail.addColorStop(.55,'#7c150f');tail.addColorStop(1,'#d0401c');
  ctx.fillStyle=tail;ctx.strokeStyle='#3f0a10';ctx.lineWidth=2.5;
@@ -222,7 +225,7 @@ export function drawDragon(b){
  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(-r*1.7,side*r*.06);ctx.lineTo(-r*2.05,side*r*.3);ctx.lineTo(-r*1.82,side*r*.16);ctx.closePath();ctx.fill();ctx.stroke()}
  for(const side of [-1,1]){
   ctx.save();ctx.scale(1,side);
-  const flap=Math.sin(b.wobble*1.5+side)*r*.08;
+  const flap=Math.sin(b.wobble*2.4+side)*r*.19; /* KRAEFTIGER Fluegelschlag (Hugo #58) */
   const wing=ctx.createLinearGradient(-r*.2,-r*1.5,r*1.4,r*.2);
   wing.addColorStop(0,'#c53a20');wing.addColorStop(.45,'#7a180f');wing.addColorStop(1,'#220608');
   ctx.fillStyle=wing;ctx.strokeStyle='#ff5a2c';ctx.lineWidth=3;
@@ -270,7 +273,7 @@ export function drawDragon(b){
  ctx.beginPath();ctx.moveTo(r*.25,-r*.42);ctx.quadraticCurveTo(r*.6,-r*.52,r*.85,-r*.38);ctx.lineTo(r*.88,-r*.02);ctx.quadraticCurveTo(r*.6,0,r*.3,r*.1);ctx.closePath();ctx.fill();ctx.stroke();
  const mouth=ctx.createRadialGradient(r*1.0,r*.05,2,r*1.0,r*.05,r*.4);
  mouth.addColorStop(0,'#fff3b0');mouth.addColorStop(.35,'#ffb020');mouth.addColorStop(.7,'#e63c0c');mouth.addColorStop(1,'#4d0a04');
- ctx.save();if(charging){ctx.shadowColor='#ff3a0a';ctx.shadowBlur=30}ctx.fillStyle=mouth;
+ ctx.save();ctx.globalAlpha=dragonFace;if(charging){ctx.shadowColor='#ff3a0a';ctx.shadowBlur=30}ctx.fillStyle=mouth;
  ctx.beginPath();ctx.moveTo(r*.7,-r*.02);ctx.lineTo(r*1.24,r*.02);ctx.lineTo(r*1.1,r*.16);ctx.lineTo(r*.74,r*.1);ctx.closePath();ctx.fill();ctx.restore();
  if(charging){ctx.save();ctx.shadowColor='#ff3a0a';ctx.shadowBlur=40;ctx.globalAlpha=.8;ctx.fillStyle='#ffd23a';ctx.beginPath();ctx.ellipse(r*1.0,r*.06,r*.4,r*.22,0,0,Math.PI*2);ctx.fill();ctx.restore()}
  const head=ctx.createLinearGradient(r*.7,-r*.4,r*1.35,r*.2);
@@ -279,20 +282,18 @@ export function drawDragon(b){
  ctx.beginPath();ctx.moveTo(r*.58,-r*.44);ctx.lineTo(r*.92,-r*.46);ctx.lineTo(r*1.22,-r*.22);ctx.lineTo(r*1.34,-r*.08);ctx.lineTo(r*1.16,-r*.03);ctx.lineTo(r*.62,-r*.02);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.fillStyle='#8f2213';ctx.strokeStyle='#ff8446';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(r*.66,0);ctx.lineTo(r*1.18,r*.16);ctx.lineTo(r*1.1,r*.24);ctx.lineTo(r*.66,r*.12);ctx.closePath();ctx.fill();ctx.stroke();
- ctx.fillStyle='#ffe9b8';
+ ctx.save();ctx.globalAlpha=dragonFace;ctx.fillStyle='#ffe9b8';
  for(let k=0;k<4;k++){const tx=r*.8+k*r*.12;
   ctx.beginPath();ctx.moveTo(tx,-r*.02);ctx.lineTo(tx+r*.035,r*.07);ctx.lineTo(tx+r*.07,-r*.02);ctx.closePath();ctx.fill();
   ctx.beginPath();ctx.moveTo(tx+r*.02,r*.14);ctx.lineTo(tx+r*.06,r*.06);ctx.lineTo(tx+r*.1,r*.14);ctx.closePath();ctx.fill()}
+ ctx.restore();
  ctx.fillStyle='#e8d3ae';ctx.strokeStyle='#3a1c0e';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(r*.62,-r*.4);ctx.quadraticCurveTo(r*.66,-r*.78,r*.34,-r*1.02);ctx.quadraticCurveTo(r*.52,-r*.7,r*.78,-r*.38);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.beginPath();ctx.moveTo(r*1.14,-r*.2);ctx.lineTo(r*1.2,-r*.36);ctx.lineTo(r*1.26,-r*.18);ctx.closePath();ctx.fill();ctx.stroke();
- /* DRACHEN-RICHTUNGS-ANSICHT (Hugo #57): Das Auge ist nur sichtbar, wenn der
-    Drache zur Kamera BLICKT (nach unten laeuft) — sonst Hinterkopf. */
- const dragonFace=Math.max(0,facingViewOf(b.angle));
+ /* Auge nur bei Vorderansicht (dragonFace oben definiert) */
  ctx.save();ctx.globalAlpha=dragonFace;ctx.shadowColor=exhausted?'#4a3512':'#ff2a08';ctx.shadowBlur=18;ctx.fillStyle=exhausted?'#8f7a2a':'#ffd23a';
  ctx.beginPath();ctx.ellipse(r*.92,-r*.2,r*.1,r*.055,-.28,0,Math.PI*2);ctx.fill();ctx.restore();
- /* DRACHEN-RICHTUNGS-ANSICHT (Hugo #57): Pupille + Nuesterloch wie das Auge
-    nur bei Vorderansicht */
+ /* Pupille + Nasenloch wie das Auge nur bei Vorderansicht */
  ctx.save();ctx.globalAlpha=dragonFace;
  ctx.fillStyle='#2a0703';ctx.beginPath();ctx.ellipse(r*.95,-r*.2,r*.02,r*.05,-.28,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#1d0604';ctx.beginPath();ctx.arc(r*1.24,-r*.12,r*.022,0,Math.PI*2);ctx.fill();
@@ -760,6 +761,9 @@ function drawPlayer(){
  const bob=moving?Math.abs(Math.sin(walk*9))*2.4:0; /* Walk-Bob */
  const px=-fy,py=fx; /* Senkrechte zur Blickrichtung */
  const flicker=s.invuln>0&&Math.floor(s.elapsed*18)%2===0;
+ /* FIX (Hugo #58, unsichtbarer Spieler): ohne dieses translate wurde die Figur
+    am WELTURSPRUNG (0,0) gezeichnet — ausserhalb der Kamera, bewegungslos! */
+ ctx.save();ctx.translate(p.x,p.y);
  /* Schatten aus der entsprechenden Richtung: Ellipse laeuft MIT (gegen die
     Blickrichtung versetzt) und dreht sich mit der Laufrichtung */
  ctx.save();if(flicker)ctx.globalAlpha=.45;
@@ -816,6 +820,7 @@ function drawPlayer(){
    }
   }
  }
+ ctx.restore();
  ctx.restore();drawWeapon()
 }
 

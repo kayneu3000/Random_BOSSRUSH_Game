@@ -22,7 +22,12 @@ export function replaySupported() {
  && typeof Blob !== 'undefined'
 }
 
-let rec = null, chunks = [], activeBoss = '';
+let rec = null, chunks = [], activeBoss = '', activeStream = null;
+
+/* IDB kann im privaten Safari haengen — immer mit Timeout race'n */
+function withTimeout(p, ms) {
+ return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))])
+}
 
 /* Fallback-Speicher (Sitzung), falls indexedDB fehlt */
 const memStore = new Map(); // boss -> { blob, ts }
@@ -41,49 +46,55 @@ async function saveReplay(boss, blob) {
  const entry = { boss, blob, ts: Date.now() };
  memStore.set(boss, entry); /* immer: Fallback + Sofort-Verfuegbarkeit */
  try {
-  const db = await openDb();
-  await new Promise((res, rej) => {
+  const db = await withTimeout(openDb(), 800);
+  await withTimeout(new Promise((res, rej) => {
    const tx = db.transaction('wins', 'readwrite');
    tx.objectStore('wins').put(entry);
    tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error)
-  })
+  }), 800)
  } catch (e) { /* Sitzungs-Speicher reicht */ }
  refreshReplayUI()
 }
 
 export async function listReplays() {
  try {
-  const db = await openDb();
-  return await new Promise((res, rej) => {
+  const db = await withTimeout(openDb(), 800);
+  return await withTimeout(new Promise((res, rej) => {
    const tx = db.transaction('wins', 'readonly');
    const rq = tx.objectStore('wins').getAll();
    rq.onsuccess = () => res(rq.result || []); rq.onerror = () => rej(rq.error)
-  })
+  }), 800)
  } catch (e) {
   return [...memStore.values()]
  }
 }
 
 export async function replayPlay(boss) {
+ /* BUTTON-FIX (Hugo #58): kein autoplay mehr — video.play() nach await hat
+    die iOS-Touch-Geste verloren (Safari blockt). Jetzt: Overlay + Quelle
+    SOFORT aus dem Sitzungs-Speicher, der Nutzer tippt Play selbst.
+    IndexedDB nur als Nachlade-Fallback, mit Timeout (privater Safari haengt). */
  try {
-  let blob = null;
-  try {
-   const db = await openDb();
-   blob = await new Promise((res, rej) => {
-    const tx = db.transaction('wins', 'readonly');
-    const rq = tx.objectStore('wins').get(boss);
-    rq.onsuccess = () => res(rq.result && rq.result.blob); rq.onerror = () => rej(rq.error)
-   })
-  } catch (e) { /* Fallback unten */ }
-  if (!blob) blob = memStore.get(boss) && memStore.get(boss).blob;
-  if (!blob) return;
   const view = $('replayView'), video = $('replayVideo');
   if (!view || !video) return;
-  if (video.src) { try { URL.revokeObjectURL(video.src) } catch (e) { } }
+  let blob = (memStore.get(boss) && memStore.get(boss).blob) || null;
+  if (!blob) {
+   try { blob = await withTimeout(loadBlobFromDb(boss), 900) } catch (e) { /* dann halt nichts */ }
+  }
+  if (!blob) return;
+  try { if (video.src) URL.revokeObjectURL(video.src) } catch (e) { }
   video.src = URL.createObjectURL(blob);
-  view.style.display = 'flex';
-  try { await video.play() } catch (e) { /* Nutzer tippt Play selbst */ }
+  view.style.display = 'flex'
  } catch (e) { /* Video-Anzeige darf niemals das Spiel kaputtmachen */ }
+}
+
+async function loadBlobFromDb(boss) {
+ const db = await openDb();
+ return new Promise((res, rej) => {
+  const tx = db.transaction('wins', 'readonly');
+  const rq = tx.objectStore('wins').get(boss);
+  rq.onsuccess = () => res(rq.result && rq.result.blob); rq.onerror = () => rej(rq.error)
+ })
 }
 
 export function replayClose() {
@@ -99,13 +110,21 @@ export function replayStart(boss, canvas) {
  if (!replaySupported() || !canvas || typeof canvas.captureStream !== 'function') return;
  try {
   const mime = pickMime();
-  const stream = canvas.captureStream(30);
-  rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 2500000 } : undefined);
+  /* ANTI-LAG (Hugo #58): 12 fps + schlanke Bitrate — Aufnahme darf dem Kampf
+     niemals spuerbar Performance kosten */
+  const stream = canvas.captureStream(12);
+  activeStream = stream;
+  rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 1200000 } : undefined);
   chunks = []; activeBoss = boss || 'boss';
   rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data) };
   rec.onerror = () => { rec = null };
   rec.start(1500)
  } catch (e) { rec = null; activeBoss = '' }
+}
+
+function releaseStream() {
+ try { if (activeStream) activeStream.getTracks().forEach(t => t.stop()) } catch (e) { /* egal */ }
+ activeStream = null
 }
 
 /* Sieg: Aufnahme anhalten und als Sieges-Video sichern */
@@ -123,12 +142,14 @@ export function replayWin() {
   };
   recorder.stop()
  } catch (e) { rec = null }
+ releaseStream()
 }
 
 /* Niederlage/Neustart: Aufnahme verwerfen */
 export function replayDiscard() {
  if (rec) { try { rec.onstop = null; rec.stop() } catch (e) { } }
- rec = null; chunks = []; activeBoss = ''
+ rec = null; chunks = []; activeBoss = '';
+ releaseStream()
 }
 
 const REPLAY_NAMES = { shadow: 'TUTORIAL', slime: 'SLIME', dragon: 'DRACHE', gunball: 'GUNBALL', snake: 'SNAKE', plant: 'PLANT' };
