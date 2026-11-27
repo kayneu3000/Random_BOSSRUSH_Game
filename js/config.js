@@ -38,9 +38,7 @@ export const VENOM={speed:290,r:10,damage:16,life:5}; /* Hugo: staerkere Haut-At
 
 export const gunballWeak=['snake','boomerang','growth','mirror','teleport'];
 /* PLANT — Fresspflanze (Hugo, Level 2 Boss #2) */
-export const PLANT_HP=700;
-export const PLANT_SHIELD_HITS=10; /* Hugo #50: nur noch 10 Angriffe ueberleben ... */
-export const PLANT_VULN_TIME=8;    /* ... dann 8 Sekunden angreifbar */
+export const PLANT_HP=1300; /* Hugo #55: dafuer IMMER angreifbar (Schild entfernt) */
 /* HUGO #49: Minis bleiben auf der Stelle, grosse Reichweite, JE 60 HP (toetbar!)
    und bleiben UNENDLICH lange da (kein Ablauf-Timer mehr). */
 export const MINI_PLANT_HP=60;

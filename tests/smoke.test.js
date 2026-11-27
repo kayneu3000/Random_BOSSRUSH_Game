@@ -816,16 +816,14 @@ test('snake hunger: 7s ohne Essen kostet ein Zehntel (Hugo #43)', async () => {
 /* ---------- PLANT + SAUGER (Hugo #47) ---------- */
 
 test('sauger class + plant constants exist per Hugo spec (#47/#49)', async () => {
-  const { classes, PLANT_HP, PLANT_SHIELD_HITS, PLANT_VULN_TIME, MINI_PLANT_HP, MINI_PLANT_RANGE, ACID_POOL_LIFE } = await import('../js/config.js');
+  const { classes, PLANT_HP, MINI_PLANT_HP, MINI_PLANT_RANGE, ACID_POOL_LIFE } = await import('../js/config.js');
   const sg = classes.sauger;
   assert.ok(sg, 'SAUGER-Klasse existiert');
   assert.equal(sg.hp, 250, 'Sauger hat 250 HP');
   assert.equal(sg.cool, 2, 'Sauger hat 2s Cooldown');
   assert.equal(sg.damage, 40, 'Sauger macht MEHR Schaden (Hugo #49)');
   assert.ok(sg.pull, 'Sauger zieht Gegner an');
-  assert.equal(PLANT_HP, 700, 'Plant hat 700 HP');
-  assert.equal(PLANT_SHIELD_HITS, 10, 'Schild: nur noch 10 Angriffe ueberleben (Hugo #50)');
-  assert.equal(PLANT_VULN_TIME, 8, 'Danach 8 Sekunden angreifbar');
+  assert.equal(PLANT_HP, 1300, 'Plant hat 1300 HP, dafuer IMMER angreifbar (Hugo #55)');
   assert.equal(MINI_PLANT_HP, 60, 'Mini-Fresspflanzen haben JE 60 HP (Hugo #49)');
   assert.equal(MINI_PLANT_RANGE, 110, 'Minis haben etwas kleinere Reichweite (Hugo #50)');
   assert.equal(ACID_POOL_LIFE, 6, 'Saeure-Pfuetzen bleiben 6s liegen');
@@ -840,7 +838,8 @@ test('plant fight boots: rooted boss with 700 hp, arrays reset, frames stable', 
   assert.equal(state.bosses.length, 1);
   const b = state.bosses[0];
   assert.equal(b.type, 'plant', 'Plant spawn im Plant-Fight');
-  assert.equal(b.hp, 700, 'Plant hat 700 HP');
+  assert.equal(b.hp, 1300, 'Plant hat 1300 HP (Hugo #55)');
+  assert.equal(b.maxHp, 1300, 'Plant maxHp 1300');
   assert.ok(state.acidPools.length === 0 && state.miniPlants.length === 0 && state.shockwaves.length === 0, 'Pfuetzen/Minis/Wellen werden beim Start geleert');
   assert.ok(state.vineSweeps.length === 0 && state.craters.length === 0, 'Ranken-Schwaenge/Krater werden beim Start geleert (Hugo #49)');
   assert.equal(state.player.stuckTimer, 0, 'HUGO-BUG #50: stuckTimer MUSS initialisiert sein (sonst faengt die Zunge NIE)');
@@ -852,34 +851,23 @@ test('plant fight boots: rooted boss with 700 hp, arrays reset, frames stable', 
   state.bosses = []; state.finished = true; state.gameRunning = false;
 });
 
-test('plant shield GEDREHT (Hugo #48): 12 IHRER Angriffe ueberleben, dann 8s angreifbar', async () => {
+test('plant IMMER angreifbar, 1300 HP, greift DIE GANZE ZEIT an (Hugo #55)', async () => {
   const { updatePlant, plantSurviveHit } = await import('../js/bosses/plant.js');
-  const { PLANT_SHIELD_HITS } = await import('../js/config.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.dmgMultiplier = 1; state.notMe = false; state.peace = false; state.invincible = false; state.invuln = 0;
   state.player = { x: 900, y: 300, r: 17, hp: 999, maxHp: 999, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
   state.acidPools = []; state.miniPlants = []; state.shockwaves = []; state.enemyProjectiles = [];
-  const b = { id: 31, type: 'plant', x: 600, y: 300, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: 99, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: false, mode: 'out', t: 0, x: 0, y: 0, ex: 0, ey: 0, dir: 1, edge: '', caught: false }, faceAngle: 0, attackCooldown: 0 };
+  const b = { id: 31, type: 'plant', x: 600, y: 300, r: 62, hp: 1300, maxHp: 1300, alive: true, flash: 0, wobble: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: 99, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: false, mode: 'out', t: 0, x: 0, y: 0, ex: 0, ey: 0, dir: 1, edge: '', caught: false }, faceAngle: 0, attackCooldown: 0 };
   state.bosses = [b]; state.effects = []; state.particles = [];
-  // Solange das Schild zu ist, nimmt sie von DEINEN Angriffen GAR NICHTS:
-  for (let i = 0; i < 15; i++) damageBoss(b, 40);
-  assert.equal(b.hp, 700, 'geschlossenes Schild: sie nimmt nichts von dir');
-  assert.equal(b.vulnerable, false, 'Schild noch zu');
-  // JETZT die gedrehte Mechanik: 12 IHRER Angriffe ueberleben:
-  for (let i = 0; i < PLANT_SHIELD_HITS - 1; i++) plantSurviveHit(b);
-  assert.equal(b.vulnerable, false, 'nach 11 ueberlebten Angriffen noch zu');
-  plantSurviveHit(b);
-  assert.equal(b.vulnerable, true, 'der 12. ueberlebte Angriff oeffnet das Schild');
-  assert.equal(b.vulnTimer, 8, '8 Sekunden angreifbar');
+  /* kein Schild mehr: DEINE Angriffe treffen IMMER */
   damageBoss(b, 40);
-  assert.equal(b.hp, 660, 'im offenen Schild nimmt sie Schaden');
-  updatePlant(b, 4);
-  assert.equal(b.vulnerable, true, 'nach 4s noch angreifbar');
-  updatePlant(b, 4.05);
-  assert.equal(b.vulnerable, false, 'nach 8s ist das Schild wieder zu');
-  assert.equal(b.shieldHits, 0, 'Zaehler resettet');
-  damageBoss(b, 40);
-  assert.equal(b.hp, 660, 'wieder geschlossen: sie nimmt nichts mehr');
+  assert.equal(b.hp, 1260, 'IMMER angreifbar: jeder Treffer zaehlt (Hugo #55)');
+  plantSurviveHit(b); /* no-op */
+  assert.equal(b.hp, 1260, 'plantSurviveHit ist jetzt no-op');
+  /* sie greift DIE GANZE ZEIT an: nach 5s (kein Cooldown-Stop mehr) kamen Attacken */
+  b.vineTimer = .2; b.biteTimer = 99;
+  for (let i = 0; i < 360 && !state.finished; i++) updatePlant(b, 1/60);
+  assert.ok(b.vineTimer < 7, 'sie greift ohne Schild-PAUSE weiter an (Ranken kommen wieder)') ;
   state.bosses = [];
 });
 
@@ -962,14 +950,13 @@ test('sauger pull: moving boss is dragged, grabbed (stun + damage) and flung; ro
   for (let i = 0; i < 240; i++) { updateCraters(1/60); if (state.craters.length) { cratered = true; break } }
   assert.ok(cratered, 'Aufprall hinterlaesst einen KRATER (Hugo #49)');
   assert.ok(!mover.flinging, 'Flug endet am Stillstand');
-  // unbeweglicher Boss: PFLANZE bekommt nur Schaden (Schild-Kontext), kein Pull
+  // unbeweglicher Boss: PFLANZE bekommt nur Schaden, kein Pull (Hugo #55: immer angreifbar!)
   state.selected = 'sauger'; state.attackTimer = 0;
-  const plant = { id: 42, type: 'plant', x: 700, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 5, vulnerable: false, vulnTimer: 0, burrowed: false, tongue: { active: false } };
+  const plant = { id: 42, type: 'plant', x: 700, y: 500, r: 62, hp: 1300, maxHp: 1300, alive: true, flash: 0, wobble: 0, burrowed: false, tongue: { active: false } };
   state.bosses = [plant];
   attack();
   assert.ok(!plant.saugerPull, 'unbewegliche Pflanze wird NICHT gezogen');
-  assert.equal(plant.hp, 700, 'geschlossenes Schild: Sauger-Schaden prallt ab');
-  assert.equal(plant.shieldHits, 5, 'DEINE Angriffe zaehlen NICHT mehr auf das Schild (Hugo #48)');
+  assert.ok(plant.hp < 1300, 'Sauger-Schaden landet JETZT IMMER bei der Pflanze (Hugo #55)');
   state.bosses = [];
 });
 
@@ -979,13 +966,12 @@ test('ranken SCHWINGEN bis zum Maprand und schlagen auf der ganzen Linie (Hugo #
   state.invincible = false; state.peace = false; state.invuln = 0; state.brutal = false; state.dashDuration = 0;
   state.player = { x: 900, y: 500, r: 17, hp: 200, maxHp: 200, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0, dashDuration: 0 };
   state.vineSweeps = []; state.bosses = []; state.particles = []; state.effects = [];
-  const b = { id: 51, type: 'plant', x: 600, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, burrowed: false, tongue: { active: false }, beamCharge: 0, beamFire: 0 };
+  const b = { id: 51, type: 'plant', x: 600, y: 500, r: 62, hp: 1300, maxHp: 1300, alive: true, flash: 0, wobble: 0, burrowed: false, tongue: { active: false }, beamCharge: 0, beamFire: 0 }; /* Schild entfernt (Hugo #55) */
   state.bosses = [b];
   state.vineSweeps.push({ x: 600, y: 500, a0: -0.02, a1: 0.02, t: 0, dur: .6, delay: 0, hit: false, dmg: 14, curAng: 0, len: 0 });
   const hp0 = state.player.hp;
   updateVineSweeps(1/60);
   assert.ok(state.player.hp < hp0, 'Ranke SCHLAEGT zu');
-  assert.equal(b.shieldHits, 1, 'ueberlebter Ranken-Schlag zaehlt aufs Schild');
   const v = state.vineSweeps[0];
   assert.ok(v.len > 1000, 'Ranke reicht BIS ZUM MAPRAND');
   /* VORWARNUNG: waehrend der Delay-Phase trifft noch nichts (Hugo #50) */

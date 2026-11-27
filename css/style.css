@@ -268,40 +268,40 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #muteBtn{position:absolute;right:12px;top:143px;pointer-events:auto;padding:8px 11px;background:#222;border-color:#aaa;font-size:14px;cursor:pointer}
 
 /* PLANT (Hugo #47): Fresspflanzen-Lobby-Karte + gruenes Kampf-Theme */
-#lobby .plantCard{background:linear-gradient(110deg,#0c1f08,#2c5a14,#0a1506);border-color:#9be15d;box-shadow:inset 0 0 18px #9be15d33}
+#lobby .plantCard{background:linear-gradient(110deg,#2a1a0a,#5c3d1e,#1f1206);border-color:#b8863f;box-shadow:inset 0 0 18px #b8863f33} /* BRAUN (Hugo #55) */
 .plantPreview{width:95px;height:85px;position:relative;flex-shrink:0}
 .plantPreview:before{content:"";position:absolute;left:14px;bottom:10px;width:64px;height:58px;border-radius:52% 52% 40% 40%;background:radial-gradient(circle at 40% 32%,#e7ffa8 0 5px,transparent 6px),radial-gradient(circle at 62% 32%,#e7ffa8 0 5px,transparent 6px),radial-gradient(circle at 40% 32%,#111 2px,transparent 3px),radial-gradient(circle at 62% 32%,#111 2px,transparent 3px),radial-gradient(circle at 38% 30%,#b6ef6d,#4e9c2f 60%,#1d4a12);box-shadow:0 0 16px #9be15d66}
 .plantPreview:after{content:"";position:absolute;left:26px;bottom:0;width:42px;height:26px;border-radius:50%;background:#1d4a12;box-shadow:inset 0 3px 6px #0c2a08}
 #selectPlant{background:linear-gradient(110deg,#2c5a14,#8ce04a,#2c5a14);border:1px solid #9be15d;box-shadow:0 0 18px #9be15d66,inset 0 0 12px #d9ffa033;color:#f2ffde}
-#game.plantTheme{background:#050d03}
-#game.plantTheme .hudBox{background:linear-gradient(145deg,#13240dee,#0a1508ee);border-color:#6d9c3f99;box-shadow:0 0 17px #4e9c2f33}
-#game.plantTheme .hudTitle,#game.plantTheme #playerHPText,#game.plantTheme #attackCooldownText,#game.plantTheme #bossHUD .name,#game.plantTheme #bossCount,#game.plantTheme #gameMessage{color:#c2e79a;text-shadow:0 0 12px #5f8c2a}
-#game.plantTheme .hpOuter{background:#0e2108;border:1px solid #6d9c33}
-#game.plantTheme .hpInner{background:linear-gradient(90deg,#3d7a22,#6db02a,#d9ff8a)}
-#game.plantTheme .bossHP{background:#0f1f0a;border-color:#8ce047;box-shadow:0 0 15px #5fae4a88}
-#game.plantTheme .bossHPFill{background:linear-gradient(90deg,#2e6b1a,#5f9f2a,#9be15d,#e0ffa0)}
-#game.plantTheme #stickBase{background:#5fae4a22;border-color:#8ce047}
-#game.plantTheme #stickKnob{background:#5fae4a99;border-color:#d9ff8a}
-#game.plantTheme .action{background:linear-gradient(145deg,#2a4a1e,#0f1508);border-color:#8ce047;color:#d9ff8a}
-#game.plantTheme #attackBtn{background:linear-gradient(145deg,#4e9c2f,#13240d);border-color:#c2e77a}
-#game.plantTheme #dashBtn{background:linear-gradient(145deg,#2a5c22,#0f1f0a);border-color:#8ce047}
-#game.plantTheme #overlay{background:#040b02e6}
-#game.plantTheme #overlay .panel{background:linear-gradient(160deg,#122208ee,#0a1407f2);border-color:#5f8c33;box-shadow:0 15px 60px #001,0 0 25px #4e9c2f44}
-#game.plantTheme #overlay h2{color:#c2e79a;text-shadow:0 0 14px #5fae3a}
-#game.plantTheme #overlay p{color:#cee0b9}
-#game.plantTheme .mainButton{background:linear-gradient(100deg,#2a4a1e,#5f9f2a,#194012);border:1px solid #8ce047;box-shadow:0 0 16px #4e9c2f44;color:#eeffdd}
-#game.plantTheme #pauseBtn,#game.plantTheme #muteBtn{background:#13240d;border-color:#5f8c33;color:#c2e79a}
-#game.plantTheme #bossBarLabel{color:#c2e79a}
-#game.plantTheme #errBox{background:#200708ee;border-color:#9be15d66;color:#e2ffbe}
-#game.plantTheme #commandBar{background:#0d1d07f0;border-color:#5f8c33}
-#game.plantTheme #commandHint{color:#8cba62}
-#game.plantTheme #commandInput{color:#e2ffbe}
-#game.plantTheme #commandSend{background:#194012;border-color:#5f8c33;color:#c2e79a}
-#classScreen.plantTheme{background:radial-gradient(ellipse at 50% 20%,#1c4a0e,#0d2a08 55%,#04110a)}
-#classScreen.plantTheme .logo{color:#c2e79a;text-shadow:0 0 25px #6db02a,0 5px 0 #2c5a14}
-#classScreen.plantTheme .panel{background:#0f1d08dd;border-color:#8ce04766;box-shadow:0 15px 60px #00110099,0 0 25px #5fae4a22}
-#classScreen.plantTheme .classCard{background:linear-gradient(145deg,#12260a,#0a1508);border-color:#3f7c28}
-#classScreen.plantTheme .classCard.selected{border-color:#9be15d;background:linear-gradient(145deg,#1c4a12,#0d2a08);box-shadow:0 0 15px #8ce04744}
-#classScreen.plantTheme .classCard h3{color:#c2e79a}
-#classScreen.plantTheme .classCard p{color:#cfe0b5}
-#classScreen.plantTheme .classCard .stats{color:#9be15d}
+#game.plantTheme{background:#0d0803} /* BRAUN (Hugo #55) */
+#game.plantTheme .hudBox{background:linear-gradient(145deg,#241505ee,#150c04ee);border-color:#a97b3f99;box-shadow:0 0 17px #b8863f33}
+#game.plantTheme .hudTitle,#game.plantTheme #playerHPText,#game.plantTheme #attackCooldownText,#game.plantTheme #bossHUD .name,#game.plantTheme #bossCount,#game.plantTheme #gameMessage{color:#e8cfa0;text-shadow:0 0 12px #a97b3f}
+#game.plantTheme .hpOuter{background:#1f1305;border:1px solid #a97b3f}
+#game.plantTheme .hpInner{background:linear-gradient(90deg,#7a5222,#b8863f,#f0d8a8)}
+#game.plantTheme .bossHP{background:#1a1005;border-color:#d8ab5c;box-shadow:0 0 15px #b8863f88}
+#game.plantTheme .bossHPFill{background:linear-gradient(90deg,#7a4d1a,#b8863f,#e8c070,#ffe8b0)}
+#game.plantTheme #stickBase{background:#b8863f22;border-color:#d8ab5c}
+#game.plantTheme #stickKnob{background:#b8863f99;border-color:#ffe8b0}
+#game.plantTheme .action{background:linear-gradient(145deg,#4a321a,#150c04);border-color:#d8ab5c;color:#ffe8b0}
+#game.plantTheme #attackBtn{background:linear-gradient(145deg,#b8863f,#241505);border-color:#f0d8a8}
+#game.plantTheme #dashBtn{background:linear-gradient(145deg,#7a5222,#1f1305);border-color:#d8ab5c}
+#game.plantTheme #overlay{background:#0a0602e6}
+#game.plantTheme #overlay .panel{background:linear-gradient(160deg,#241505ee,#150c04f2);border-color:#a97b3f;box-shadow:0 15px 60px #000,0 0 25px #b8863f44}
+#game.plantTheme #overlay h2{color:#e8cfa0;text-shadow:0 0 14px #b8863f}
+#game.plantTheme #overlay p{color:#d9c4a0}
+#game.plantTheme .mainButton{background:linear-gradient(100deg,#4a321a,#b8863f,#3a2510);border:1px solid #d8ab5c;box-shadow:0 0 16px #b8863f44;color:#fff3dd}
+#game.plantTheme #pauseBtn,#game.plantTheme #muteBtn{background:#241505;border-color:#a97b3f;color:#e8cfa0}
+#game.plantTheme #bossBarLabel{color:#e8cfa0}
+#game.plantTheme #errBox{background:#200708ee;border-color:#d8ab5c66;color:#f0e0be}
+#game.plantTheme #commandBar{background:#1f1305f0;border-color:#a97b3f}
+#game.plantTheme #commandHint{color:#b8a06a}
+#game.plantTheme #commandInput{color:#f0e0be}
+#game.plantTheme #commandSend{background:#3a2510;border-color:#a97b3f;color:#e8cfa0}
+#classScreen.plantTheme{background:radial-gradient(ellipse at 50% 20%,#4a2e0e,#2a1a0a 55%,#110a04)} /* BRAUN (Hugo #55) */
+#classScreen.plantTheme .logo{color:#e8cfa0;text-shadow:0 0 25px #b8863f,0 5px 0 #5c3d1e}
+#classScreen.plantTheme .panel{background:#1f1305dd;border-color:#b8863f66;box-shadow:0 15px 60px #000a0099,0 0 25px #a97b3f22}
+#classScreen.plantTheme .classCard{background:linear-gradient(145deg,#241505,#150c04);border-color:#7a5222}
+#classScreen.plantTheme .classCard.selected{border-color:#e8c070;background:linear-gradient(145deg,#3a2510,#1f1305);box-shadow:0 0 15px #d8ab5c44}
+#classScreen.plantTheme .classCard h3{color:#e8cfa0}
+#classScreen.plantTheme .classCard p{color:#d9c4a0}
+#classScreen.plantTheme .classCard .stats{color:#e8c070}

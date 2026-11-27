@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { classes, MAP, PLANT_SHIELD_HITS, ACID_POOL_LIFE, MINI_PLANT_RANGE } from "./config.js";
+import { classes, MAP, ACID_POOL_LIFE, MINI_PLANT_RANGE } from "./config.js";
 import { ctx, canvas } from "./canvas.js";
 import { rayMapLength } from "./utils.js";
 import { headRadiusOf } from "./bosses/snake.js";
@@ -520,12 +520,12 @@ export function drawPlant(b){
   for(let k=0;k<4;k++){const a=s.elapsed*3+k*1.7;ctx.fillStyle='#9be15d';ctx.globalAlpha=.5;ctx.beginPath();ctx.arc(Math.cos(a)*30,8+Math.sin(a*2)*6,3,0,Math.PI*2);ctx.fill()}
   ctx.restore();return
  }
- const vuln=b.vulnerable, flash=b.flash>0;
- /* Rosen-Farben: verwundbar = welkt (blasser), Treffer = blitz weiss */
- const petalA=flash?'#ffffff':vuln?'#d98aa5':'#e5518d';
- const petalB=flash?'#ffd9e6':vuln?'#b8607f':'#ff7ab8';
- const petalC=flash?'#fff3f7':vuln?'#e0a8bb':'#ffa8cf';
- const stemC=vuln?'#3a5a22':'#1d5c14';
+ const flash=b.flash>0; /* vuln entfernt — Plant immer angreifbar (Hugo #55) */
+ /* Rosen-Farben: Treffer = blitz weiss */
+ const petalA=flash?'#ffffff':'#e5518d';
+ const petalB=flash?'#ffd9e6':'#ff7ab8';
+ const petalC=flash?'#fff3f7':'#ffa8cf';
+ const stemC='#1d5c14';
  const mo=b.mouthOpen||0;
  ctx.rotate(Math.sin(b.wobble)*.04);
  /* WURZELN im Boden (dick, verzweigt) */
@@ -556,7 +556,7 @@ export function drawPlant(b){
  ctx.lineTo(7,-6);
  ctx.quadraticCurveTo(sw+6,14,22,42);
  ctx.closePath();ctx.fill();
- ctx.strokeStyle=vuln?'#2c4a18':'#0c2a08';ctx.lineWidth=3;ctx.stroke();
+ ctx.strokeStyle='#0c2a08';ctx.lineWidth=3;ctx.stroke();
  /* kleine WURZEL-FITZEL am unteren Stiel (Hugo #49) */
  ctx.strokeStyle=stemC;ctx.lineCap='round';ctx.lineWidth=4;
  for(let k=-2;k<=2;k++){
@@ -572,7 +572,7 @@ export function drawPlant(b){
  for(let k=0;k<6;k++){const a=k*Math.PI*2/6+s.elapsed*.15+.4;ctx.save();ctx.translate(Math.cos(a)*19,-34+Math.sin(a)*19);ctx.rotate(a);ctx.beginPath();ctx.ellipse(0,0,19,11,0,0,Math.PI*2);ctx.fill();ctx.restore()}
  ctx.fillStyle=petalC;ctx.beginPath();ctx.arc(0,-34,17,0,Math.PI*2);ctx.fill();
  /* MAUL im Rosenkopf */
- ctx.fillStyle=vuln?'#3a1020':'#1d0a12';ctx.beginPath();ctx.ellipse(0,-28,20,7+mo*16,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#1d0a12';ctx.beginPath();ctx.ellipse(0,-28,20,7+mo*16,0,0,Math.PI*2);ctx.fill();
  /* SPITZE ZAEHNE — WILD in den Rosenblaettern verteilt (feste Winkel) */
  ctx.fillStyle='#fff8e0';
  for(let k=0;k<9;k++){
@@ -591,13 +591,7 @@ export function drawPlant(b){
  ctx.fillStyle='#ff7ab8';ctx.beginPath();ctx.moveTo(Math.sin(s.elapsed*3)*11,-2+Math.sin(s.elapsed*4)*3);
  ctx.lineTo(Math.sin(s.elapsed*3)*11+4,4);ctx.lineTo(Math.sin(s.elapsed*3)*11-4,4);ctx.closePath();ctx.fill();
  /* KEINE AUGEN mehr (Hugo #49) — die Rose ist das Gesicht */
- /* SCHILD-Ring: wie nah bist du an den 12 ueberlebten Angriffen */
- if(!vuln){
-  ctx.globalAlpha=.2+(b.shieldHits/PLANT_SHIELD_HITS)*.5;
-  ctx.strokeStyle='#7ef0ff';ctx.lineWidth=4;
-  ctx.beginPath();ctx.arc(0,-20,66,0,Math.PI*2);ctx.stroke();
-  ctx.globalAlpha=1
- }
+ /* Schild-Ring ENTFERNT (Hugo #55): Plant immer angreifbar */
  ctx.restore()
 }
 
