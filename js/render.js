@@ -212,10 +212,12 @@ export function drawDragon(b){
   aura.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=aura;ctx.beginPath();ctx.arc(0,0,r*2.1,0,Math.PI*2);ctx.fill()
  }
+ /* DRACHEN-ANIMATION (Hugo #57): der Schwanz schwingt lebendig mit */
+ const sway=Math.sin(b.wobble*.9)*r*.16;
  const tail=ctx.createLinearGradient(-r*1.9,0,-r*.3,0);
  tail.addColorStop(0,'#2a060a');tail.addColorStop(.55,'#7c150f');tail.addColorStop(1,'#d0401c');
  ctx.fillStyle=tail;ctx.strokeStyle='#3f0a10';ctx.lineWidth=2.5;
- ctx.beginPath();ctx.moveTo(-r*.4,-r*.26);ctx.quadraticCurveTo(-r*1.2,-r*.28,-r*1.85,0);ctx.quadraticCurveTo(-r*1.2,r*.32,-r*.4,r*.26);ctx.closePath();ctx.fill();ctx.stroke();
+ ctx.beginPath();ctx.moveTo(-r*.4,-r*.26);ctx.quadraticCurveTo(-r*1.2,-r*.28+sway*.5,-r*1.85,sway);ctx.quadraticCurveTo(-r*1.2,r*.32+sway*.5,-r*.4,r*.26);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.fillStyle='#e8622f';ctx.strokeStyle='#5d120e';ctx.lineWidth=1.5;
  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(-r*1.7,side*r*.06);ctx.lineTo(-r*2.05,side*r*.3);ctx.lineTo(-r*1.82,side*r*.16);ctx.closePath();ctx.fill();ctx.stroke()}
  for(const side of [-1,1]){
@@ -284,10 +286,17 @@ export function drawDragon(b){
  ctx.fillStyle='#e8d3ae';ctx.strokeStyle='#3a1c0e';ctx.lineWidth=2;
  ctx.beginPath();ctx.moveTo(r*.62,-r*.4);ctx.quadraticCurveTo(r*.66,-r*.78,r*.34,-r*1.02);ctx.quadraticCurveTo(r*.52,-r*.7,r*.78,-r*.38);ctx.closePath();ctx.fill();ctx.stroke();
  ctx.beginPath();ctx.moveTo(r*1.14,-r*.2);ctx.lineTo(r*1.2,-r*.36);ctx.lineTo(r*1.26,-r*.18);ctx.closePath();ctx.fill();ctx.stroke();
- ctx.save();ctx.shadowColor=exhausted?'#4a3512':'#ff2a08';ctx.shadowBlur=18;ctx.fillStyle=exhausted?'#8f7a2a':'#ffd23a';
+ /* DRACHEN-RICHTUNGS-ANSICHT (Hugo #57): Das Auge ist nur sichtbar, wenn der
+    Drache zur Kamera BLICKT (nach unten laeuft) — sonst Hinterkopf. */
+ const dragonFace=Math.max(0,facingViewOf(b.angle));
+ ctx.save();ctx.globalAlpha=dragonFace;ctx.shadowColor=exhausted?'#4a3512':'#ff2a08';ctx.shadowBlur=18;ctx.fillStyle=exhausted?'#8f7a2a':'#ffd23a';
  ctx.beginPath();ctx.ellipse(r*.92,-r*.2,r*.1,r*.055,-.28,0,Math.PI*2);ctx.fill();ctx.restore();
+ /* DRACHEN-RICHTUNGS-ANSICHT (Hugo #57): Pupille + Nuesterloch wie das Auge
+    nur bei Vorderansicht */
+ ctx.save();ctx.globalAlpha=dragonFace;
  ctx.fillStyle='#2a0703';ctx.beginPath();ctx.ellipse(r*.95,-r*.2,r*.02,r*.05,-.28,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#1d0604';ctx.beginPath();ctx.arc(r*1.24,-r*.12,r*.022,0,Math.PI*2);ctx.fill();
+ ctx.restore();
  if(exhausted){
   for(let i=0;i<4;i++){
    const t2=(s.elapsed*.7+i*.25)%1;
@@ -732,18 +741,81 @@ function drawWeapon(){
  ctx.restore()
 }
 
+/* RICHTUNGS-ANSICHT (Hugo #57): Vom Charakter sieht man das Gesicht von der
+   Richtung, in die er laeuft — nach oben = Rueckansicht, nach unten = Face,
+   schraeg = dazwischen. Rueckgabe: -1 (Ruecken) ... +1 (Face zum Betrachter). */
+export function facingViewOf(angle){
+ if(!Number.isFinite(angle))return 0;
+ return Math.max(-1,Math.min(1,Math.sin(angle)))
+}
+
 function drawPlayer(){
  const s=state,p=s.player;
- ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);
- if(s.invuln>0&&Math.floor(s.elapsed*18)%2===0)ctx.globalAlpha=.45;
- ctx.fillStyle='#07121e99';ctx.beginPath();ctx.ellipse(0,10,20,9,0,0,Math.PI*2);ctx.fill();
- if(s.selected==='tank'){ctx.fillStyle='#778b9c';ctx.fillRect(-13,-13,26,27);ctx.fillStyle='#c4d5dc';ctx.fillRect(-9,-10,18,13);ctx.strokeStyle='#465765';ctx.lineWidth=2;ctx.strokeRect(-13,-13,26,27)}
-  else{ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#2bd58b':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':s.selected==='sauger'?'#3fae49':'#c4d8e9';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
-   if(s.selected==='sauger'){ /* SAUGER (Hugo #47): gruen mit Stacheln */
-    ctx.fillStyle='#1d5c28';
-    for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*13-Math.sin(a)*4,Math.sin(a)*13+Math.cos(a)*4);ctx.lineTo(Math.cos(a)*22,Math.sin(a)*22);ctx.lineTo(Math.cos(a)*13+Math.sin(a)*4,Math.sin(a)*13-Math.cos(a)*4);ctx.closePath();ctx.fill()}
+ /* BLICKRICHTUNG statt rotate: Figur bleibt rund, Gesicht/Fuesse wandern in
+    Laufrichtung — schraeg und nach vorne (oben) sieht endlich richtig aus */
+ const ang=Number.isFinite(p.angle)?p.angle:-Math.PI/2;
+ const fx=Math.cos(ang),fy=Math.sin(ang),view=facingViewOf(ang);
+ const moving=!!p.moving;
+ const walk=(p.walkT||0);
+ const bob=moving?Math.abs(Math.sin(walk*9))*2.4:0; /* Walk-Bob */
+ const px=-fy,py=fx; /* Senkrechte zur Blickrichtung */
+ const flicker=s.invuln>0&&Math.floor(s.elapsed*18)%2===0;
+ /* Schatten aus der entsprechenden Richtung: Ellipse laeuft MIT (gegen die
+    Blickrichtung versetzt) und dreht sich mit der Laufrichtung */
+ ctx.save();if(flicker)ctx.globalAlpha=.45;
+ ctx.fillStyle='#07121e99';
+ ctx.beginPath();ctx.ellipse(-fx*4,9-fy*3,20,9,ang,0,Math.PI*2);ctx.fill();
+ ctx.restore();
+ /* Fuesse: nur bei Bewegung sichtbar, alternieren im Schritt-Takt */
+ if(moving){
+  const stride=Math.sin(walk*11)*7;
+  ctx.save();if(flicker)ctx.globalAlpha=.45;
+  ctx.fillStyle='#12314a';
+  for(const sgn of[-1,1]){
+   ctx.beginPath();ctx.ellipse(px*sgn*7+fx*stride*sgn,py*sgn*7+7+fy*stride*sgn*.5-bob*.4,5,3.6,ang,0,Math.PI*2);ctx.fill()
+  }
+  ctx.restore()
+ }
+ ctx.save();if(flicker)ctx.globalAlpha=.45;
+ if(s.selected==='tank'){
+  /* Tank: Panzerkasten dreht in Blickrichtung, Visier-Schlitz zeigt nach vorn */
+  ctx.save();ctx.translate(0,-bob);ctx.rotate(ang);
+  ctx.fillStyle='#778b9c';ctx.fillRect(-13,-13,26,27);ctx.fillStyle='#c4d5dc';ctx.fillRect(-9,-10,18,13);
+  ctx.strokeStyle='#465765';ctx.lineWidth=2;ctx.strokeRect(-13,-13,26,27);
+  ctx.fillStyle='#1d2c38';ctx.fillRect(9,-4,4,8); /* Visier */
+  ctx.restore()
+ }else{
+  const cy=-bob;
+  ctx.fillStyle=s.selected==='archer'?'#28b78b':s.selected==='assassin'?'#7254bd':s.selected==='healer'?'#38a0ff':s.selected==='ember'?'#f16a21':s.selected==='gunner'?'#b58aff':s.selected==='faust'?'#e8b98a':s.selected==='whip'?'#1e6b24':s.selected==='sauger'?'#3fae49':'#c4d8e9';
+  ctx.beginPath();ctx.arc(0,cy,15,0,Math.PI*2);ctx.fill();
+  if(s.selected==='sauger'){ /* SAUGER (Hugo #47): gruen mit Stacheln */
+   ctx.save();ctx.translate(0,cy);
+   ctx.fillStyle='#1d5c28';
+   for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.beginPath();ctx.moveTo(Math.cos(a)*13-Math.sin(a)*4,Math.sin(a)*13+Math.cos(a)*4);ctx.lineTo(Math.cos(a)*22,Math.sin(a)*22);ctx.lineTo(Math.cos(a)*13+Math.sin(a)*4,Math.sin(a)*13-Math.cos(a)*4);ctx.closePath();ctx.fill()}
+   ctx.restore()
+  }
+  if(view<-.35){
+   /* RUECKANSICHT: kein Gesicht — Kapuzen-/Haarstreifen quer zum Kopf */
+   ctx.save();ctx.translate(0,cy);ctx.rotate(ang);
+   ctx.fillStyle='#00000059';ctx.fillRect(3,-9,5,18);
+   ctx.fillStyle='#00000038';ctx.beginPath();ctx.arc(-4,0,10,0,Math.PI*2);ctx.fill();
+   ctx.restore()
+  }else{
+   /* GESICHT: Augen wandern in Blickrichtung */
+   if(view>.35){
+    /* FRONTANSICHT (laufts auf dich zu / nach unten): zwei Augen */
+    for(const sgn of[-1,1]){
+     const ex=fx*6+px*sgn*5.5,ey=fy*6+py*sgn*5.5;
+     ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(ex,cy+ey,4.4,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#0a1c2e';ctx.beginPath();ctx.arc(ex+fx*1.5,cy+ey+fy*1.5,2,0,Math.PI*2);ctx.fill()
+    }
+   }else{
+    /* SEITENANSICHT: ein Auge vorne an der Blickrichtung */
+    ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(fx*9,cy+fy*8-1,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0a1c2e';ctx.beginPath();ctx.arc(fx*10.2,cy+fy*9.4-1,1.8,0,Math.PI*2);ctx.fill()
    }
-   ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(5,-4,5,0,Math.PI*2);ctx.fill()}
+  }
+ }
  ctx.restore();drawWeapon()
 }
 

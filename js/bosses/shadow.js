@@ -1,7 +1,7 @@
 import { state } from "../state.js";
 import { MAP, SHADOW_HP } from "../config.js";
 import { damageBoss, damagePlayer, duelTargetOf, particle } from "../entities.js";
-import { showGameMessage } from "../ui.js";
+import { showGameMessage, showTutorialPause } from "../ui.js";
 import { createTowers } from "./dragon.js";
 
 export function createShadow(x,y){
@@ -48,6 +48,21 @@ export function updateShadow(b,dt){
   b.phase=phase;
   if(phase===2){b.mode='throwing';b.throwTimer=5;b.fireCooldown=.4;showGameMessage('PHASE 2 \u2014 W\u00c4HREND ER WIRFT, IST ER UNVERWUNDBAR! DANACH 10 SEKUNDEN ANGREIFEN!',4)}
   else{b.mode='guarded';spawnShadowTowers();showGameMessage('PHASE 3 \u2014 ZERST\u00d6RE ALLE 4 T\u00dcRME! SOLANGE SIE STEHEN, IST ER UNVERWUNDBAR!',4)}
+  /* TUTORIAL-PAUSE (Hugo #57): jede neue Phase stoppt das Spiel und wird
+     in Zeilen + kleiner Skizze erklaert. Nur echtes Tutorial (kein Duel). */
+  if(state.player&&!state.isAdmin){
+   if(phase===2&&!b.tutP2){b.tutP2=1;showTutorialPause('TUTORIAL \u2014 PHASE 2',[
+    'Der Schatten wirft jetzt eine Wurf-Font\u00e4ne aus Sternen!',
+    'W\u00e4hrend er WIRFT, ist er UNVERWUNDBAR \u2014 lass deine Schl\u00e4ge weg!',
+    'Sobald der Sternenregen vorbei ist: 10 Sekunden ANGREIFEN!',
+    'Weiche den Sternen seitlich aus \u2014 Stick/WASD.'
+   ],'throw')}
+   else if(phase===3&&!b.tutP3){b.tutP3=1;showTutorialPause('TUTORIAL \u2014 PHASE 3',[
+    'Vier SCHATTENT\u00dcRME erwachen und heilen seinen Schild.',
+    'Zerst\u00f6re ALLE 4 T\u00fcrme \u2014 erst dann ist er verwundbar!',
+    'Achtung: Die T\u00fcrme erwachen wieder, wenn du zu lange brauchst.'
+   ],'towers')}
+  }
  }
  const T=duelTargetOf(b);
  b.angle=Math.atan2(T.y-b.y,T.x-b.x);

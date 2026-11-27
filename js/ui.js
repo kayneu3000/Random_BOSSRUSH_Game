@@ -2,6 +2,7 @@ import { $ } from "./utils.js";
 import { ADMIN_UNLOCK_CODE } from "./config.js";
 import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
+import { replayDiscard, refreshReplayUI, replayClose } from "./replay.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
 
@@ -37,6 +38,7 @@ export function applyUnlocksToUI() {
   wcard.querySelector('h3').textContent = whipLabels[cls][1]
  }
  if (state.unlocks.whip) $('whipCard').classList.add('whipUnlocked');
+ if (state.unlocks.healer) $('healerCard').classList.add('healerUnlocked'); /* HEALER BLAU (Hugo #57) */
  if (state.unlocks.ember) $('emberCard').classList.add('emberUnlocked');
  if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked');
  $('selectSnake').classList.toggle('snakeLocked', !(state.unlocks.healer && state.unlocks.ember && state.unlocks.gunner));
@@ -46,6 +48,7 @@ export function showScreen(id) {
  document.querySelectorAll('.screen').forEach(x => x.classList.remove('active'));
  $('game').style.display = 'none';
  $(id).classList.add('active');
+ if (id === 'lobby') refreshReplayUI(); /* Siege-Videos (Hugo #57) */
  if (id === 'classScreen') {
   $('classScreen').classList.toggle('slimeTheme', state.selectedBoss === 'slime');
   $('classScreen').classList.toggle('dragonTheme', state.selectedBoss === 'dragon');
@@ -68,7 +71,103 @@ export function showGameMessage(text, durationSeconds = Infinity) {
  $('gameMessage').textContent = text
 }
 
+/* ---------- TUTORIAL-PAUSE (Hugo #57) ----------
+   Bei jeder neuen Tutorial-Phase stoppt das Spiel und ein Overlay erklaert
+   in EINZELNEN ZEILEN (nichts laeuft aus dem Bildschirm) mit kleiner Skizze,
+   was zu tun ist. FORTSETZEN-Button startet den Kampf weiter. */
+export function showTutorialPause(title, lines, sketch) {
+ if (state.finished) return;
+ try {
+  state.paused = true;
+  const box = $('tutPause'); if (!box) { state.paused = false; return }
+  setText($('tutPauseTitle'), title || 'PHASE');
+  const linesEl = $('tutPauseLines');
+  while (linesEl.firstChild) linesEl.removeChild(linesEl.firstChild);
+  for (const ln of (lines || [])) {
+   const d = document.createElement('div'); d.className = 'tutLine'; d.textContent = ln; linesEl.appendChild(d)
+  }
+  drawTutorialSketch($('tutSketch'), sketch || 'move');
+  box.style.display = 'flex'
+ } catch (e) { state.paused = false } /* Overlay darf nie den Kampf einfrieren */
+}
+
+export function hideTutorialPause() {
+ const box = $('tutPause');
+ if (box) box.style.display = 'none';
+ state.paused = false
+}
+
+/* Kleine Skizzen (Stichwort-Bilder) fuer die Tutorial-Pause */
+function drawTutorialSketch(cv, kind) {
+ try {
+  if (!cv || typeof cv.getContext !== 'function') return;
+  const g = cv.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#0a1420'; g.fillRect(0, 0, cv.width, cv.height);
+  g.strokeStyle = '#9fd8ff'; g.fillStyle = '#9fd8ff'; g.lineWidth = 2.5; g.lineCap = 'round';
+  const P = (x, y) => [x * cv.width / 180, y * cv.height / 90];
+  const stick = (x, y) => {
+   g.beginPath(); g.arc(x, y - 12, 6, 0, Math.PI * 2); g.stroke(); /* Kopf */
+   g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x, y + 8); g.stroke(); /* Koerper */
+   g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x + 7, y); g.stroke(); /* Arme */
+   g.beginPath(); g.moveTo(x, y + 8); g.lineTo(x - 6, y + 18); g.moveTo(x, y + 8); g.lineTo(x + 6, y + 18); g.stroke() /* Beine */
+  };
+  const [cx, cy] = P(90, 48);
+  if (kind === 'move') {
+   stick(cx - 34, cy + 6);
+   for (const [ax, ay] of [[-8, -10], [8, -10], [0, -16], [-14, 2], [14, 2]]) {
+    const [axx, ayy] = P(cx + ax, cy + ay);
+    g.beginPath(); g.moveTo(axx - 4, ayy); g.lineTo(axx + 4, ayy); g.lineTo(axx, ayy - 5); g.closePath(); g.fill()
+   }
+  } else if (kind === 'throw') {
+   stick(cx - 40, cy + 8); g.fillStyle = '#b79aff';
+   for (let k = 0; k < 3; k++) { const [sx, sy] = P(cx - 20 + k * 16, cy - 6 - k * 6); g.save(); g.translate(sx, sy); g.rotate(k); g.fillRect(-3, -3, 7, 7); g.restore() }
+   g.fillStyle = '#9fd8ff'; g.font = 'bold 11px Arial'; g.fillText('WURF = UNVERWUNDBAR', P(18, 16)[0], P(18, 16)[1]); g.fillText('DANACH ANGREIFEN!', P(52, 80)[0], P(52, 80)[1])
+  } else if (kind === 'towers') {
+   g.fillStyle = '#8f6dff';
+   for (const tx of [26, 66, 114, 154]) { const [txx, tyy] = P(tx, 22); g.fillRect(txx - 5, tyy, 10, 14); g.beginPath(); g.arc(txx, tyy - 3, 5, 0, Math.PI * 2); g.fill() }
+   stick(cx, cy + 14);
+   g.fillStyle = '#9fd8ff'; g.font = 'bold 11px Arial'; g.fillText('ALLE 4 TUERME ZERSTOEREN', P(14, 82)[0], P(14, 82)[1])
+  } else { /* fallback: Pfeil */
+   g.beginPath(); g.moveTo(cx - 30, cy); g.lineTo(cx + 30, cy); g.lineTo(cx + 20, cy - 8); g.moveTo(cx + 30, cy); g.lineTo(cx + 20, cy + 8); g.stroke()
+  }
+ } catch (e) { /* Skizze ist Deko */ }
+}
+
+/* ---------- LOBBY-TEXTE IN ZEILEN (Hugo #57) ----------
+   Lange Boss-Beschreibungen werden an Wortgrenzen in Zeilen geteilt, damit
+   nichts aus dem Bildschirm laeuft. */
+export function wrapLines(txt, max = 95) {
+ const words = String(txt || '').split(' '), lines = [];
+ let cur = '';
+ for (const w of words) {
+  if (!cur) { cur = w; continue }
+  if ((cur + ' ' + w).length <= max) cur += ' ' + w;
+  else { lines.push(cur); cur = w }
+ }
+ if (cur) lines.push(cur);
+ return lines
+}
+
+export function splitBossTexts(max = 95) {
+ try {
+  document.querySelectorAll('.bossInfo p').forEach(p => {
+   const txt = (p.textContent || '').trim();
+   if (p.dataset.split || txt.length < 120) return;
+   p.dataset.split = '1';
+   const lines = wrapLines(txt, max);
+   p.textContent = '';
+   for (const ln of lines) {
+    const d = document.createElement('div'); d.className = 'lobbyLine'; d.textContent = ln; p.appendChild(d)
+   }
+  })
+ } catch (e) { /* Zeilenumbruch ist Kosmetik */ }
+}
+
 export function endGame(win) {
+ /* REPLAY (Hugo #57): Niederlage → Aufnahme verwerfen (Sieg wurde schon
+    in main.js via replayWin gesichert) */
+ if (!win) replayDiscard();
  state.finished = true; state.paused = true; $('overlay').style.display = 'flex';
  $('overlayTitle').textContent = win ? 'SIEG!' : 'BESIEGT';
  sfx(win ? 'victory' : 'defeat');
@@ -182,6 +281,9 @@ export function updateHUD() {
 }
 
 export function attachUI({ startGame }) {
+ splitBossTexts(); /* Lobby-Texte in Zeilen (Hugo #57) */
+ $('tutResume').onclick = hideTutorialPause; /* Tutorial-Phase fortsetzen */
+ $('replayClose').onclick = replayClose; /* Video-Anzeige schliessen */
  $('selectBoss').onclick = () => { state.selectedBoss = 'slime'; showScreen('classScreen') };
  $('selectDragon').onclick = () => { state.selectedBoss = 'dragon'; showScreen('classScreen') };
  $('selectGunball').onclick = () => { state.selectedBoss = 'gunball'; showScreen('classScreen') };

@@ -80,6 +80,9 @@ const { attack } = await import('../js/combat.js');
 const { damageBoss } = await import('../js/entities.js');
 const { endGame } = await import('../js/ui.js');
 
+/* Tutorial-Pause/Overlays duerfen Tests danach nicht einfrieren */
+test.afterEach(() => { state.paused = false; });
+
 test('startGame bootstraps a slime boss fight for the archer', () => {
   state.selected = 'archer';
   state.selectedBoss = 'slime';
@@ -1110,4 +1113,96 @@ test('ZUNGE VORGEWARNT (Hugo #54): warn-Phase mit blinkender Linie, dann schiess
   assert.equal(b.tongue.mode, 'out', 'nach der Warnung schiesst die Zunge LOS');
   assert.ok(b.tongue.t > 0, 'Ausfahren laeuft');
   state.bosses = [];
+});
+
+/* ---------- HUGO #57 BLICKWINKEL ---------- */
+
+test('RICHTUNGS-ANSICHT (Hugo #57): facingViewOf liefert Ruecken/Seite/Face', async () => {
+  const { facingViewOf } = await import('../js/render.js');
+  assert.equal(facingViewOf(Math.PI / 2), 1, 'nach unten = Face zum Betrachter');
+  assert.equal(facingViewOf(-Math.PI / 2), -1, 'nach oben = Rueckansicht');
+  assert.equal(facingViewOf(0), 0, 'Seitenansicht');
+  assert.ok(facingViewOf(Math.PI / 4) > 0 && facingViewOf(Math.PI / 4) < 1, 'schraeg = dazwischen');
+  assert.equal(facingViewOf(NaN), 0, 'NaN-Guard');
+});
+
+test('LAUF-ANIMATION (Hugo #57): moving + walkT beim Laufen, aus nach Stopp', () => {
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame();
+  state.keys = { KeyW: true }; /* frisches Keys-Objekt: keine Pfeiltasten-Reste frueherer Tests */
+  update(1 / 60);
+  assert.equal(state.player.moving, true, 'moving an');
+  assert.ok(state.player.walkT > 0, 'walkT laeuft');
+  state.keys = {};
+  update(1 / 60);
+  assert.equal(state.player.moving, false, 'moving aus nach Stopp');
+});
+
+test('TUTORIAL-PAUSE (Hugo #57): Phase-Overlay pausiert, FORTSETZEN gibt frei', async () => {
+  const { showTutorialPause, hideTutorialPause } = await import('../js/ui.js');
+  state.finished = false;
+  showTutorialPause('TUTORIAL \u2014 PHASE 2', ['Zeile 1', 'Zeile 2', 'Zeile 3'], 'throw');
+  assert.equal(state.paused, true, 'Spiel pausiert');
+  const box = document.getElementById('tutPause');
+  assert.equal(box.style.display, 'flex', 'Overlay sichtbar');
+  const lines = document.getElementById('tutPauseLines');
+  assert.equal(lines.children.length, 3, 'drei Zeilen-Divs (nichts laeuft aus dem Bildschirm)');
+  assert.equal(document.getElementById('tutPauseTitle').textContent, 'TUTORIAL \u2014 PHASE 2');
+  document.getElementById('tutResume').onclick();
+  assert.equal(state.paused, false, 'FORTSETZEN gibt frei');
+  assert.equal(box.style.display, 'none');
+});
+
+test('TUTORIAL-PAUSE: Phasenwechsel im Shadow-Fight loest Overlay aus (je Phase nur 1x)', async () => {
+  const { createShadow, updateShadow } = await import('../js/bosses/shadow.js');
+  state.finished = false; state.paused = false; state.isAdmin = false;
+  state.bosses = []; state.enemyProjectiles = []; state.infernoTowers = []; state.particles = []; state.effects = [];
+  state.selected = 'faust';
+  state.player = { x: 800, y: 1000, r: 17, hp: 100, maxHp: 100, speed: 200, angle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0, stuckTimer: 0, moving: false, walkT: 0 };
+  createShadow(800, 500);
+  const sh = state.bosses[0];
+  sh.hp = 299; updateShadow(sh, 1 / 60); /* -> Phase 2 */
+  assert.equal(state.paused, true, 'Phase-2-Pause');
+  state.paused = false;
+  updateShadow(sh, 1 / 60); /* gleich wieder Phase 2: kein zweites Overlay */
+  assert.equal(state.paused, false, 'kein Doppel-Overlay in derselben Phase');
+  state.paused = false; sh.hp = 149; updateShadow(sh, 1 / 60); /* -> Phase 3 */
+  assert.equal(state.paused, true, 'Phase-3-Pause');
+  state.bosses = []; state.paused = false;
+});
+
+test('LOBBY-TEXTSPLITTER (Hugo #57): wrapLines bricht lange Texte an Wortgrenzen', async () => {
+  const { wrapLines } = await import('../js/ui.js');
+  const lines = wrapLines('Wort '.repeat(60).trim(), 40);
+  assert.ok(lines.length >= 5, 'mehrere Zeilen');
+  for (const ln of lines) assert.ok(ln.length <= 45, 'Zeile bleibt kurz genug');
+  assert.deepEqual(wrapLines('kurz'), ['kurz']);
+  assert.deepEqual(wrapLines(''), []);
+});
+
+test('REPLAY-VIDEO (Hugo #57): Sieg speichert Aufnahme, Niederlage verwirft, Lobby listet', async () => {
+  globalThis.MediaRecorder = class {
+    constructor(stream, opts) { this.mimeType = (opts && opts.mimeType) || 'video/mp4'; this.state = 'inactive'; }
+    static isTypeSupported(m) { return m === 'video/mp4' || m === 'video/mp4;codecs=avc1'; }
+    start() { this.state = 'recording'; }
+    stop() { this.state = 'inactive'; if (typeof this.ondataavailable === 'function') this.ondataavailable({ data: { size: 5 } }); if (typeof this.onstop === 'function') this.onstop(); }
+  };
+  const replay = await import('../js/replay.js');
+  assert.equal(replay.replaySupported(), true, 'Stub-MediaRecorder erkannt');
+  const cv = document.getElementById('canvas');
+  cv.captureStream = () => ({ getTracks() { return [] } });
+  replay.replayStart('slime', cv);
+  replay.replayWin();
+  const list = await replay.listReplays();
+  assert.ok(list.some(r => r.boss === 'slime'), 'Sieges-Video gespeichert');
+  replay.replayStart('dragon', cv);
+  replay.replayDiscard();
+  const list2 = await replay.listReplays();
+  assert.ok(!list2.some(r => r.boss === 'dragon'), 'Niederlage-Aufnahme verworfen');
+  await replay.refreshReplayUI();
+  const box = document.getElementById('replayBox');
+  assert.ok(box.children.length >= 1, 'Lobby-Liste gebaut');
+  const btn = box.children.find(c => (c.textContent || '').includes('SLIME'));
+  assert.ok(btn, 'SLIME-Video-Button vorhanden');
+  replay.replayClose();
 });
