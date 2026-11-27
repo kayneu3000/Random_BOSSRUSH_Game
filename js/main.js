@@ -55,7 +55,7 @@ function startGame() {
  if (s.isAdmin && !classes[s.selected]) s.selected = s.adminBaseClass || 'faust';
  const c = classes[s.selected];
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
- s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
+ s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.acidPools = []; s.miniPlants = []; s.shockwaves = []; /* PLANT (Hugo #47) */
  s.vineSweeps = []; s.craters = []; /* HUGO #49: Ranken-Schwaenge + Krater */
@@ -93,7 +93,7 @@ function startGame() {
  } else if (s.selectedBoss === 'plant') {
   createPlant(MAP.w/2, MAP.h/2-200);
   $('bossName').textContent = 'PFLANZE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 PLANT';
-  showGameMessage('DIE FRESSPFLANZE! UEBERLEBT 12 ANGRIFFE!', 2.4)
+  showGameMessage('DIE FRESSPFLANZE! UEBERLEBT 10 ANGRIFFE!', 2.4)
  } else {
   createSlime(MAP.w/2, MAP.h/2-200, 0);
   $('bossName').textContent = 'SLIME'; $('huntTitle').textContent = 'SLIME HUNT';
@@ -130,6 +130,13 @@ function movePlayer(dt) {
   const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
   const step = (Number.isFinite(dv) ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
   s.player.x += dX*step; s.player.y += dY*step
+ } else if (s.player.flingT > 0) {
+  /* SCHLEUDER-FLUG (Hugo #50): wie bei Sauger — Zunge/Sauger schleudern dich
+     mit echter Wucht davon, Reibung bremst dich, Steuerung erst danach */
+  s.player.flingT -= dt;
+  s.player.x += s.player.flingX*dt; s.player.y += s.player.flingY*dt;
+  const dec = Math.max(0, 1-2.2*dt); s.player.flingX *= dec; s.player.flingY *= dec;
+  if (s.player.flingT <= 0 || Math.hypot(s.player.flingX, s.player.flingY) < 40) { s.player.flingT = 0; s.player.flingX = 0; s.player.flingY = 0 }
  } else if (s.player.stuckTimer > 0) {
   /* ZUNGE (Hugo #47): an der Pflanzenzunge geklebt — keine eigene Bewegung,
      die Zunge schleift dich. Der Timer laeuft runter, falls sie dich loslaesst. */

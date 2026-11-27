@@ -48,7 +48,7 @@ function plantAttackDamage(b,dmg){
 export function createPlant(x,y){
  state.bosses.push({id:++state.spawnId,type:'plant',x,y,r:62,hp:700,maxHp:700,alive:true,flash:0,wobble:0,
   attackCooldown:0,shieldHits:0,vulnerable:false,vulnTimer:0,burrowed:false,burrowSub:0,mouthOpen:0,chew:0,
-  vineTimer:1.4,acidSpitTimer:3.5,seedTimer:3.5,tongueTimer:6,beamTimer:8,burrowTimer:13,screamTimer:8,biteTimer:0,
+  vineTimer:2,acidSpitTimer:4,seedTimer:4,tongueTimer:6.5,beamTimer:8.5,burrowTimer:14,screamTimer:8.5,biteTimer:0, /* Cooldowns etwas hoeher (Hugo #50) */
   beamCharge:0,beamFire:0,beamAngle:0,
   tongue:{active:false,mode:'out',t:0,x:0,y:0,ex:0,ey:0,dir:1,edge:'',caught:false},
   faceAngle:0})
@@ -158,12 +158,13 @@ function updateTongue(b,dt){
   else{if(t.ey<40||t.ey>MAP.h-40)t.dir*=-1}
   t.x=t.ex;t.y=t.ey;
   if(t.t<=0){
-   /* SWING-ENDE: Wer klebt, wird zur anderen Map-Seite geschleudert + viel Schaden */
+   /* SWING-ENDE: Wer klebt, wird WEGGESCHLEUDERT — wie bei Sauger (Hugo #50):
+      kein Spiegel-Teleport mehr, sondern echter Physik-Flug mit Reibung! */
    if(t.caught){
     p.stuckTimer=0;t.caught=false;
     plantSurviveHit(b);
-    if(t.edge==='top'||t.edge==='bottom')p.x=MAP.w-p.x;else p.y=MAP.h-p.y;
-    clampArena(p);
+    const fa=Math.atan2(p.y-hy,p.x-hx),FLING=1400;
+    p.flingX=Math.cos(fa)*FLING;p.flingY=Math.sin(fa)*FLING;p.flingT=1.1;
     damagePlayer(35);state.invuln=1;sfx('sling');state.screenShake=14;
     showGameMessage('WEGMITDIR!',1.2)
    }
@@ -176,7 +177,7 @@ function updateTongue(b,dt){
  }
  /* Fang-Check: die GESAMTE Zunge faengt (Hugo #49) — nicht nur die Spitze!
    Wer klebt, bleibt an SEINEM Punkt auf der Zunge haengen und schwingt mit. */
- if(!t.caught&&t.active&&state.invuln<=0&&p.stuckTimer<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+20){
+ if(!t.caught&&t.active&&state.invuln<=0&&p.stuckTimer<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+26){
   t.caught=true;p.stuckTimer=.85;sfx('tongue');
   const vx=t.x-hx,vy=t.y-hy,vl=Math.hypot(vx,vy)||1;
   t.u=Math.max(.12,Math.min(1,((p.x-hx)*vx+(p.y-hy)*vy)/(vl*vl))); /* Klebe-Punkt */
@@ -194,7 +195,7 @@ export function updateVineSweeps(dt){
  const p=state.player,pb=livingPlant();
  for(let i=state.vineSweeps.length-1;i>=0;i--){
   const v=state.vineSweeps[i];
-  if(v.delay>0){v.delay-=dt;continue}
+  if(v.delay>0){v.delay-=dt;continue} /* VORWARNUNG (Hugo #50): Ziel-Linien blinken in render.js */
   v.t+=dt;
   if(v.t>=v.dur){state.vineSweeps.splice(i,1);continue}
   const k=v.t/v.dur,ang=v.a0+(v.a1-v.a0)*k;
@@ -217,7 +218,7 @@ export function updatePlant(b,dt){
   b.vulnTimer-=dt;
   if(b.vulnTimer<=0){
    b.vulnerable=false;b.shieldHits=0;
-   b.vineTimer=1.6;b.acidSpitTimer=3;b.seedTimer=4;b.beamTimer=7;b.screamTimer=6;b.burrowTimer=9;
+   b.vineTimer=2.2;b.acidSpitTimer=3.5;b.seedTimer=4.5;b.beamTimer=7.5;b.screamTimer=7;b.burrowTimer=10;
    showGameMessage('DIE PFLANZE HAT WIEDER ZU!',1.6)
   }
   return
@@ -259,27 +260,28 @@ export function updatePlant(b,dt){
    if(pointSegmentDistance(p.x,p.y,b.x,b.y-30,ex,ey)<p.r+30)plantAttackDamage(b,30);
    for(let k=0;k<6;k++){const dd=Math.random()*Math.min(length,520);particle(b.x+Math.cos(b.beamAngle)*dd,b.y-30+Math.sin(b.beamAngle)*dd,'#c8f75a',4+Math.random()*5)}
   }
-  if(b.beamFire<=0)b.beamTimer=10+Math.random()*4
+  if(b.beamFire<=0)b.beamTimer=11+Math.random()*4
  }else if(b.beamTimer<=0&&dist<720){
   b.beamCharge=.9;b.mouthOpen=1;sfx('venom');
   showGameMessage('SAEURE-STRAHL KOMMT — AUSSER WEICHUNG!',1.6)
  }
 
- /* RANKEN (Hugo #49): sie SCHWINGEN und SCHLAGEN wie Peitschen bis zum Maprand */
+ /* RANKEN (Hugo #49, LANGSAMER + VORGEWARNT: Hugo #50): sie SCHWINGEN und
+    SCHLAGEN wie Peitschen bis zum Maprand — erst blinkende Ziel-Linien! */
  b.vineTimer-=dt;
  if(b.vineTimer<=0){
-  b.vineTimer=2.2+Math.random()*1.4;b.mouthOpen=1;sfx('slash');
-  showGameMessage('RANKEN-SCHLAG!',.8);
+  b.vineTimer=2.7+Math.random()*1.5;b.mouthOpen=1;sfx('slash');
+  showGameMessage('RANKEN — ACHTUNG!',.8);
   for(let k=0;k<2;k++){
    const a=b.faceAngle+(k?1:-1)*(.35+Math.random()*.5);
-   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:.6,delay:k*.25,hit:false,dmg:14,curAng:a,len:0})
+   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:1.05,delay:.6+k*.3,hit:false,dmg:14,curAng:a,len:0})
   }
  }
 
  /* BISS (jetzt frueher + weiter sichtbar, Hugo #48) */
  b.biteTimer-=dt;
  if(dist<240&&b.biteTimer<=0){
-  b.biteTimer=1.7;b.biteWind=.4;b.mouthOpen=1;sfx('bite');
+  b.biteTimer=2;b.biteWind=.4;b.mouthOpen=1;sfx('bite');
   showGameMessage('BISS!',.9)
  }
  if(b.biteWind>0){
@@ -290,7 +292,7 @@ export function updatePlant(b,dt){
  /* SAEURE-SPUCKE: Pfuetze bleibt auf dem Boden */
  b.acidSpitTimer-=dt;
  if(b.acidSpitTimer<=0){
-  b.acidSpitTimer=3.5+Math.random()*2;b.mouthOpen=1;sfx('acid');
+  b.acidSpitTimer=4+Math.random()*2;b.mouthOpen=1;sfx('acid'); /* etwas seltener (Hugo #50) */
   const fl=dist; /* auf die aktuelle Spielerposition zielen */
   state.enemyProjectiles.push({type:'acid',plant:true,x:b.x,y:b.y-30,vx:dx/dist*260,vy:dy/dist*260,life:fl/260+.02,damage:0,r:11,pool:true,poolR:34,poolLife:ACID_POOL_LIFE,poolDmg:9,poolTickRate:.55})
  }
@@ -298,7 +300,7 @@ export function updatePlant(b,dt){
  /* SAMEN -> Mini-Fresspflanzen (jetzt OEFFTER + mit Ansage, Hugo #48) */
  b.seedTimer-=dt;
  if(b.seedTimer<=0){
-  b.seedTimer=4.5+Math.random()*2.5;b.mouthOpen=1;sfx('seed');
+  b.seedTimer=5+Math.random()*2.5;b.mouthOpen=1;sfx('seed');
   showGameMessage('SAMEN! MINI-FRESSPFLANZEN KOMMEN!',1.6);
   for(let k=0;k<2;k++){
    const a=Math.random()*6.28,sp=240;
@@ -309,7 +311,7 @@ export function updatePlant(b,dt){
  /* ZUNGE (bis zum Maprand, schwingt die Wand entlang) */
  b.tongueTimer-=dt;
  if(b.tongueTimer<=0&&!b.tongue.active){
-  b.tongueTimer=7+Math.random()*3;
+  b.tongueTimer=8+Math.random()*3;
   const e=nearestEdgePoint(b.x,b.y);
   b.tongue={active:true,mode:'out',t:.4,x:b.x,y:b.y-30,ex:e.ex,ey:e.ey,dir:Math.random()<.5?1:-1,edge:e.edge,caught:false};
   sfx('tongue');showGameMessage('DIE ZUNGE!',1.6)
@@ -318,7 +320,7 @@ export function updatePlant(b,dt){
  /* VERGRABEN */
  b.burrowTimer-=dt;
  if(b.burrowTimer<=0){
-  b.burrowTimer=12+Math.random()*6;
+  b.burrowTimer=13+Math.random()*6;
   b.burrowed=true;b.burrowSub=1.4;sfx('burrow');
   showGameMessage('SIE VERGRABT SICH!',1.6);
   for(let k=0;k<26;k++)particle(b.x+(Math.random()-.5)*120,b.y+40,'#7a5230',4+Math.random()*4)
@@ -327,7 +329,7 @@ export function updatePlant(b,dt){
  /* SCHREI + SCHALLWELLE (drueber dashen!) */
  b.screamTimer-=dt;
  if(b.screamTimer<=0){
-  b.screamTimer=8+Math.random()*3;
+  b.screamTimer=9+Math.random()*3;
   state.shockwaves.push({x:b.x,y:b.y,r:50,speed:430,life:2.6,hit:false});
   sfx('scream');b.mouthOpen=1;
   showGameMessage('SCHREI! UEBER DIE WELLE DASHEN!',1.8)

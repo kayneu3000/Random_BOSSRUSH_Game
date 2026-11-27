@@ -601,26 +601,49 @@ export function drawPlant(b){
  ctx.restore()
 }
 
-/* MINI-FRESSPFLANZE (Hugo #49): bleibt auf der Stelle, GROSSE Reichweite
-   (gestrichelter Ring!), JE 60 HP mit HP-Balken — unendlich lange da */
+/* MINI-FRESSPFLANZE (Hugo #50): sieht aus wie der grosse Boss — nur MINI
+   (Rosenkopf, dunkelgruener Stiel, Zaehne, Zunge). Bleibt auf der Stelle,
+   Reichweiten-Ring, JE 60 HP mit HP-Balken, unendlich lange da. */
 export function drawMiniPlant(a){
  const s=state;
  ctx.save();ctx.translate(a.x,a.y);
- /* GROSSE REICHWEITE sichtbar machen */
+ /* REICHWEITE sichtbar machen */
  ctx.globalAlpha=.16+Math.sin(s.elapsed*3)*.05;
  ctx.strokeStyle='#9be15d';ctx.lineWidth=2;ctx.setLineDash([8,10]);
  ctx.beginPath();ctx.arc(0,0,MINI_PLANT_RANGE,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
  ctx.globalAlpha=1;
- const puls=1+Math.sin(a.wobble)*.1;
- ctx.fillStyle='#3d7a22';ctx.fillRect(-3,0,6,14);
- ctx.fillStyle=a.flash>0?'#ffffff':(Math.sin(a.wobble*2)>.6?'#e7ffa8':'#9be15d');
- ctx.beginPath();ctx.ellipse(0,-8,13*puls,11*puls,0,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#1d4a12';ctx.beginPath();ctx.ellipse(0,-4,8,3.5,0,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#fff8e0';for(const tx of [-4,0,4]){ctx.beginPath();ctx.moveTo(tx-1.5,-7);ctx.lineTo(tx,-4.5);ctx.lineTo(tx+1.5,-7);ctx.closePath();ctx.fill()}
- ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(-4,-13,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-13,2,0,Math.PI*2);ctx.fill();
+ ctx.rotate(Math.sin(a.wobble)*.08);
+ const flash=a.flash>0;
+ /* Mini-WURZELN */
+ ctx.lineCap='round';
+ for(let k=-1;k<=1;k++){
+  ctx.strokeStyle=k%2?'#4a3218':'#5c3f1e';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(k*4,8);ctx.quadraticCurveTo(k*8+Math.sin(s.elapsed*2+k)*3,15,k*10,19);ctx.stroke()
+ }
+ /* Mini-STIEL (dunkelgruen) */
+ ctx.fillStyle='#1d5c14';
+ ctx.beginPath();ctx.moveTo(-6,10);ctx.quadraticCurveTo(-2,0,-2,-4);ctx.lineTo(2,-4);ctx.quadraticCurveTo(2,0,6,10);ctx.closePath();ctx.fill();
+ /* Mini-ROSENKOPF: 2 Bluetenblatt-Schichten + Kern */
+ const pA=flash?'#ffffff':'#e5518d',pB=flash?'#ffd9e6':'#ff7ab8',pC=flash?'#fff3f7':'#ffa8cf';
+ ctx.fillStyle=pA;
+ for(let k=0;k<5;k++){const an=k*Math.PI*2/5+s.elapsed*.15;ctx.save();ctx.translate(Math.cos(an)*8,-10+Math.sin(an)*8);ctx.rotate(an);ctx.beginPath();ctx.ellipse(0,0,7,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+ ctx.fillStyle=pB;
+ for(let k=0;k<4;k++){const an=k*Math.PI*2/4+s.elapsed*.15+.5;ctx.save();ctx.translate(Math.cos(an)*5,-10+Math.sin(an)*5);ctx.rotate(an);ctx.beginPath();ctx.ellipse(0,0,5.5,3.5,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+ ctx.fillStyle=pC;ctx.beginPath();ctx.arc(0,-10,5,0,Math.PI*2);ctx.fill();
+ /* Mini-MAUL + SPITZE ZAEHNE */
+ ctx.fillStyle='#1d0a12';ctx.beginPath();ctx.ellipse(0,-8.5,6,2.5+Math.sin(a.wobble*2)*1.2,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#fff8e0';
+ for(let k=0;k<5;k++){const an=k*2.399+.7,tx=Math.cos(an)*6.5,ty=-10+Math.sin(an)*5.5;
+  ctx.beginPath();ctx.moveTo(tx-1.5,ty);ctx.lineTo(tx,ty-2.6);ctx.lineTo(tx+1.5,ty);ctx.closePath();ctx.fill()}
+ /* Mini-ZUNGE (spitzig, schwingt) */
+ ctx.strokeStyle='#ff5aa0';ctx.lineWidth=2.5;
+ ctx.beginPath();ctx.moveTo(0,-7);
+  ctx.quadraticCurveTo(Math.sin(s.elapsed*3+a.wobble)*4,0,Math.sin(s.elapsed*3+a.wobble)*6,3);
+ ctx.stroke();
  /* HP-BALKEN (60 HP, toetbar) */
- ctx.fillStyle='#140706';ctx.fillRect(-14,-22,28,5);
- ctx.fillStyle='#ff4b20';ctx.fillRect(-14,-22,28*Math.max(0,a.hp/a.maxHp),5);
+ ctx.rotate(-Math.sin(a.wobble)*.08);
+ ctx.fillStyle='#140706';ctx.fillRect(-14,-24,28,5);
+ ctx.fillStyle='#ff4b20';ctx.fillRect(-14,-24,28*Math.max(0,a.hp/a.maxHp),5);
  ctx.restore()
 }
 
@@ -775,8 +798,17 @@ export function draw(){
  }});
  safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){if(b.type==='dragon')drawDragon(b);else if(b.type==='gunball')drawGunball(b);else if(b.type==='shadow')drawShadow(b);else if(b.type==='snake')drawSnake(b);else if(b.type==='snakeSkin')drawSkin(b);else if(b.type==='plant')drawPlant(b);else drawSlime(b)}});
  safeDraw('ranken',()=>{for(const v of s.vineSweeps){
+  if(v.delay>0){
+   /* VORWARNUNG (Hugo #50): blinkende Ziel-Linien zeigen, WO die Ranken zuschlagen */
+   ctx.save();ctx.globalAlpha=.3+Math.sin(state.elapsed*16)*.18;
+   ctx.strokeStyle='#c8f75a';ctx.lineWidth=3;ctx.setLineDash([12,10]);
+   for(const wa of [v.a0,v.a1,v.curAng]){
+    const wl=rayMapLength(v.x,v.y,wa);
+    ctx.beginPath();ctx.moveTo(v.x,v.y);ctx.lineTo(v.x+Math.cos(wa)*wl,v.y+Math.sin(wa)*wl);ctx.stroke()
+   }
+   ctx.setLineDash([]);ctx.restore();continue
+  }
   /* RANKEN-SCHWAG (Hugo #49): Peitsche bis zum Maprand, mit Dornen */
-  if(v.delay>0)continue;
   const k=Math.min(1,v.t/v.dur),ang=v.curAng,len=v.len||rayMapLength(v.x,v.y,ang);
   ctx.save();ctx.lineCap='round';
   ctx.globalAlpha=.95*(1-Math.max(0,k-.75)/.25);

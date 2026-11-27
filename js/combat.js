@@ -129,9 +129,10 @@ export function updatePulls(dt){
    b.stunTimer=1.2; /* kurz keinen Schaden machen */
    damageBoss(b,45);sfx('bite'); /* MEHR SCHADEN (Hugo #49) */
    state.effects.push({type:'saugerBite',x:b.x,y:b.y,life:.45}); /* sichtbarer BISS */
-   /* SCHLEUDERN: KEIN Teleport mehr — echte Wucht (Knockback mit Reibung) */
-   const a=Math.atan2(b.y-p.y,b.x-p.x),FLING=1500;
-   b.kbx=Math.cos(a)*FLING;b.kby=Math.sin(a)*FLING;b.flinging=true;
+   /* SCHLEUDERN: KEIN Teleport, echte Wucht — und HINTER SICH (Hugo #50):
+      Richtung entgegen der eigenen Blickrichtung (Wurf ueber die Schulter) */
+   const fa=p.angle,FLING=1500;
+   b.kbx=-Math.cos(fa)*FLING;b.kby=-Math.sin(fa)*FLING;b.flinging=true;
    damageBoss(b,30);state.screenShake=12; /* Schleudern + nochmal Schaden */
    showGameMessage('WEGMITDIR!',1);
    continue
