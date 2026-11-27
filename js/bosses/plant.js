@@ -177,7 +177,7 @@ function updateTongue(b,dt){
  }
  /* Fang-Check: die GESAMTE Zunge faengt (Hugo #49) — nicht nur die Spitze!
    Wer klebt, bleibt an SEINEM Punkt auf der Zunge haengen und schwingt mit. */
- if(!t.caught&&t.active&&state.invuln<=0&&p.stuckTimer<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+26){
+ if(!t.caught&&t.active&&state.invuln<=0&&(p.stuckTimer||0)<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+26){
   t.caught=true;p.stuckTimer=.85;sfx('tongue');
   const vx=t.x-hx,vy=t.y-hy,vl=Math.hypot(vx,vy)||1;
   t.u=Math.max(.12,Math.min(1,((p.x-hx)*vx+(p.y-hy)*vy)/(vl*vl))); /* Klebe-Punkt */
@@ -274,7 +274,7 @@ export function updatePlant(b,dt){
   showGameMessage('RANKEN — ACHTUNG!',.8);
   for(let k=0;k<2;k++){
    const a=b.faceAngle+(k?1:-1)*(.35+Math.random()*.5);
-   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:1.05,delay:.6+k*.3,hit:false,dmg:14,curAng:a,len:0})
+   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:1.8,delay:.6+k*.3,hit:false,dmg:14,curAng:a,len:0}) /* NOCH VIEL langsamer (Hugo #50) */
   }
  }
 
@@ -308,12 +308,17 @@ export function updatePlant(b,dt){
   }
  }
 
- /* ZUNGE (bis zum Maprand, schwingt die Wand entlang) */
+ /* ZUNGE (bis zum Maprand, schwingt die Wand entlang)
+    HUGO #50: sie jagt DICH — der Strahl zielt DURCH DICH bis zum Maprand,
+    dann schwingt sie von dort die Wand entlang */
  b.tongueTimer-=dt;
  if(b.tongueTimer<=0&&!b.tongue.active){
   b.tongueTimer=8+Math.random()*3;
-  const e=nearestEdgePoint(b.x,b.y);
-  b.tongue={active:true,mode:'out',t:.4,x:b.x,y:b.y-30,ex:e.ex,ey:e.ey,dir:Math.random()<.5?1:-1,edge:e.edge,caught:false};
+  const hx2=b.x,hy2=b.y-30;
+  const ang=Math.atan2(p.y-hy2,p.x-hx2),L=rayMapLength(hx2,hy2,ang);
+  const ex2=hx2+Math.cos(ang)*L,ey2=hy2+Math.sin(ang)*L;
+  const e2=ey2<=1?'top':ey2>=MAP.h-1?'bottom':ex2<=1?'left':'right';
+  b.tongue={active:true,mode:'out',t:.4,x:hx2,y:hy2,ex:ex2,ey:ey2,dir:Math.random()<.5?1:-1,edge:e2,caught:false};
   sfx('tongue');showGameMessage('DIE ZUNGE!',1.6)
  }
 

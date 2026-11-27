@@ -55,7 +55,9 @@ function startGame() {
  if (s.isAdmin && !classes[s.selected]) s.selected = s.adminBaseClass || 'faust';
  const c = classes[s.selected];
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
- s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0 };
+ /* stuckTimer MUSS initialisiert sein (HUGO-BUG #50): ohne das Feld war
+    undefined<=0 = false — der Zungen-Fang-Check sprang NIE an! */
+ s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0, stuckTimer: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.acidPools = []; s.miniPlants = []; s.shockwaves = []; /* PLANT (Hugo #47) */
  s.vineSweeps = []; s.craters = []; /* HUGO #49: Ranken-Schwaenge + Krater */
