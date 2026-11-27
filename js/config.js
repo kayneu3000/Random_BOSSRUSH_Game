@@ -9,7 +9,7 @@ export const classes = {
  assassin:{name:'ASSASSIN',hp:200,damage:10,cool:.2,range:47,speed:345,icon:'🗡'},
  /* PEITSCHE (Hugo): 220 HP, 30 Schaden, 0,5s Cooldown, langer LINIEN-Angriff, weiter Dash, etwas schneller als normale Klassen */
  whip:{name:'PEITSCHE',hp:220,damage:40,cool:.5,range:230,speed:270,icon:'🗡',line:true}, /* Hugo: 40 Schaden */
- sauger:{name:'SAUGER',hp:250,damage:25,cool:2,range:280,speed:245,icon:'🌱',pull:true}, /* Hugo: zieht Gegner an */
+ sauger:{name:'SAUGER',hp:250,damage:40,cool:2,range:280,speed:245,icon:'🌱',pull:true}, /* Hugo #49: MEHR Schaden (40) + zieht Gegner an */
 faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
  healer:{name:'HEALER',hp:100,damage:0,cool:0,range:0,speed:235,icon:'💚'},
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},
@@ -41,7 +41,10 @@ export const gunballWeak=['snake','boomerang','growth','mirror','teleport'];
 export const PLANT_HP=700;
 export const PLANT_SHIELD_HITS=12; /* Hugo: 12 Angriffe ueberleben ... */
 export const PLANT_VULN_TIME=8;    /* ... dann 8 Sekunden angreifbar */
-export const MINI_PLANT_LIFE=10;   /* Mini-Fresspflanzen: unsterblich, aber nur 10s da */
+/* HUGO #49: Minis bleiben auf der Stelle, grosse Reichweite, JE 60 HP (toetbar!)
+   und bleiben UNENDLICH lange da (kein Ablauf-Timer mehr). */
+export const MINI_PLANT_HP=60;
+export const MINI_PLANT_RANGE=170; /* grosse Biss-Reichweite */
 export const ACID_POOL_LIFE=6;     /* Saeure-Pfuetzen bleiben liegen */
 
 export const gunballMedium=['giant','splitter','planet','chain','time','rain'];

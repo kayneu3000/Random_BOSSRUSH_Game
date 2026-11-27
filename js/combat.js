@@ -2,17 +2,19 @@ import { state } from "./state.js";
 import { classes, MAP } from "./config.js";
 import { damageBoss, damageTower, damagePlayer, particle } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
+import { damageMiniPlant } from "./bosses/plant.js";
 import { getInput } from "./input.js";
 import { showGameMessage } from "./ui.js";
 import { sfx } from "./audio.js";
 import { pointSegmentDistance, rayMapLength } from "./utils.js";
 
 function pickRangedTarget(){
- let target=null,dist=Infinity,isSnakeFood=false;
- for(const a of state.smallSnakes){if(a.destroyed)continue;const d=Math.hypot(a.x-state.player.x,a.y-state.player.y);if(d<dist){dist=d;target=a;isSnakeFood=true}}
- for(const t of state.infernoTowers){if(t.destroyed)continue;const d=Math.hypot(t.x-state.player.x,t.y-state.player.y);if(d<dist){dist=d;target=t;isSnakeFood=false}}
- for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;const d=Math.hypot(b.x-state.player.x,b.y-state.player.y);if(d<dist){dist=d;target=b;isSnakeFood=false}}
- return { target, isSnakeFood }
+ let target=null,dist=Infinity,isSnakeFood=false,isMini=false;
+ for(const a of state.smallSnakes){if(a.destroyed)continue;const d=Math.hypot(a.x-state.player.x,a.y-state.player.y);if(d<dist){dist=d;target=a;isSnakeFood=true;isMini=false}}
+ for(const a of state.miniPlants){const d=Math.hypot(a.x-state.player.x,a.y-state.player.y);if(d<dist){dist=d;target=a;isSnakeFood=false;isMini=true}} /* Minis sind toetbar (Hugo #49) */
+ for(const t of state.infernoTowers){if(t.destroyed)continue;const d=Math.hypot(t.x-state.player.x,t.y-state.player.y);if(d<dist){dist=d;target=t;isSnakeFood=false;isMini=false}}
+ for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;const d=Math.hypot(b.x-state.player.x,b.y-state.player.y);if(d<dist){dist=d;target=b;isSnakeFood=false;isMini=false}}
+ return { target, isSnakeFood, isMini }
 }
 
 /* PEITSCHE (Hugo): schmaler Korridor vor dem Spieler — trifft nur, was in der Linie liegt */
@@ -25,23 +27,27 @@ function inWhipLine(x,y,maxD){
 }
 
 function pickMeleeTarget(c){
- let target=null,dist=Infinity,isTower=true,isSnakeFood=false;
+ let target=null,dist=Infinity,isTower=true,isSnakeFood=false,isMini=false;
  for(const a of state.smallSnakes){
   if(a.destroyed)continue;
   const dx=a.x-state.player.x,dy=a.y-state.player.y,d=Math.hypot(dx,dy),ang=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(ang-state.player.angle),Math.cos(ang-state.player.angle));
-  if(Math.abs(diff)>.85||d>c.range+a.r)continue;if(d<dist){dist=d;target=a;isTower=false;isSnakeFood=true}
+  if(Math.abs(diff)>.85||d>c.range+a.r)continue;if(d<dist){dist=d;target=a;isTower=false;isSnakeFood=true;isMini=false}
+ }
+ for(const a of state.miniPlants){ /* Minis sind toetbar (Hugo #49) */
+  const dx=a.x-state.player.x,dy=a.y-state.player.y,d=Math.hypot(dx,dy),ang=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(ang-state.player.angle),Math.cos(ang-state.player.angle));
+  if(Math.abs(diff)>.85||d>c.range+a.r)continue;if(d<dist){dist=d;target=a;isTower=false;isSnakeFood=false;isMini=true}
  }
  for(const t of state.infernoTowers){
   if(t.destroyed)continue;
   const dx=t.x-state.player.x,dy=t.y-state.player.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(a-state.player.angle),Math.cos(a-state.player.angle));
-  if(Math.abs(diff)>.85||d>c.range+t.r)continue;if(d<dist){dist=d;target=t;isTower=true;isSnakeFood=false}
+  if(Math.abs(diff)>.85||d>c.range+t.r)continue;if(d<dist){dist=d;target=t;isTower=true;isSnakeFood=false;isMini=false}
  }
  for(const b of state.bosses){
   if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;
   const dx=b.x-state.player.x,dy=b.y-state.player.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx),diff=Math.atan2(Math.sin(a-state.player.angle),Math.cos(a-state.player.angle));
-  if(Math.abs(diff)>.85||d>c.range+b.r)continue;if(d<dist){dist=d;target=b;isTower=false;isSnakeFood=false}
+  if(Math.abs(diff)>.85||d>c.range+b.r)continue;if(d<dist){dist=d;target=b;isTower=false;isSnakeFood=false;isMini=false}
  }
- return { target, isTower, isSnakeFood }
+ return { target, isTower, isSnakeFood, isMini }
 }
 
 function shootGunner(){
@@ -78,9 +84,10 @@ export function attack(){
   state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:'whip'});
   const hits=[];
   for(const a of state.smallSnakes){if(!a.destroyed&&inWhipLine(a.x,a.y,c.range+a.r))hits.push({t:a,k:'food'})}
+  for(const a of state.miniPlants){if(inWhipLine(a.x,a.y,c.range+a.r))hits.push({t:a,k:'mini'})}
   for(const t of state.infernoTowers){if(!t.destroyed&&inWhipLine(t.x,t.y,c.range+t.r))hits.push({t,k:'tower'})}
   for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;if(inWhipLine(b.x,b.y,c.range+b.r))hits.push({t:b,k:'boss'})}
-  for(const h of hits){if(h.k==='food')damageSmallSnake(h.t,c.damage);else if(h.k==='tower')damageTower(h.t,c.damage);else damageBoss(h.t,c.damage)}
+  for(const h of hits){if(h.k==='food')damageSmallSnake(h.t,c.damage);else if(h.k==='mini')damageMiniPlant(h.t,c.damage);else if(h.k==='tower')damageTower(h.t,c.damage);else damageBoss(h.t,c.damage)}
   return
  }
  if(c.pull){
@@ -92,6 +99,7 @@ export function attack(){
   const pullPick = pickMeleeTarget(c);
   state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:'sauger'});
   if(!pullPick.target)return;
+  if(pullPick.isMini){damageMiniPlant(pullPick.target,c.damage);return}
   if(pullPick.isSnakeFood){damageSmallSnake(pullPick.target,c.damage);return}
   if(pullPick.isTower){damageTower(pullPick.target,c.damage);return}
   const b=pullPick.target;
@@ -100,36 +108,62 @@ export function attack(){
   showGameMessage('ANGESAUGT!',.9);
   return
  }
- const { target, isTower, isSnakeFood } = pickMeleeTarget(c);
+ const { target, isTower, isSnakeFood, isMini } = pickMeleeTarget(c);
  state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:state.selected});
- if(target){if(isSnakeFood)damageSmallSnake(target,c.damage);else if(isTower)damageTower(target,c.damage);else damageBoss(target,c.damage)}
+ if(target){if(isSnakeFood)damageSmallSnake(target,c.damage);else if(isMini)damageMiniPlant(target,c.damage);else if(isTower)damageTower(target,c.damage);else damageBoss(target,c.damage)}
 }
 
-/* SAUGER-ANZIEHEN (Hugo #47): markierte Gegner werden zur Spielerin gezogen,
-   Beruehrung = Stun + Schaden, Schleudern nach hinten + nochmal Schaden. */
+/* SAUGER-ANZIEHEN (Hugo #47, NEU #49): markierte Gegner werden zur Spielerin
+   gezogen — mit SICHTBAREN SAUG-WIND-WELLEN. Bei Beruehrung: die Fresspflanze
+   BEISST sichtbar zu (Stun + Schaden), dann wird der Gegner NICHT mehr
+   teleportiert, sondern mit echter WUCHT weit weg geschleudert — und schlaegt
+   beim Aufprall einen KRATER in den Boden. */
 export function updatePulls(dt){
  const p=state.player;
  for(const b of state.bosses){
   if(!b.alive||!b.saugerPull)continue;
   b.saugerPull.t-=dt;
   const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy)||1;
-  if(d<b.r+p.r+2){
+  if(d<b.r+p.r+6){
    delete b.saugerPull;
    b.stunTimer=1.2; /* kurz keinen Schaden machen */
-   damageBoss(b,25);sfx('bite');
-   const a=Math.atan2(b.y-p.y,b.x-p.x);
-   b.x+=Math.cos(a)*230;b.y+=Math.sin(a)*230;
-   b.x=Math.max(40,Math.min(MAP.w-40,b.x));b.y=Math.max(40,Math.min(MAP.h-40,b.y));
-   damageBoss(b,15);state.screenShake=8; /* Schleudern + nochmal Schaden */
-   for(let k=0;k<14;k++)particle(b.x,b.y,'#9be15d',3+Math.random()*3);
+   damageBoss(b,45);sfx('bite'); /* MEHR SCHADEN (Hugo #49) */
+   state.effects.push({type:'saugerBite',x:b.x,y:b.y,life:.45}); /* sichtbarer BISS */
+   /* SCHLEUDERN: KEIN Teleport mehr — echte Wucht (Knockback mit Reibung) */
+   const a=Math.atan2(b.y-p.y,b.x-p.x),FLING=1500;
+   b.kbx=Math.cos(a)*FLING;b.kby=Math.sin(a)*FLING;b.flinging=true;
+   damageBoss(b,30);state.screenShake=12; /* Schleudern + nochmal Schaden */
+   showGameMessage('WEGMITDIR!',1);
    continue
   }
   if(b.saugerPull&&b.saugerPull.t<=0){delete b.saugerPull;continue}
   /* ANZIEHEN: 430 px/s Richtung Spieler */
   const sp=430*dt;
   b.x+=dx/d*sp;b.y+=dy/d*sp;
-  if(Math.random()<.5)particle(b.x-dx/d*b.r,b.y-dy/d*b.r,'#9be15d',3)
+  /* SICHTBARE SAUG-WIND-WELLEN (Hugo #49): Luft wirbelt vom Gegner zur Pflanze */
+  if(Math.random()<.75){
+   const u=.15+Math.random()*.75;
+   state.effects.push({type:'suckWind',x:b.x+dx*u+(Math.random()-.5)*30,y:b.y+dy*u+(Math.random()-.5)*30,life:.32})
+  }
  }
+}
+
+/* SCHLEUDER-FLUG (Hugo #49): der Boss rutscht mit Reibung weit weg und
+   schlaegt beim Stillstand einen KRATER in den Boden. */
+export function updateCraters(dt){
+ for(const b of state.bosses){
+  if(!b.flinging)continue;
+  b.x+=b.kbx*dt;b.y+=b.kby*dt;
+  const dec=Math.max(0,1-2.4*dt);b.kbx*=dec;b.kby*=dec;
+  b.x=Math.max(60,Math.min(MAP.w-60,b.x));b.y=Math.max(60,Math.min(MAP.h-60,b.y));
+  if(Math.hypot(b.kbx,b.kby)<60){
+   b.flinging=false;b.kbx=0;b.kby=0;
+   state.craters.push({x:b.x,y:b.y+b.r*.35,r:b.r*1.2,life:20,max:20});
+   state.screenShake=10;sfx('scream');
+   for(let k=0;k<18;k++)particle(b.x+(Math.random()-.5)*b.r*2,b.y+(Math.random()-.5)*b.r,'#b9a58a',3+Math.random()*4)
+  }
+ }
+ for(let i=state.craters.length-1;i>=0;i--){state.craters[i].life-=dt;if(state.craters[i].life<=0)state.craters.splice(i,1)}
 }
 
 export function dash(){
@@ -146,6 +180,7 @@ export function updateEmber(dt){
    state.emberTick+=.3;const length=rayMapLength(state.player.x,state.player.y,state.emberBeamAngle),ex=state.player.x+Math.cos(state.emberBeamAngle)*length,ey=state.player.y+Math.sin(state.emberBeamAngle)*length;
    for(const t of state.infernoTowers){if(!t.destroyed&&pointSegmentDistance(t.x,t.y,state.player.x,state.player.y,ex,ey)<t.r+22)damageTower(t,20)}
    for(const a of state.smallSnakes){if(!a.destroyed&&pointSegmentDistance(a.x,a.y,state.player.x,state.player.y,ex,ey)<a.r+22)damageSmallSnake(a,20)}
+   for(const a of state.miniPlants){if(pointSegmentDistance(a.x,a.y,state.player.x,state.player.y,ex,ey)<a.r+22)damageMiniPlant(a,20)} /* Minis toetbar (Hugo #49) */
    for(const b of state.bosses){if(!b.alive)continue;if(b.type==='dragon'&&b.mode!=='exhausted')continue;if(b.type==='gunball'&&b.mode!=='vulnerable')continue;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))continue;if(b.type==='snake')continue;if(pointSegmentDistance(b.x,b.y,state.player.x,state.player.y,ex,ey)<b.r+25)damageBoss(b,20)}
    for(let i=0;i<7;i++){const distance=Math.random()*Math.min(length,500),px=state.player.x+Math.cos(state.emberBeamAngle)*distance,py=state.player.y+Math.sin(state.emberBeamAngle)*distance;particle(px,py,Math.random()<.5?'#ffb52e':'#ff4b12',3+Math.random()*6)}
   }

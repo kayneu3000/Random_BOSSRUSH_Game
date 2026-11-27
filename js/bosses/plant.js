@@ -1,5 +1,5 @@
 import { state } from "../state.js";
-import { MAP, PLANT_SHIELD_HITS, PLANT_VULN_TIME, MINI_PLANT_LIFE, ACID_POOL_LIFE } from "../config.js";
+import { MAP, PLANT_SHIELD_HITS, PLANT_VULN_TIME, MINI_PLANT_HP, MINI_PLANT_RANGE, ACID_POOL_LIFE } from "../config.js";
 import { damagePlayer, particle, damageBoss } from "../entities.js";
 import { showGameMessage } from "../ui.js";
 import { sfx } from "../audio.js";
@@ -33,6 +33,7 @@ export function plantSurviveHit(b){
  if(b.shieldHits>=PLANT_SHIELD_HITS){
   b.vulnerable=true;b.vulnTimer=PLANT_VULN_TIME;
   if(b.tongue.active){b.tongue.active=false;state.player.stuckTimer=0}
+  b.beamCharge=0;b.beamFire=0; /* K.O.: kein Saeurestrahl mehr (Hugo #49) */
   sfx('sling');state.screenShake=8;
   showGameMessage('SCHILD OFFEN — JETZT ANGRIFF!',2)
  }else showGameMessage('UEBERLEBT '+b.shieldHits+'/'+PLANT_SHIELD_HITS,1)
@@ -53,11 +54,21 @@ export function createPlant(x,y){
   faceAngle:0})
 }
 
-/* ---------- Mini-Fresspflanzen (Samen) ---------- */
+/* ---------- Mini-Fresspflanzen (Samen)
+   HUGO #49: bleiben AUF DER STELLE, GROSSE Reichweite, JE 60 HP (toetbar!)
+   und bleiben UNENDLICH lange da (kein Ablauf-Timer mehr). ---------- */
 export function createMiniPlant(x,y){
- state.miniPlants.push({x,y,r:15,life:MINI_PLANT_LIFE,biteCd:.4,wobble:Math.random()*6.28})
+ state.miniPlants.push({x,y,r:15,hp:MINI_PLANT_HP,maxHp:MINI_PLANT_HP,biteCd:.4,flash:0,wobble:Math.random()*6.28})
  sfx('seed');
- showGameMessage('MINI-FRESSPFLANZEN — UNSTERBLICH, ABER NUR 10s!',1.8)
+ showGameMessage('MINI-FRESSPFLANZEN — JE 60 HP, GROSSE REICHWEITE!',1.8)
+}
+
+export function damageMiniPlant(a,dmg){
+ a.hp-=dmg;a.flash=.14;
+ if(a.hp<=0){
+  for(let k=0;k<14;k++)particle(a.x,a.y,'#9be15d',3+Math.random()*3);
+  a.dead=true
+ }
 }
 
 function livingPlant(){
@@ -68,14 +79,11 @@ export function updateMiniPlants(dt){
  const p=state.player;
  for(let i=state.miniPlants.length-1;i>=0;i--){
   const a=state.miniPlants[i];
-  a.life-=dt;a.wobble+=dt*5;a.biteCd-=dt;
-  if(a.life<=0){ /* nach 10 Sekunden sind sie einfach weg */
-   for(let k=0;k<10;k++)particle(a.x,a.y,'#9be15d',3);
-   state.miniPlants.splice(i,1);continue
-  }
-  const dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy)||1;
-  a.x+=dx/d*118*dt;a.y+=dy/d*118*dt;
-  if(d<a.r+p.r+4&&a.biteCd<=0){
+  a.wobble+=dt*5;a.biteCd-=dt;a.flash=Math.max(0,a.flash-dt);
+  if(a.dead||a.hp<=0){state.miniPlants.splice(i,1);continue}
+  /* STATIONAER: sie ruehrt sich nicht von der Stelle — aber GROSSE Reichweite */
+  const d=Math.hypot(p.x-a.x,p.y-a.y)||1;
+  if(d<MINI_PLANT_RANGE&&a.biteCd<=0){
    a.biteCd=1.15;
    const pb=livingPlant();if(pb)plantSurviveHit(pb); /* ihr Biss zaehlt */
    damagePlayer(8);sfx('bite');
@@ -105,8 +113,11 @@ export function updateShockwaves(dt){
   const w=state.shockwaves[i];
   w.r+=w.speed*dt;w.life-=dt;
   if(w.life<=0){state.shockwaves.splice(i,1);continue}
-  /* Drueber dashen! (Dash = invuln) — sonst Volltreffer + Rueckschlag */
-  if(!w.hit&&state.invuln<=0&&p.dashDuration<=0){
+  /* Drueber dashen! (Dash = invuln) — sonst Volltreffer + Rueckschlag.
+     HUGO-BUG #49: p.dashDuration gab es auf dem Spieler NIE (dashDuration liegt
+     auf STATE) — undefined<=0 ist immer false, deshalb hat die Schallwelle
+     NIE Schaden gemacht! */
+  if(!w.hit&&state.invuln<=0&&state.dashDuration<=0){
    const d=Math.hypot(p.x-w.x,p.y-w.y);
    if(Math.abs(d-w.r)<26){
     w.hit=true;
@@ -162,15 +173,38 @@ function updateTongue(b,dt){
   const k=Math.max(0,t.t/.35);
   t.x=hx+(t.ex-hx)*k;t.y=hy+(t.ey-hy)*k;
   if(t.t<=0){t.active=false;if(t.caught){t.caught=false;p.stuckTimer=0}}
-  return
  }
- /* Fang-Check: wer die Zunge beruehrt, KLEBT drauf */
- if(!t.caught&&state.invuln<=0&&p.stuckTimer<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+16){
+ /* Fang-Check: die GESAMTE Zunge faengt (Hugo #49) — nicht nur die Spitze!
+   Wer klebt, bleibt an SEINEM Punkt auf der Zunge haengen und schwingt mit. */
+ if(!t.caught&&t.active&&state.invuln<=0&&p.stuckTimer<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+20){
   t.caught=true;p.stuckTimer=.85;sfx('tongue');
+  const vx=t.x-hx,vy=t.y-hy,vl=Math.hypot(vx,vy)||1;
+  t.u=Math.max(.12,Math.min(1,((p.x-hx)*vx+(p.y-hy)*vy)/(vl*vl))); /* Klebe-Punkt */
   showGameMessage('AN DER ZUNGE — FESTGEKLEBT!',1.4)
  }
- if(t.caught){
-  p.x=t.x;p.y=t.y /* an der Zunge entlanggeschleift */
+ if(t.caught&&t.active){
+  const u=t.u||1;
+  p.x=hx+(t.x-hx)*u;p.y=hy+(t.y-hy)*u /* am Klebe-Punkt mitgeschwungen */
+ }
+}
+
+/* ---------- Ranken-SCHWAENGE (Hugo #49): keine Projektile mehr — die Ranken
+   SCHWINGEN und SCHLAGEN wie Peitschen und reichen BIS ZUM MAPRAND ---------- */
+export function updateVineSweeps(dt){
+ const p=state.player,pb=livingPlant();
+ for(let i=state.vineSweeps.length-1;i>=0;i--){
+  const v=state.vineSweeps[i];
+  if(v.delay>0){v.delay-=dt;continue}
+  v.t+=dt;
+  if(v.t>=v.dur){state.vineSweeps.splice(i,1);continue}
+  const k=v.t/v.dur,ang=v.a0+(v.a1-v.a0)*k;
+  v.curAng=ang;v.len=rayMapLength(v.x,v.y,ang); /* bis zum MAPRAND */
+  /* Treffer entlang der GANZEN Ranke */
+  if(!v.hit&&pb&&!pb.vulnerable&&!pb.burrowed&&state.invuln<=0&&state.dashDuration<=0&&
+     pointSegmentDistance(p.x,p.y,v.x,v.y,v.x+Math.cos(ang)*v.len,v.y+Math.sin(ang)*v.len)<p.r+22){
+   v.hit=true;plantAttackDamage(pb,v.dmg);state.screenShake=7;
+   for(let q=0;q<10;q++)particle(p.x,p.y,'#8cf838',3+Math.random()*3)
+  }
  }
 }
 
@@ -231,15 +265,15 @@ export function updatePlant(b,dt){
   showGameMessage('SAEURE-STRAHL KOMMT — AUSSER WEICHUNG!',1.6)
  }
 
- /* RANKEN: 3 Schuesse nach dir — sie LANDEN und werden zu Giftpfuetzen */
+ /* RANKEN (Hugo #49): sie SCHWINGEN und SCHLAGEN wie Peitschen bis zum Maprand */
  b.vineTimer-=dt;
  if(b.vineTimer<=0){
-  b.vineTimer=1.8+Math.random()*1.2;b.mouthOpen=1;
-  for(let k=-1;k<=1;k++){
-   const a=b.faceAngle+k*.22,sp=310;
-   state.enemyProjectiles.push({type:'vine',plant:true,x:b.x,y:b.y-30,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.8+Math.random()*.35,damage:10,r:9,pool:true,poolR:24,poolLife:5,poolDmg:6,poolTickRate:.5})
+  b.vineTimer=2.2+Math.random()*1.4;b.mouthOpen=1;sfx('slash');
+  showGameMessage('RANKEN-SCHLAG!',.8);
+  for(let k=0;k<2;k++){
+   const a=b.faceAngle+(k?1:-1)*(.35+Math.random()*.5);
+   state.vineSweeps.push({x:b.x,y:b.y-6,a0:a-.55,a1:a+.55,t:0,dur:.6,delay:k*.25,hit:false,dmg:14,curAng:a,len:0})
   }
-  sfx('slash')
  }
 
  /* BISS (jetzt frueher + weiter sichtbar, Hugo #48) */

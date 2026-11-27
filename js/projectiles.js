@@ -1,7 +1,7 @@
 import { state } from "./state.js";
 import { damageBoss, damagePlayer, damageTower } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
-import { createMiniPlant, plantSurviveHit } from "./bosses/plant.js";
+import { createMiniPlant, damageMiniPlant, plantSurviveHit } from "./bosses/plant.js";
 import { ACID_POOL_LIFE } from "./config.js";
 import { sfx } from "./audio.js";
 
@@ -11,6 +11,8 @@ export function updatePlayerProjectiles(dt){
   for(const t of state.infernoTowers){if(!t.destroyed&&Math.hypot(p.x-t.x,p.y-t.y)<p.r+t.r){damageTower(t,p.damage);p.life=0;break}}
   if(p.life<=0)continue;
   for(const a of state.smallSnakes){if(!a.destroyed&&Math.hypot(p.x-a.x,p.y-a.y)<p.r+a.r){damageSmallSnake(a,p.damage);p.life=0;break}}
+  if(p.life<=0)continue;
+  for(const a of state.miniPlants){if(Math.hypot(p.x-a.x,p.y-a.y)<p.r+a.r){damageMiniPlant(a,p.damage);p.life=0;break}} /* Minis toetbar (Hugo #49) */
   if(p.life<=0)continue;
   for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage);p.life=0;break}}
  }
