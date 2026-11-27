@@ -1,8 +1,9 @@
 import { state } from "./state.js";
+import { PLANT_SHIELD_HITS, PLANT_VULN_TIME } from "./config.js";
 import { createSlime } from "./bosses/slime.js";
 import { exhaustDragon } from "./bosses/dragon.js";
 import { exhaustShadow } from "./bosses/shadow.js";
-import { endGame } from "./ui.js";
+import { endGame, showGameMessage } from "./ui.js";
 import { $ } from "./utils.js";
 
 export function createHealerSlimes(){
@@ -56,7 +57,26 @@ import { sfx } from "./audio.js";
 
 export function damageBoss(b,amount,ignoreGuard){
  if(!b.alive)return;
- if(!ignoreGuard){if(b.type==='dragon'&&b.mode!=='exhausted')return;if(b.type==='gunball'&&b.mode!=='vulnerable')return;if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))return;if(b.type==='snake')return}
+ if(!ignoreGuard){
+  if(b.type==='dragon'&&b.mode!=='exhausted')return;
+  if(b.type==='gunball'&&b.mode!=='vulnerable')return;
+  if(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))return;
+  if(b.type==='snake')return;
+  /* PLANT-SCHILD (Hugo #47): die Pflanze UEBERLEBT 12 Angriffe — sie verliert
+     dabei KEINE HP. Der 12. Treffer oeffnet das Schild: 8 Sekunden lang nimmt
+     sie normalen Schaden, danach schliesst es sich wieder (Zaehler resettet). */
+  if(b.type==='plant'){
+   if(b.burrowed)return;
+   if(!b.vulnerable){
+    b.shieldHits++;
+    if(b.shieldHits>=PLANT_SHIELD_HITS){
+     b.vulnerable=true;b.vulnTimer=PLANT_VULN_TIME;
+     showGameMessage('SCHILD OFFEN — JETZT ANGRIFF!',2);sfx('sling')
+    }else showGameMessage('SCHILD: NOCH '+(PLANT_SHIELD_HITS-b.shieldHits)+' ANGRIFFEN',1.1);
+    return
+   }
+  }
+ }
  sfx('bossHit');
  b.hp-=amount*(state.dmgMultiplier||1);b.flash=.13;
  for(let i=0;i<3;i++)particle(b.x,b.y,b.type==='dragon'?'#ffad55':b.type==='gunball'?'#c7a2ff':'#a7f7ff',3+Math.random()*3);

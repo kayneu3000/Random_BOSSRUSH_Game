@@ -1,5 +1,5 @@
 import { state } from "./state.js";
-import { classes } from "./config.js";
+import { classes, MAP } from "./config.js";
 import { damageBoss, damageTower, damagePlayer, particle } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
 import { getInput } from "./input.js";
@@ -83,9 +83,53 @@ export function attack(){
   for(const h of hits){if(h.k==='food')damageSmallSnake(h.t,c.damage);else if(h.k==='tower')damageTower(h.t,c.damage);else damageBoss(h.t,c.damage)}
   return
  }
+ if(c.pull){
+  /* SAUGER (Hugo #47): die Fresspflanze in der Hand SAUGT den Gegner an.
+     - Statue/Wurzel-Boss (z.B. PFLANZE, kann sich nicht bewegen): nur Schaden.
+     - Beweglicher Gegner: wird angezogen — bei Beruehrung ist er kurz
+       kampfunfaehig (kein Schaden von ihm) UND nimmt selbst Schaden, dann
+       wird er nach hinten geschleudert und nimmt NOCHMAL Schaden. 2s Cooldown. */
+  const pullPick = pickMeleeTarget(c);
+  state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:'sauger'});
+  if(!pullPick.target)return;
+  if(pullPick.isSnakeFood){damageSmallSnake(pullPick.target,c.damage);return}
+  if(pullPick.isTower){damageTower(pullPick.target,c.damage);return}
+  const b=pullPick.target;
+  if(b.type==='plant'||b.saugerPull){damageBoss(b,c.damage);return} /* unbeweglich → nur Schaden */
+  b.saugerPull={t:.55};sfx('tongue');
+  showGameMessage('ANGESAUGT!',.9);
+  return
+ }
  const { target, isTower, isSnakeFood } = pickMeleeTarget(c);
  state.effects.push({type:'slash',x:state.player.x,y:state.player.y,angle:state.player.angle,life:.2,r:c.range,weapon:state.selected});
  if(target){if(isSnakeFood)damageSmallSnake(target,c.damage);else if(isTower)damageTower(target,c.damage);else damageBoss(target,c.damage)}
+}
+
+/* SAUGER-ANZIEHEN (Hugo #47): markierte Gegner werden zur Spielerin gezogen,
+   Beruehrung = Stun + Schaden, Schleudern nach hinten + nochmal Schaden. */
+export function updatePulls(dt){
+ const p=state.player;
+ for(const b of state.bosses){
+  if(!b.alive||!b.saugerPull)continue;
+  b.saugerPull.t-=dt;
+  const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy)||1;
+  if(d<b.r+p.r+2){
+   delete b.saugerPull;
+   b.stunTimer=1.2; /* kurz keinen Schaden machen */
+   damageBoss(b,25);sfx('bite');
+   const a=Math.atan2(b.y-p.y,b.x-p.x);
+   b.x+=Math.cos(a)*230;b.y+=Math.sin(a)*230;
+   b.x=Math.max(40,Math.min(MAP.w-40,b.x));b.y=Math.max(40,Math.min(MAP.h-40,b.y));
+   damageBoss(b,15);state.screenShake=8; /* Schleudern + nochmal Schaden */
+   for(let k=0;k<14;k++)particle(b.x,b.y,'#9be15d',3+Math.random()*3);
+   continue
+  }
+  if(b.saugerPull&&b.saugerPull.t<=0){delete b.saugerPull;continue}
+  /* ANZIEHEN: 430 px/s Richtung Spieler */
+  const sp=430*dt;
+  b.x+=dx/d*sp;b.y+=dy/d*sp;
+  if(Math.random()<.5)particle(b.x-dx/d*b.r,b.y-dy/d*b.r,'#9be15d',3)
+ }
 }
 
 export function dash(){

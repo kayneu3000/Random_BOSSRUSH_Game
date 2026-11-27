@@ -9,7 +9,8 @@ export const classes = {
  assassin:{name:'ASSASSIN',hp:200,damage:10,cool:.2,range:47,speed:345,icon:'🗡'},
  /* PEITSCHE (Hugo): 220 HP, 30 Schaden, 0,5s Cooldown, langer LINIEN-Angriff, weiter Dash, etwas schneller als normale Klassen */
  whip:{name:'PEITSCHE',hp:220,damage:40,cool:.5,range:230,speed:270,icon:'🗡',line:true}, /* Hugo: 40 Schaden */
- faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
+ sauger:{name:'SAUGER',hp:250,damage:25,cool:2,range:280,speed:245,icon:'🌱',pull:true}, /* Hugo: zieht Gegner an */
+faust:{name:'FAUSTKÄMPFER',hp:100,damage:10,cool:.5,range:70,speed:260,icon:'👊'},
  healer:{name:'HEALER',hp:100,damage:0,cool:0,range:0,speed:235,icon:'💚'},
  ember:{name:'EMBER',hp:200,damage:5,cool:0,range:800,speed:235,icon:'🐲🔥'},
  gunner:{name:'GUNNER',hp:200,damage:40,cool:0,range:900,speed:235,icon:'🔫'},
@@ -36,6 +37,13 @@ export const TOWER_HP=75;
 export const VENOM={speed:290,r:10,damage:16,life:5}; /* Hugo: staerkere Haut-Attacken */
 
 export const gunballWeak=['snake','boomerang','growth','mirror','teleport'];
+/* PLANT — Fresspflanze (Hugo, Level 2 Boss #2) */
+export const PLANT_HP=700;
+export const PLANT_SHIELD_HITS=12; /* Hugo: 12 Angriffe ueberleben ... */
+export const PLANT_VULN_TIME=8;    /* ... dann 8 Sekunden angreifbar */
+export const MINI_PLANT_LIFE=10;   /* Mini-Fresspflanzen: unsterblich, aber nur 10s da */
+export const ACID_POOL_LIFE=6;     /* Saeure-Pfuetzen bleiben liegen */
+
 export const gunballMedium=['giant','splitter','planet','chain','time','rain'];
 export const gunballStrong=['fusion','magnet','blackhole','core'];
 

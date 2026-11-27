@@ -7,6 +7,7 @@ import { createDragon, createTowers } from "./bosses/dragon.js";
 import { createGunball } from "./bosses/gunball.js";
 import { createShadow } from "./bosses/shadow.js";
 import { createSnake } from "./bosses/snake.js";
+import { createPlant } from "./bosses/plant.js";
 
 const ARENA_MIN_W=600, ARENA_MIN_H=450, ARENA_MAX_W=5000, ARENA_MAX_H=3600;
 
@@ -126,13 +127,14 @@ export function runCommand(text, startGame){
  if(c==='gunball')return cmdSpawn('gunball');
  if(c==='shadow')return cmdSpawn('shadow');
  if(c==='snake')return cmdSpawn('snake');
+ if(c==='plant')return cmdSpawn('plant');
  if(c==='bossrush')return cmdBossRush(startGame);
  showGameMessage('UNBEKANNT: "'+cmd+'" \u2014 TIPPE "HELP"',2.2)
 }
 
 function cmdHelp(page){
  const pages=[
-  'KOMMANDOS: slime dragon gunball shadow snake  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: faust ember gunner sword archer tank assassin healer  \u00b7  help 2',
+  'KOMMANDOS: slime dragon gunball shadow snake plant  \u00b7  "a vs b" z.B. slime vs dragon  \u00b7  klassen: faust ember gunner sword archer tank assassin healer  \u00b7  help 2',
   'ARENA: arena slime|dragon|gunball|shrink|grow|infinite|reset  \u00b7  hp 500  \u00b7  dmg 2  \u00b7  speed 300  \u00b7  cooldown 0.5  \u00b7  help 3',
   'MODUS: peace  \u00b7  brutal  \u00b7  friendly fire  \u00b7  not me  \u00b7  invincible  \u00b7  time freeze / time normal  \u00b7  bossrush'
  ];
@@ -159,7 +161,7 @@ function cmdClass(name){
 
 function cmdArena(arg,startGame){
  const s=state;
- if(arg==='slime'||arg==='dragon'||arg==='gunball'||arg==='snake'){s.selectedBoss=arg;startGame();return}
+ if(arg==='slime'||arg==='dragon'||arg==='gunball'||arg==='snake'||arg==='plant'){s.selectedBoss=arg;startGame();return}
  if(arg==='reset'||arg==='normal'){s.arena={w:MAP.w,h:MAP.h};s.player.x=Math.min(s.player.x,s.arena.w-30);s.player.y=Math.min(s.player.y,s.arena.h-30);showGameMessage('ARENA ZUR\u00dcCKGESETZT');return}
  if(arg==='shrink'){s.arena={w:Math.max(ARENA_MIN_W,Math.round(s.arena.w*.65)),h:Math.max(ARENA_MIN_H,Math.round(s.arena.h*.65))};s.player.x=Math.min(s.player.x,s.arena.w-30);s.player.y=Math.min(s.player.y,s.arena.h-30);showGameMessage('ARENA SCHRUMPFEN: '+s.arena.w+'\u00d7'+s.arena.h);return}
  if(arg==='grow'){s.arena={w:Math.min(ARENA_MAX_W,Math.round(s.arena.w/.65)),h:Math.min(ARENA_MAX_H,Math.round(s.arena.h/.65))};showGameMessage('ARENA W\u00c4CHST: '+s.arena.w+'\u00d7'+s.arena.h);return}
@@ -183,6 +185,7 @@ function cmdSpawn(kind){
  else if(kind==='gunball')createGunball(spot.x,spot.y);
  else if(kind==='shadow')createShadow(spot.x,spot.y);
  else if(kind==='snake')createSnake(spot.x,spot.y);
+ else if(kind==='plant')createPlant(spot.x,spot.y);
  showGameMessage('BOSS BESCHWOREN: '+kind.toUpperCase())
 }
 
@@ -193,6 +196,7 @@ function spawnRushBoss(kind){
  else if(kind==='gunball')createGunball(x,y);
  else if(kind==='shadow')createShadow(x,y);
  else if(kind==='snake')createSnake(x,y);
+ else if(kind==='plant')createPlant(x,y);
  showGameMessage('BOSS RUSH: '+kind.toUpperCase()+'!')
 }
 
@@ -205,13 +209,13 @@ function cmdBossRush(startGame){
  const s=state;
  s.selectedBoss='slime';
  startGame();
- s.bossRushQueue=['slime','dragon','gunball','shadow','snake'];
+ s.bossRushQueue=['slime','dragon','gunball','shadow','snake','plant'];
  s.bosses=[];s.enemyProjectiles=[];s.fireTrails=[];s.infernoTowers=[];
  spawnNextBossRush()
 }
 
 function cmdDuel(left,right,startGame){
- const s=state, kinds=['slime','dragon','gunball','shadow','snake'];
+ const s=state, kinds=['slime','dragon','gunball','shadow','snake','plant'];
  if(!kinds.includes(left)||!kinds.includes(right)){showGameMessage('VS: z.B. "slime vs dragon"',2.2);return}
  if(left===right){showGameMessage('VS: ZWEI VERSCHIEDENE BOSSE!',1.8);return}
  s.selectedBoss=right;

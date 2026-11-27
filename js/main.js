@@ -3,7 +3,7 @@ import { MAP, classes } from "./config.js";
 import { $ } from "./utils.js";
 import { loadUnlocks, applyUnlocksToUI, attachUI, showGameMessage, endGame, updateHUD } from "./ui.js";
 import { attachInput, getInput } from "./input.js";
-import { attack, updateEmber } from "./combat.js";
+import { attack, updateEmber, updatePulls } from "./combat.js";
 import { createHealerSlimes, updateCompanions, damagePlayer, damageBoss, updateVisualEffects } from "./entities.js";
 import { createSlime, updateSlime } from "./bosses/slime.js";
 import { createDragon, createTowers, updateDragon, updateTowerBeams } from "./bosses/dragon.js";
@@ -11,6 +11,7 @@ import { createGunball, updateGunball } from "./bosses/gunball.js";
 import { createShadow, updateShadow } from "./bosses/shadow.js";
 import { createSnake, updateSnake } from "./bosses/snake.js";
 import { createSnakeSkin, updateSnakeSkin } from "./bosses/snakeSkin.js";
+import { createPlant, updatePlant, updateMiniPlants, updateAcidPools, updateShockwaves } from "./bosses/plant.js";
 import { updatePlayerProjectiles, updateEnemyProjectiles, updateFireTrails } from "./projectiles.js";
 import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
@@ -56,6 +57,7 @@ function startGame() {
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
  s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
+ s.acidPools = []; s.miniPlants = []; s.shockwaves = []; /* PLANT (Hugo #47) */
  s.kills = 0; $('kills').textContent = '0 besiegt';
  s.elapsed = 0; s.attackTimer = 0; s.dashTimer = 0; s.dashDuration = 0; s.invuln = 0; s.screenShake = 0; s.spawnId = 0;
  s.finished = false; s.paused = false; s.camera = { x: 0, y: 0 };
@@ -69,6 +71,7 @@ function startGame() {
  $('game').classList.toggle('gunballTheme', s.selectedBoss === 'gunball');
  $('game').classList.toggle('shadowTheme', s.selectedBoss === 'shadow');
  $('game').classList.toggle('snakeTheme', s.selectedBoss === 'snake');
+ $('game').classList.toggle('plantTheme', s.selectedBoss === 'plant');
  $('game').classList.toggle('emberTheme', s.selected === 'ember');
 
  if (s.selectedBoss === 'dragon') {
@@ -86,6 +89,10 @@ function startGame() {
  } else if (s.selectedBoss === 'snake') {
   createSnake(MAP.w/2, MAP.h/2-200);
   $('bossName').textContent = 'SNAKE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 SNAKE'
+ } else if (s.selectedBoss === 'plant') {
+  createPlant(MAP.w/2, MAP.h/2-200);
+  $('bossName').textContent = 'PFLANZE'; $('huntTitle').textContent = 'LEVEL 2 \u2014 PLANT';
+  showGameMessage('DIE FRESSPFLANZE! UEBERLEBT 12 ANGRIFFE!', 2.4)
  } else {
   createSlime(MAP.w/2, MAP.h/2-200, 0);
   $('bossName').textContent = 'SLIME'; $('huntTitle').textContent = 'SLIME HUNT';
@@ -122,6 +129,10 @@ function movePlayer(dt) {
   const dY = Number.isFinite(s.player.dashY) ? s.player.dashY : 0;
   const step = (Number.isFinite(dv) ? dv : 850) * (Number.isFinite(dt) && dt > 0 ? dt : 0);
   s.player.x += dX*step; s.player.y += dY*step
+ } else if (s.player.stuckTimer > 0) {
+  /* ZUNGE (Hugo #47): an der Pflanzenzunge geklebt — keine eigene Bewegung,
+     die Zunge schleift dich. Der Timer laeuft runter, falls sie dich loslaesst. */
+  s.player.stuckTimer = Math.max(0, s.player.stuckTimer-dt)
  } else {
   const v = getInput();
   s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
@@ -168,6 +179,9 @@ function update(dt) {
 
  for (const b of s.bosses) {
   if (!b.alive) continue;
+  /* SAUGER-GRIFF (Hugo #47): frisch gegriffene Gegner sind kurz kampfunfaehig */
+  if (b.stunTimer > 0) { b.stunTimer -= dt; continue }
+  if (b.type === 'plant') { updatePlant(b, dt); continue }
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
   if (b.type === 'shadow') { updateShadow(b, dt); continue }
@@ -192,6 +206,10 @@ function update(dt) {
  updatePlayerProjectiles(dt);
  updateEnemyProjectiles(dt);
  updateFireTrails(dt);
+ updateMiniPlants(dt);
+ updateAcidPools(dt);
+ updateShockwaves(dt);
+ updatePulls(dt);
  updateVisualEffects(dt);
 
  updateCamera();

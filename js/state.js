@@ -13,6 +13,7 @@ export const state = {
  companions: [],
  infernoTowers: [],
  fireTrails: [],
+ acidPools: [], miniPlants: [], shockwaves: [], /* PLANT (Hugo #47) */
 
  camera: { x: 0, y: 0 },
  keys: {},

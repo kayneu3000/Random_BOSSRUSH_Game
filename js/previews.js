@@ -1,5 +1,5 @@
 import { beginPreviewCtx, endPreviewCtx } from "./canvas.js";
-import { drawSnake, drawShadow, drawGunball, drawDragon } from "./render.js";
+import { drawSnake, drawShadow, drawGunball, drawDragon, drawPlant } from "./render.js";
 import { state } from "./state.js";
 
 /* ECHTE BOSS-BILDER in der Lobby (Hugo-Wunsch): die Karten zeigen die
@@ -15,7 +15,8 @@ export function initBossPreviews(){
    }},
    {sel:'.shadowPreview',paint:g=>{g.translate(95,78);drawShadow({type:'shadow',x:0,y:0,r:30,mode:'stalking',wobble:0,sprintTimer:0,phase:1})}},
    {sel:'.dragonPreview',paint:g=>{g.translate(102,88);g.scale(.92,.92);drawDragon({type:'dragon',x:0,y:0,r:34,angle:-.55,wobble:0,mode:'guarded',beamAngle:0,beamCharge:0,beamTimer:0,exhaustedTimer:0,fireCooldown:1,attackCooldown:0,infernoCooldown:5})}},
-   {sel:'.gunballPreview',paint:g=>{g.translate(95,85);g.scale(.9,.9);drawGunball({type:'gunball',x:0,y:0,r:32,rotation:.5,mode:'attacking',phaseTimer:10,weaponIndex:0,weaponTimer:0,fireTimer:0,attackCooldown:0,wobble:0})}}
+   {sel:'.gunballPreview',paint:g=>{g.translate(95,85);g.scale(.9,.9);drawGunball({type:'gunball',x:0,y:0,r:32,rotation:.5,mode:'attacking',phaseTimer:10,weaponIndex:0,weaponTimer:0,fireTimer:0,attackCooldown:0,wobble:0})}},
+   {sel:'.plantPreview',paint:g=>{g.translate(95,118);g.scale(.85,.85);drawPlant({type:'plant',x:0,y:0,r:62,hp:700,maxHp:700,alive:true,flash:0,wobble:state.elapsed*2.4,mouthOpen:.4+Math.sin(state.elapsed*3)*.5,chew:0,shieldHits:4,vulnerable:false,vulnTimer:0,burrowed:false,tongue:{active:false},faceAngle:0})}}
   ];
   const live=[];
   for(const spec of specs){
