@@ -144,6 +144,13 @@ function nearestEdgePoint(x,y){
 function updateTongue(b,dt){
  const t=b.tongue,p=state.player;
  if(!t.active)return;
+ if(t.mode==='warn'){
+  /* VORWARNUNG (Hugo #54): die Ziel-Linie blinkt in render.js — die Zunge
+     schiesst erst LOS, wenn die Warnung abgelaufen ist */
+  t.warnT-=dt;t.x=b.x;t.y=b.y-30;
+  if(t.warnT<=0){t.mode='out';t.t=.4;sfx('tongue')}
+  return;
+ }
  t.t-=dt;
  const hx=b.x,hy=b.y-30; /* Kopf der Pflanze */
  if(t.mode==='out'){
@@ -177,7 +184,7 @@ function updateTongue(b,dt){
  }
  /* Fang-Check: die GESAMTE Zunge faengt (Hugo #49) — nicht nur die Spitze!
    Wer klebt, bleibt an SEINEM Punkt auf der Zunge haengen und schwingt mit. */
- if(!t.caught&&t.active&&state.invuln<=0&&(p.stuckTimer||0)<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+26){
+ if(!t.caught&&t.active&&t.mode!=='warn'&&state.invuln<=0&&(p.stuckTimer||0)<=0&&pointSegmentDistance(p.x,p.y,hx,hy,t.x,t.y)<p.r+26){
   t.caught=true;p.stuckTimer=.85;sfx('tongue');
   const vx=t.x-hx,vy=t.y-hy,vl=Math.hypot(vx,vy)||1;
   t.u=Math.max(.12,Math.min(1,((p.x-hx)*vx+(p.y-hy)*vy)/(vl*vl))); /* Klebe-Punkt */
@@ -318,8 +325,8 @@ export function updatePlant(b,dt){
   const ang=Math.atan2(p.y-hy2,p.x-hx2),L=rayMapLength(hx2,hy2,ang);
   const ex2=hx2+Math.cos(ang)*L,ey2=hy2+Math.sin(ang)*L;
   const e2=ey2<=1?'top':ey2>=MAP.h-1?'bottom':ex2<=1?'left':'right';
-  b.tongue={active:true,mode:'out',t:.4,x:hx2,y:hy2,ex:ex2,ey:ey2,dir:Math.random()<.5?1:-1,edge:e2,caught:false};
-  sfx('tongue');showGameMessage('DIE ZUNGE!',1.6)
+  b.tongue={active:true,mode:'warn',warnT:.7,x:hx2,y:hy2,ex:ex2,ey:ey2,dir:Math.random()<.5?1:-1,edge:e2,caught:false};
+  sfx('venom');showGameMessage('DIE ZUNGE KOMMT!',1.6) /* VORWARNUNG (Hugo #54) */
  }
 
  /* VERGRABEN */

@@ -827,6 +827,15 @@ export function draw(){
   /* ZUNGE (Hugo #47): bis zum Maprand, schwingt die Wand entlang */
   if(!b.alive||b.type!=='plant'||!b.tongue||!b.tongue.active)continue;
   const t=b.tongue;
+  if(t.mode==='warn'){
+   /* VORWARNUNG (Hugo #54): blinkende rosa Ziel-Linie — Kopfdurch den Spieler bis zum Maprand */
+   const hx=b.x,hy=b.y-30;
+   ctx.save();ctx.globalAlpha=.35+Math.sin(s.elapsed*22)*.3;
+   ctx.strokeStyle='#ff7ab8';ctx.lineWidth=4;ctx.setLineDash([12,10]);
+   ctx.beginPath();ctx.moveTo(hx,hy);ctx.lineTo(t.ex,t.ey);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='#ff5aa0';ctx.beginPath();ctx.arc(t.ex,t.ey,7,0,Math.PI*2);ctx.fill();
+   ctx.restore();continue
+  }
   ctx.save();ctx.lineCap='round';
   ctx.strokeStyle='#ff7ab8';ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(b.x,b.y-30);ctx.lineTo(t.x,t.y);ctx.stroke();
   ctx.strokeStyle='#ffc2dd';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(b.x,b.y-30);ctx.lineTo(t.x,t.y);ctx.stroke();
