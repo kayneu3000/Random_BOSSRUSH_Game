@@ -1052,7 +1052,9 @@ test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {
   state.kills = 0; state.bosses = []; state.player = { hp: 250, maxHp: 250 };
   endGame(true);
   assert.equal(state.unlocks.sauger, true, 'SAUGER freigeschaltet');
-  assert.ok(document.getElementById('overlayText').textContent.indexOf('SAUGER') >= 0, 'Sieg-Text nennt SAUGER');
+  const ot = document.getElementById('overlayText');
+  const otText = ot.children.length ? ot.children.map(c => c.textContent).join(' ') : ot.textContent;
+  assert.ok(otText.indexOf('SAUGER') >= 0, 'Sieg-Text nennt SAUGER');
   state.unlocks.sauger = false;
 });
 
@@ -1205,4 +1207,40 @@ test('REPLAY-VIDEO (Hugo #57): Sieg speichert Aufnahme, Niederlage verwirft, Lob
   const btn = box.children.find(c => (c.textContent || '').includes('SLIME'));
   assert.ok(btn, 'SLIME-Video-Button vorhanden');
   replay.replayClose();
+});
+
+/* ---------- HUGO #58 SICHTBAR ---------- */
+
+test('FIX UNSICHTBARER SPIELER (Hugo #58): drawPlayer zeichnet an p.x/p.y (translate)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/render.js', import.meta.url), 'utf8');
+  const dp = src.slice(src.indexOf('function drawPlayer'), src.indexOf('function drawPlayer') + 1200);
+  assert.ok(dp.includes('ctx.translate(p.x,p.y)'), 'drawPlayer muss zur Spielerposition translaten');
+  /* Und der Spieler steht nach wie vor im safeDraw — Zeichnen laeuft fehlerfrei */
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame();
+  const { draw } = await import('../js/render.js');
+  draw();
+  const cv = document.getElementById('canvas');
+  assert.equal(cv.getContext('2d').__stackDepth, 0, 'Canvas-Stack nach draw() leer');
+});
+
+test('KAMPF-TEXTE IN ZEILEN (Hugo #58): showGameMessage teilt lange Meldungen', async () => {
+  const { showGameMessage } = await import('../js/ui.js');
+  showGameMessage('KURZ');
+  const el = document.getElementById('gameMessage');
+  assert.equal(el.textContent, 'KURZ', 'kurzer Text bleibt einfach');
+  const lang = 'PHASE 2 WAHREND ER WIRFT IST ER UNVERWUNDBAR DANACH ZEHN SEKUNDEN LANG ANGREIFEN GANZ SICHER';
+  showGameMessage(lang);
+  assert.ok(el.children.length >= 2, 'langer Text wird in Zeilen-Divs geteilt');
+  for (const c of el.children) assert.equal(c.className, 'fightLine', 'Zeilen-Klasse gesetzt');
+});
+
+test('SIEGES-TEXTE IM OVERLAY IN ZEILEN (Hugo #58)', async () => {
+  state.finished = false;
+  state.selectedBoss = 'plant';
+  endGame(true);
+  const el = document.getElementById('overlayText');
+  assert.ok(el.children.length >= 2, 'langer Sieg-Text als Zeilen-Divs');
+  state.finished = false; state.paused = false;
 });

@@ -123,7 +123,9 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #dashBtn{background:linear-gradient(145deg,#444,#222)}
 #healBtn{background:linear-gradient(145deg,#333,#111);display:none}
 #pauseBtn{position:absolute;right:12px;top:95px;pointer-events:auto;padding:8px 13px;background:#222;border-color:#aaa}
-#gameMessage{position:absolute;top:28%;left:50%;transform:translateX(-50%);font-size:clamp(22px,5vw,42px);font-weight:1000;letter-spacing:4px;color:#eee;text-shadow:0 0 20px #777;text-align:center;pointer-events:none;white-space:nowrap}
+#gameMessage{position:absolute;top:24%;left:50%;transform:translateX(-50%);font-size:clamp(20px,4.4vw,38px);font-weight:1000;letter-spacing:3px;color:#eee;text-shadow:0 0 20px #777;text-align:center;pointer-events:none;white-space:normal;max-width:94vw}
+/* KAMPF-TEXTE IN ZEILEN (Hugo #58): nichts laeuft mehr aus dem Bildschirm */
+.fightLine{display:block;line-height:1.3}
 #errBox{position:absolute;top:46%;left:50%;transform:translateX(-50%);max-width:92%;font-size:13px;line-height:1.5;color:#ffd9d9;background:#2a0b0bE6;border:1px solid #ff604688;padding:8px 12px;border-radius:8px;display:none;text-align:center;word-break:break-word;pointer-events:none;z-index:60;white-space:normal}
 #overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#020202d9;z-index:5;padding:20px}
 #overlay .panel{max-width:420px;text-align:center}
@@ -280,6 +282,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 .replayHint{font-size:12px;color:#9db4c4;text-align:center;padding:4px 0}
 #replayView{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#020509e8;z-index:90;padding:16px}
 #replayVideo{width:min(640px,92vw);max-height:56vh;border-radius:12px;background:#000;display:block;margin:0 auto 12px}
+#overlayText .fightLine{display:block;line-height:1.5}
 /* LOBBY-TEXTE IN ZEILEN (Hugo #57) */
 .bossInfo p .lobbyLine{display:block;line-height:1.55}
 /* HEALER BLAU (Hugo #57) */

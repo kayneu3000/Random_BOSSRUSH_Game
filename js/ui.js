@@ -63,12 +63,26 @@ export function setPause(v) {
  state.paused = v;
  $('overlay').style.display = v ? 'flex' : 'none';
  $('overlayTitle').textContent = 'PAUSE';
- $('overlayText').textContent = 'Der Kampf ist pausiert.'
+ setMultiline($('overlayText'), 'Der Kampf ist pausiert.');
+}
+
+/* KAMPF-TEXTE IN ZEILEN (Hugo #58): lange Meldungen (Phasen-Ansagen!) werden
+   an Wortgrenzen in Zeilen-Divs geteilt — nichts laeuft mehr aus dem Bildschirm */
+function setMultiline(el, text, max = 48) {
+ try {
+  if (!el) return;
+  const lines = wrapLines(text, max);
+  if (lines.length <= 1) { if (el.textContent !== text) el.textContent = text; return }
+  el.textContent = '';
+  for (const ln of lines) {
+   const d = document.createElement('div'); d.className = 'fightLine'; d.textContent = ln; el.appendChild(d)
+  }
+ } catch (e) { try { el.textContent = text } catch (e2) { /* leiser Notfall */ } }
 }
 
 export function showGameMessage(text, durationSeconds = Infinity) {
  state.message = { text, until: state.elapsed + durationSeconds };
- $('gameMessage').textContent = text
+ setMultiline($('gameMessage'), text, 26) /* riesige Schrift -> kurze Zeilen */
 }
 
 /* ---------- TUTORIAL-PAUSE (Hugo #57) ----------
@@ -172,23 +186,23 @@ export function endGame(win) {
  $('overlayTitle').textContent = win ? 'SIEG!' : 'BESIEGT';
  sfx(win ? 'victory' : 'defeat');
  state.kills = 0; $('kills').textContent = '0 besiegt';
- if (win && state.selectedBoss === 'shadow') { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } $('overlayText').textContent = 'Tutorial geschafft! Ab jetzt warten alle Bosse in der Lobby auf dich!' }
+ if (win && state.selectedBoss === 'shadow') { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } setMultiline($('overlayText'), 'Tutorial geschafft! Ab jetzt warten alle Bosse in der Lobby auf dich!') }
  if (win && state.selectedBoss === 'slime') {
   state.unlocks.healer = true;
-  $('overlayText').textContent = 'Alle Slime-Formen besiegt! Healer freigeschaltet!'
+  setMultiline($('overlayText'), 'Alle Slime-Formen besiegt! Healer freigeschaltet!');
  } else if (win && state.selectedBoss === 'dragon') {
   state.unlocks.ember = true;
-  $('overlayText').textContent = 'Der Drache wurde besiegt! EMBER FREIGESCHALTET! Der Drachenkopf als Hand kann einen 5 Sekunden langen Feuerstrahl schießen. Danach lädt er 4 Sekunden auf.'
+  setMultiline($('overlayText'), 'Der Drache wurde besiegt! EMBER FREIGESCHALTET! Der Drachenkopf als Hand kann einen 5 Sekunden langen Feuerstrahl schießen. Danach lädt er 4 Sekunden auf.');
  } else if (win && state.selectedBoss === 'gunball') {
   state.unlocks.gunner = true;
-  $('overlayText').textContent = 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.'
+  setMultiline($('overlayText'), 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.');
  } else if (win && state.selectedBoss === 'snake') {
   state.unlocks.whip = true;
-  $('overlayText').textContent = 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag!'
+  setMultiline($('overlayText'), 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag!');
  } else if (win && state.selectedBoss === 'plant') {
   state.unlocks.sauger = true;
-  $('overlayText').textContent = 'Die Fresspflanze ist besiegt! SAUGER FREIGESCHALTET: 250 HP, grün mit Stacheln und eine Fresspflanze in der Hand, die Gegner anzieht!'
- } else $('overlayText').textContent = win ? 'Der Boss wurde besiegt!' : 'Der Boss hat dich besiegt. Versuche es erneut!';
+  setMultiline($('overlayText'), 'Die Fresspflanze ist besiegt! SAUGER FREIGESCHALTET: 250 HP, grün mit Stacheln und eine Fresspflanze in der Hand, die Gegner anzieht!');
+ } else setMultiline($('overlayText'), win ? 'Der Boss wurde besiegt!' : 'Der Boss hat dich besiegt. Versuche es erneut!');
  applyUnlocksToUI();
  saveUnlocks();
  $('resume').style.display = 'none'
