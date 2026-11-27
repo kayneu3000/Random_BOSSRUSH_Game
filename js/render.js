@@ -27,6 +27,17 @@ function drawBackground(){
   for(let x=0;x<s.arena.w;x+=100)for(let y=0;y<s.arena.h;y+=100){ctx.fillStyle=((x/100+y/100)%2===0)?'#161028':'#0d0819';ctx.fillRect(x,y,100,100);ctx.strokeStyle='#2c2047';ctx.lineWidth=2;ctx.strokeRect(x,y,100,100)}
   for(let i=0;i<80;i++){const x=(i*317+83)%s.arena.w,y=(i*193+127)%s.arena.h;ctx.fillStyle='#7b4dff44';ctx.beginPath();ctx.arc(x,y,2+(i%3),0,Math.PI*2);ctx.fill()}
   ctx.fillStyle='#1c1230';ctx.fillRect(0,0,s.arena.w,25);ctx.fillRect(0,s.arena.h-25,s.arena.w,25);ctx.fillRect(0,0,25,s.arena.h);ctx.fillRect(s.arena.w-25,0,25,s.arena.h);ctx.strokeStyle='#8f6dff';ctx.lineWidth=4;ctx.strokeRect(25,25,s.arena.w-50,s.arena.h-50)
+ }else if(s.selectedBoss==='plant'){
+  /* EIGENE Sumpf-Erde-Arena (Hugo #48: "die arena ist dort irgendwie die vom slime") */
+  ctx.fillStyle='#1a120a';ctx.fillRect(0,0,s.arena.w,s.arena.h);
+  for(let x=0;x<s.arena.w;x+=100)for(let y=0;y<s.arena.h;y+=100){ctx.fillStyle=((x/100+y/100)%2===0)?'#221709':'#150e06';ctx.fillRect(x,y,100,100);ctx.strokeStyle='#332410';ctx.lineWidth=2;ctx.strokeRect(x,y,100,100)}
+  /* Moos-Flecken + Erdschollen */
+  for(let i=0;i<50;i++){const x=(i*317+83)%s.arena.w,y=(i*193+127)%s.arena.h;ctx.fillStyle='#2e4a1a66';ctx.beginPath();ctx.ellipse(x,y,7+(i%3)*3,4+(i%2)*2,.5,0,Math.PI*2);ctx.fill()}
+  /* Wurzel-Gestruepp */
+  for(let i=0;i<70;i++){const x=(i*271+41)%s.arena.w,y=(i*149+67)%s.arena.h;ctx.strokeStyle='#4a3218';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,y+12);ctx.quadraticCurveTo(x+7,y,x+16,y+4);ctx.stroke()}
+  /* Kleine Grashalme */
+  for(let i=0;i<60;i++){const x=(i*197+59)%s.arena.w,y=(i*233+97)%s.arena.h;ctx.strokeStyle='#5a8c2a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+2,y-8);ctx.moveTo(x+4,y);ctx.lineTo(x+4,y-6);ctx.stroke()}
+  ctx.fillStyle='#0f2a08';ctx.fillRect(0,0,s.arena.w,25);ctx.fillRect(0,s.arena.h-25,s.arena.w,25);ctx.fillRect(0,0,25,s.arena.h);ctx.fillRect(s.arena.w-25,0,25,s.arena.h);ctx.strokeStyle='#9be15d';ctx.lineWidth=4;ctx.strokeRect(25,25,s.arena.w-50,s.arena.h-50)
  }else{
   ctx.fillStyle='#63dff5';ctx.fillRect(0,0,s.arena.w,s.arena.h);
   for(let x=0;x<s.arena.w;x+=100)for(let y=0;y<s.arena.h;y+=100){ctx.fillStyle=((x/100+y/100)%2===0)?'#83efff':'#55cce9';ctx.fillRect(x,y,100,100);ctx.strokeStyle='#36b5d9';ctx.lineWidth=2;ctx.strokeRect(x,y,100,100)}
@@ -496,8 +507,9 @@ function drawSmallSnake(a){
  ctx.restore()
 }
 
-/* PLANT — DIE FRESSPFLANZE (Hugo #47): waechst aus dem Boden, Maul + Zaehne +
-   Blaettern. Verwundbar = welkt + X-Augen. Ungreifbar = Schild-Ring (12 Hits). */
+/* PLANT — DIE FRESSPFLANZE (Hugo #48-Redesign): Wurzeln, DUNKELGRUENER Stiel,
+   ROSA ROSEN-Kopf mit spitzen Zaehnen, die WILD in den Rosenblaettern stecken,
+   spitzige Zunge — und RANKEN wie TENTAKEL, die um sie herumschwirren. */
 export function drawPlant(b){
  const s=state;
  ctx.save();ctx.translate(b.x,b.y);
@@ -509,43 +521,75 @@ export function drawPlant(b){
   ctx.restore();return
  }
  const vuln=b.vulnerable, flash=b.flash>0;
- const bodyA=flash?'#e9ffc2':vuln?'#b6d94a':'#4e9c2f';
- const bodyB=flash?'#ffffff':vuln?'#e7ffa8':'#9be15d';
- const dark=flash?'#7a4a2a':'#1d4a12';
- ctx.rotate(Math.sin(b.wobble)*.05);
- /* Wurzeln im Boden */
- ctx.strokeStyle='#7a5230';ctx.lineWidth=6;ctx.lineCap='round';
- for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(k*14,34);ctx.quadraticCurveTo(k*22,48,k*30+Math.sin(s.elapsed*2+k)*4,58);ctx.stroke()}
- /* Stiel */
- ctx.fillStyle='#3d7a22';ctx.fillRect(-9,-4,18,44);
- /* Kopf-Kugel */
- ctx.fillStyle=bodyA;ctx.beginPath();ctx.arc(0,-34,46,0,Math.PI*2);ctx.fill();
- ctx.fillStyle=bodyB;ctx.beginPath();ctx.ellipse(-14,-48,20,13,-.5,0,Math.PI*2);ctx.fill();
- /* Blatt-Kragen */
- ctx.fillStyle='#3d7a22';
- for(const side of [-1,1]){ctx.save();ctx.translate(side*40,-14);ctx.rotate(side*.75);ctx.beginPath();ctx.ellipse(0,0,24,10,0,0,Math.PI*2);ctx.fill();ctx.restore()}
- /* MAUL (oeffnet sich bei Attacken) */
+ /* Rosen-Farben: verwundbar = welkt (blasser), Treffer = blitz weiss */
+ const petalA=flash?'#ffffff':vuln?'#d98aa5':'#e5518d';
+ const petalB=flash?'#ffd9e6':vuln?'#b8607f':'#ff7ab8';
+ const petalC=flash?'#fff3f7':vuln?'#e0a8bb':'#ffa8cf';
+ const stemC=vuln?'#3a5a22':'#1d5c14';
  const mo=b.mouthOpen||0;
- ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(0,-20,30,10+mo*22,0,0,Math.PI*2);ctx.fill();
- /* Zaehne */
- ctx.fillStyle='#fff8e0';
- for(let k=-2;k<=2;k++){
-  ctx.beginPath();ctx.moveTo(k*11-4,-20-(9+mo*20));ctx.lineTo(k*11,-8-mo*18);ctx.lineTo(k*11+4,-20-(9+mo*20));ctx.closePath();ctx.fill();
-  ctx.beginPath();ctx.moveTo(k*11-4,-20+(9+mo*20));ctx.lineTo(k*11,-8+mo*18);ctx.lineTo(k*11+4,-20+(9+mo*20));ctx.closePath();ctx.fill()
+ ctx.rotate(Math.sin(b.wobble)*.04);
+ /* WURZELN im Boden (dick, verzweigt) */
+ ctx.lineCap='round';
+ for(let k=-3;k<=3;k++){
+  ctx.strokeStyle=k%2?'#4a3218':'#5c3f1e';ctx.lineWidth=7-Math.abs(k);
+  ctx.beginPath();ctx.moveTo(k*12,30);
+  ctx.quadraticCurveTo(k*20+Math.sin(s.elapsed*1.5+k)*5,46,k*28+Math.sin(s.elapsed*2+k)*6,60);
+  ctx.stroke()
  }
+ /* TENTAKEL-RANKEN, die um sie herumschwirren (Hugo #48) */
+ for(let t=0;t<3;t++){
+  const ph=s.elapsed*(1.3+t*.35)+t*2.1, cx=Math.cos(ph)*(66+t*10), cy=Math.sin(ph*1.7)*(26+t*6)+8;
+  ctx.strokeStyle=t===1?'#3d7a22':'#2e6b1a';ctx.lineWidth=5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(0,10);
+  ctx.bezierCurveTo(cx*.4,cy-18,cx*.75,cy+16,cx,cy);
+  ctx.stroke();
+  /* Dornen an den Ranken */
+  ctx.fillStyle='#8cf838';
+  for(let d=1;d<=3;d++){const u=d/3.2,dx2=cx*u,dy2=cy*u+Math.sin(ph*2+d)*6;ctx.beginPath();ctx.arc(dx2,dy2,2.4,0,Math.PI*2);ctx.fill()}
+ }
+ /* DUNKELGRUENER STIEL */
+ ctx.strokeStyle=stemC;ctx.lineWidth=16;
+ ctx.beginPath();ctx.moveTo(0,36);ctx.quadraticCurveTo(Math.sin(b.wobble)*6,12,0,-8);ctx.stroke();
+ ctx.strokeStyle=vuln?'#2c4a18':'#0c2a08';ctx.lineWidth=4;
+ ctx.beginPath();ctx.moveTo(5,36);ctx.quadraticCurveTo(Math.sin(b.wobble)*6+5,12,5,-8);ctx.stroke();
+ /* ROSA ROSEN-KOPF: Bluetenblaetter in Schichten */
+ ctx.fillStyle=petalA;
+ for(let k=0;k<7;k++){const a=k*Math.PI*2/7+s.elapsed*.15;ctx.save();ctx.translate(Math.cos(a)*30,-34+Math.sin(a)*30);ctx.rotate(a);ctx.beginPath();ctx.ellipse(0,0,24,14,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+ ctx.fillStyle=petalB;
+ for(let k=0;k<6;k++){const a=k*Math.PI*2/6+s.elapsed*.15+.4;ctx.save();ctx.translate(Math.cos(a)*19,-34+Math.sin(a)*19);ctx.rotate(a);ctx.beginPath();ctx.ellipse(0,0,19,11,0,0,Math.PI*2);ctx.fill();ctx.restore()}
+ ctx.fillStyle=petalC;ctx.beginPath();ctx.arc(0,-34,17,0,Math.PI*2);ctx.fill();
+ /* MAUL im Rosenkopf */
+ ctx.fillStyle=vuln?'#3a1020':'#1d0a12';ctx.beginPath();ctx.ellipse(0,-28,20,7+mo*16,0,0,Math.PI*2);ctx.fill();
+ /* SPITZE ZAEHNE — WILD in den Rosenblaettern verteilt (feste Winkel) */
+ ctx.fillStyle='#fff8e0';
+ for(let k=0;k<9;k++){
+  const a=k*2.399+0.7; /* goldener Winkel = wild, aber deterministisch */
+  const tx=Math.cos(a)*25,ty=-34+Math.sin(a)*25*.86;
+  const inn=Math.sin(a*3)*4;
+  ctx.beginPath();ctx.moveTo(tx+Math.cos(a+1.9)*5,ty+Math.sin(a+1.9)*5);
+  ctx.lineTo(tx-inn*.4-Math.cos(a)*6,ty-Math.sin(a)*6);
+  ctx.lineTo(tx+Math.cos(a-1.9)*5,ty+Math.sin(a-1.9)*5);ctx.closePath();ctx.fill()
+ }
+ /* SPITZIGE ZUNGE, haengt raus (schwingt beim Kauen) */
+ ctx.strokeStyle='#ff5aa0';ctx.lineWidth=6;ctx.lineCap='round';
+ ctx.beginPath();ctx.moveTo(0,-22);
+ ctx.quadraticCurveTo(Math.sin(s.elapsed*3)*7,-10,Math.sin(s.elapsed*3)*11,-2+Math.sin(s.elapsed*4)*3);
+ ctx.stroke();
+ ctx.fillStyle='#ff7ab8';ctx.beginPath();ctx.moveTo(Math.sin(s.elapsed*3)*11,-2+Math.sin(s.elapsed*4)*3);
+ ctx.lineTo(Math.sin(s.elapsed*3)*11+4,4);ctx.lineTo(Math.sin(s.elapsed*3)*11-4,4);ctx.closePath();ctx.fill();
  /* Augen: zornig — verwundbar: X-Augen */
  if(vuln){
-  ctx.strokeStyle='#0c2a08';ctx.lineWidth=3;
-  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*20-5,-60);ctx.lineTo(side*20+5,-50);ctx.moveTo(side*20+5,-60);ctx.lineTo(side*20-5,-50);ctx.stroke()}
+  ctx.strokeStyle='#3a1020';ctx.lineWidth=3;
+  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*26-5,-58);ctx.lineTo(side*26+5,-48);ctx.moveTo(side*26+5,-58);ctx.lineTo(side*26-5,-48);ctx.stroke()}
  }else{
-  ctx.fillStyle='#ffffff';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*20,-55,6,0,Math.PI*2);ctx.fill()}
-  ctx.fillStyle='#0c2a08';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*20+side*2,-54,3,0,Math.PI*2);ctx.fill()}
+  ctx.fillStyle='#ffffff';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*26,-53,6,0,Math.PI*2);ctx.fill()}
+  ctx.fillStyle='#1d0a12';for(const side of [-1,1]){ctx.beginPath();ctx.arc(side*26+side*2,-52,3,0,Math.PI*2);ctx.fill()}
  }
- /* SCHILD-Ring: leuchtet staerker, je naher der 12-Angriffe-Durchbruch ist */
+ /* SCHILD-Ring: wie nah bist du an den 12 ueberlebten Angriffen */
  if(!vuln){
-  ctx.globalAlpha=.22+(b.shieldHits/PLANT_SHIELD_HITS)*.5;
+  ctx.globalAlpha=.2+(b.shieldHits/PLANT_SHIELD_HITS)*.5;
   ctx.strokeStyle='#7ef0ff';ctx.lineWidth=4;
-  ctx.beginPath();ctx.arc(0,-30,62,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,-20,66,0,Math.PI*2);ctx.stroke();
   ctx.globalAlpha=1
  }
  ctx.restore()
@@ -734,6 +778,28 @@ export function draw(){
  }
  if(dragon&&dragon.mode==='beamActive'){
   ctx.save();ctx.translate(dragon.x,dragon.y);ctx.rotate(dragon.beamAngle);const len=rayMapLength(dragon.x,dragon.y,dragon.beamAngle);ctx.shadowColor='#ff1600';ctx.shadowBlur=45;ctx.fillStyle='#9b0000';ctx.fillRect(0,-54,len,108);ctx.fillStyle='#ff2712';ctx.fillRect(0,-34,len,68);ctx.fillStyle='#ff8b28';ctx.fillRect(0,-18,len,36);ctx.fillStyle='#fff3a0';ctx.fillRect(0,-7,len,14);ctx.restore()
+ }
+ const plantB=s.bosses.find(b=>b.type==='plant'&&b.alive);
+ if(plantB&&plantB.beamCharge>0){
+  /* VORWARNUNG (Hugo #48): gruene Ziel-Linie + wachsender Auflade-Ring */
+  ctx.save();ctx.translate(plantB.x,plantB.y-30);ctx.rotate(plantB.faceAngle);
+  const len=rayMapLength(plantB.x,plantB.y-30,plantB.faceAngle);
+  ctx.globalAlpha=.4+Math.sin(s.elapsed*20)*.25;ctx.strokeStyle='#c8f75a';ctx.lineWidth=3;ctx.setLineDash([14,10]);
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(len,0);ctx.stroke();ctx.setLineDash([]);
+  ctx.restore();
+  ctx.save();ctx.globalAlpha=.6;ctx.strokeStyle='#c8f75a';ctx.lineWidth=4;
+  ctx.beginPath();ctx.arc(plantB.x,plantB.y-30,40*(1-plantB.beamCharge/.9)+30,0,Math.PI*2);ctx.stroke();
+  ctx.restore()
+ }
+ if(plantB&&plantB.beamFire>0){
+  /* SAEURE-STRAHL: dick, giftgruen, LAENGER da (3.2s) */
+  ctx.save();ctx.translate(plantB.x,plantB.y-30);ctx.rotate(plantB.beamAngle);
+  const len=rayMapLength(plantB.x,plantB.y-30,plantB.beamAngle),pulse=1+Math.sin(s.elapsed*24)*.1;
+  ctx.fillStyle='#5a8c14';ctx.fillRect(0,-30*pulse,len,60*pulse);
+  ctx.fillStyle='#9be15d';ctx.fillRect(0,-18*pulse,len,36*pulse);
+  ctx.fillStyle='#c8f75a';ctx.fillRect(0,-9*pulse,len,18*pulse);
+  ctx.fillStyle='#e7ffa8';ctx.fillRect(0,-4*pulse,len,8*pulse);
+  ctx.restore()
  }
  if(s.selected==='ember'&&s.emberBeamTimer>0){
   s.emberBeamAngle=s.player.angle;const len=rayMapLength(s.player.x,s.player.y,s.emberBeamAngle);ctx.save();ctx.translate(s.player.x,s.player.y);ctx.rotate(s.emberBeamAngle);const pulse=1+Math.sin(s.elapsed*25)*.12;ctx.shadowColor='#ff3c00';ctx.shadowBlur=45;ctx.fillStyle='#8b1604';ctx.fillRect(15,-36*pulse,len,72*pulse);ctx.fillStyle='#ff3a0a';ctx.fillRect(15,-25*pulse,len,50*pulse);ctx.fillStyle='#ff9d20';ctx.fillRect(15,-15*pulse,len,30*pulse);ctx.fillStyle='#fff1a0';ctx.fillRect(15,-6*pulse,len,12*pulse);ctx.restore();

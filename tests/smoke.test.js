@@ -846,8 +846,8 @@ test('plant fight boots: rooted boss with 700 hp, arrays reset, frames stable', 
   state.bosses = []; state.finished = true; state.gameRunning = false;
 });
 
-test('plant shield: 12 hits survive, then 8s vulnerable, then shield resets', async () => {
-  const { updatePlant } = await import('../js/bosses/plant.js');
+test('plant shield GEDREHT (Hugo #48): 12 IHRER Angriffe ueberleben, dann 8s angreifbar', async () => {
+  const { updatePlant, plantSurviveHit } = await import('../js/bosses/plant.js');
   const { PLANT_SHIELD_HITS } = await import('../js/config.js');
   state.gameRunning = true; state.paused = false; state.finished = false;
   state.dmgMultiplier = 1; state.notMe = false; state.peace = false; state.invincible = false; state.invuln = 0;
@@ -855,13 +855,16 @@ test('plant shield: 12 hits survive, then 8s vulnerable, then shield resets', as
   state.acidPools = []; state.miniPlants = []; state.shockwaves = []; state.enemyProjectiles = [];
   const b = { id: 31, type: 'plant', x: 600, y: 300, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, burrowSub: 0, mouthOpen: 0, chew: 0, vineTimer: 99, acidSpitTimer: 99, seedTimer: 99, tongueTimer: 99, beamTimer: 99, burrowTimer: 99, screamTimer: 99, biteTimer: 0, beamCharge: 0, beamFire: 0, beamAngle: 0, tongue: { active: false, mode: 'out', t: 0, x: 0, y: 0, ex: 0, ey: 0, dir: 1, edge: '', caught: false }, faceAngle: 0, attackCooldown: 0 };
   state.bosses = [b]; state.effects = []; state.particles = [];
-  for (let i = 0; i < PLANT_SHIELD_HITS - 1; i++) damageBoss(b, 40);
-  assert.equal(b.hp, 700, 'Schild-Hits kosten KEINE HP');
+  // Solange das Schild zu ist, nimmt sie von DEINEN Angriffen GAR NICHTS:
+  for (let i = 0; i < 15; i++) damageBoss(b, 40);
+  assert.equal(b.hp, 700, 'geschlossenes Schild: sie nimmt nichts von dir');
   assert.equal(b.vulnerable, false, 'Schild noch zu');
-  damageBoss(b, 40);
-  assert.equal(b.vulnerable, true, '12. Angriff oeffnet das Schild');
+  // JETZT die gedrehte Mechanik: 12 IHRER Angriffe ueberleben:
+  for (let i = 0; i < PLANT_SHIELD_HITS - 1; i++) plantSurviveHit(b);
+  assert.equal(b.vulnerable, false, 'nach 11 ueberlebten Angriffen noch zu');
+  plantSurviveHit(b);
+  assert.equal(b.vulnerable, true, 'der 12. ueberlebte Angriff oeffnet das Schild');
   assert.equal(b.vulnTimer, 8, '8 Sekunden angreifbar');
-  assert.equal(b.hp, 700, 'der 12. Angriff selbst wird noch absorbiert (ueberlebt!)');
   damageBoss(b, 40);
   assert.equal(b.hp, 660, 'im offenen Schild nimmt sie Schaden');
   updatePlant(b, 4);
@@ -869,7 +872,8 @@ test('plant shield: 12 hits survive, then 8s vulnerable, then shield resets', as
   updatePlant(b, 4.05);
   assert.equal(b.vulnerable, false, 'nach 8s ist das Schild wieder zu');
   assert.equal(b.shieldHits, 0, 'Zaehler resettet');
-  // Zunge inaktiv lassen: keine Fang-Checks im Test
+  damageBoss(b, 40);
+  assert.equal(b.hp, 660, 'wieder geschlossen: sie nimmt nichts mehr');
   state.bosses = [];
 });
 
@@ -923,12 +927,26 @@ test('sauger pull: moving boss is dragged, grabbed (stun + damage) and flung; ro
   assert.ok(Math.abs(mover.x - 500) > 100, 'Gegner wurde nach hinten geschleudert');
   // unbeweglicher Boss: PFLANZE bekommt nur Schaden (Schild-Kontext), kein Pull
   state.selected = 'sauger'; state.attackTimer = 0;
-  const plant = { id: 42, type: 'plant', x: 700, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 0, vulnerable: false, vulnTimer: 0, burrowed: false, tongue: { active: false } };
+  const plant = { id: 42, type: 'plant', x: 700, y: 500, r: 62, hp: 700, maxHp: 700, alive: true, flash: 0, wobble: 0, shieldHits: 5, vulnerable: false, vulnTimer: 0, burrowed: false, tongue: { active: false } };
   state.bosses = [plant];
   attack();
   assert.ok(!plant.saugerPull, 'unbewegliche Pflanze wird NICHT gezogen');
-  assert.equal(plant.shieldHits, 1, 'Angriff zaehlt auf dem Schild');
+  assert.equal(plant.hp, 700, 'geschlossenes Schild: Sauger-Schaden prallt ab');
+  assert.equal(plant.shieldHits, 5, 'DEINE Angriffe zaehlen NICHT mehr auf das Schild (Hugo #48)');
   state.bosses = [];
+});
+
+test('ranken projectiles LAND and become smaller giftpfuetzen (Hugo #48)', async () => {
+  const { updateEnemyProjectiles } = await import('../js/projectiles.js');
+  state.gameRunning = true; state.paused = false; state.finished = false;
+  state.player = { x: 99999, y: 99999, r: 17, hp: 200, maxHp: 200, speed: 200, angle: 0, dashX: 0, dashY: 0, stuckTimer: 0 };
+  state.acidPools = []; state.bosses = []; state.miniPlants = []; state.particles = []; state.effects = [];
+  state.enemyProjectiles = [{ type: 'vine', plant: true, x: 300, y: 300, vx: 310, vy: 0, life: .2, damage: 10, r: 9, pool: true, poolR: 24, poolLife: 5, poolDmg: 6, poolTickRate: .5 }];
+  updateEnemyProjectiles(0.3);
+  assert.equal(state.enemyProjectiles.length, 0, 'Ranke ist gelandet (nicht unendlich geflogen)');
+  assert.equal(state.acidPools.length, 1, 'aus der Ranke wird eine Giftpfuetze');
+  assert.equal(state.acidPools[0].r, 24, 'Ranken-Pfuetze ist kleiner als Saeure-Spuck-Pfuetze');
+  state.acidPools = []; state.enemyProjectiles = [];
 });
 
 test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {

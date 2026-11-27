@@ -1,7 +1,7 @@
 import { state } from "./state.js";
 import { damageBoss, damagePlayer, damageTower } from "./entities.js";
 import { damageSmallSnake } from "./bosses/snake.js";
-import { createMiniPlant } from "./bosses/plant.js";
+import { createMiniPlant, plantSurviveHit } from "./bosses/plant.js";
 import { ACID_POOL_LIFE } from "./config.js";
 import { sfx } from "./audio.js";
 
@@ -52,17 +52,25 @@ function moveEnemyProjectile(p,dt){
 
 export function updateEnemyProjectiles(dt){
  for(const p of state.enemyProjectiles){
-  if(p.type==='fireball'||!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt}
+  if(p.type==='fireball'||!p.type){p.x+=p.vx*dt;p.y+=p.vy*dt}
   else moveEnemyProjectile(p,dt);
+  /* HUGO-BUG-FIX #48: moveEnemyProjectile hat die Lebenszeit NIE runtergezahlt
+     — deshalb flogen Ranken/Saeure UNENDLICH weit und wurden nie zu Pfuetzen! */
+  p.life-=dt;
   /* PLANT (Hugo #47): Saeure und Samen machen KEINEN direkten Kontakt-Schaden —
      sie fliegen durch, bis sie landen: Saeure wird zur Pfuetze, Samen zur
      Mini-Fresspflanze. */
-  if(p.life>0&&p.damage>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){damagePlayer(p.damage);p.life=0}
+  if(p.life>0&&p.damage>0&&Math.hypot(p.x-state.player.x,p.y-state.player.y)<p.r+state.player.r){
+   if(p.plant){const pb=state.bosses.find(q=>q.alive&&q.type==='plant');if(pb)plantSurviveHit(pb)} /* ihre Attacke ueberlebt = zaehlt */
+   damagePlayer(p.damage);p.life=0
+  }
   if(p.life>0&&state.friendlyFire&&(p.age||0)>.35&&p.damage>0){
    for(const b of state.bosses){if(!b.alive)continue;if(Math.hypot(p.x-b.x,p.y-b.y)<p.r+b.r){damageBoss(b,p.damage,true);p.life=0;break}}
   }
   if(p.life<=0){
-   if(p.pool){state.acidPools.push({x:p.x,y:p.y,r:34,life:ACID_POOL_LIFE,tick:0});sfx('acid')}
+   /* Hugo #48: Ranken/Saeure LANDEN und bleiben als Pfuetze liegen
+      (Ranken-Pfuetzen kleiner, Saeure-Spuck-Pfuetzen groesser) */
+   if(p.pool){state.acidPools.push({x:p.x,y:p.y,r:p.poolR||34,life:p.poolLife||ACID_POOL_LIFE,tick:0,dmg:p.poolDmg||9,tickRate:p.poolTickRate||.55});sfx('acid')}
    else if(p.mini){createMiniPlant(p.x,p.y)}
   }
  }
