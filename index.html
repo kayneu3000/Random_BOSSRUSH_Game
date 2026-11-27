@@ -34,7 +34,7 @@
   <button class="mainButton" id="selectGunball">GUNBALL AUSWÄHLEN →</button>
 
   <div class="levelDivider">level 2</div>
- <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 56 · BOGENWURF</div>
+ <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 57 · BLICKWINKEL</div>
 
  <div class="bossCard snakeCard">
    <div class="snakePreview"></div>
@@ -47,6 +47,9 @@
    <div class="bossInfo"><h3>PLANT</h3><p>Die Rosenfresspflanze sitzt fest in ihren Wurzeln: VORGEWARnte Ranken die wie Peitschen SCHWINGEN und SCHLAGEN bis zum Maprand, Biss, Säure-Pfützen, Mini-Fresspflanzen (je 60 HP, bleiben für immer — aber tötbar!), eine Zunge die mit ihrer GESAMTEN Länge fängt und dich WEGSCHLEUDERT, vorgewarnter Säurestrahl, Vergraben und Schrei-Schallwelle. SIE IST JETZT IMMER ANGREIFBAR — aber dafür hat sie 1300 HP und greift DIE GANZE ZEIT an!</p><p style="color:#d8ab5c;margin-top:7px">LEVEL 2 · 1300 HP · FRESSPFLANZE</p></div>
   </div>
   <button class="mainButton" id="selectPlant" title="Besiege zuerst SNAKE, um PLANT zu öffnen">PLANT AUSWÄHLEN →</button>
+
+ <div class="levelDivider" style="margin-top:26px">DEINE SIEGE ALS VIDEO</div>
+ <div id="replayBox"></div>
  </div>
 </div>
 
@@ -104,6 +107,9 @@
   <div class="actionButtons"><button class="action" id="cmdBtn"><strong>💻</strong>CMD</button><button class="action" id="healBtn"><strong>🧪</strong>HEILEN</button><button class="action" id="dashBtn"><strong>➤</strong>DASH</button><button class="action" id="attackBtn"><strong id="attackIcon">⚔</strong><span id="attackLabel">ANGRIFF</span></button></div>
  </div>
  <div id="overlay"><div class="panel"><h2 id="overlayTitle">PAUSE</h2><p id="overlayText">Der Kampf ist pausiert.</p><button class="mainButton" id="resume">WEITERSPIELEN</button><button style="width:100%;margin-top:9px" id="restart">NEU STARTEN</button><button style="width:100%;margin-top:9px" id="toLobby">ZUR LOBBY</button></div></div>
+ <div id="tutPause"><div class="tutPanel"><h2 id="tutPauseTitle">PHASE</h2><div id="tutPauseLines"></div><canvas id="tutSketch" width="180" height="90"></canvas><button class="mainButton" id="tutResume">FORTSETZEN ▶</button></div></div>
 </div>
+
+<div id="replayView"><div class="tutPanel"><h2>DEIN SIEGES-VIDEO</h2><video id="replayVideo" controls playsinline></video><button class="mainButton" id="replayClose">ZURÜCK</button></div></div>
 
 <script type="module" src="js/main.js"></script>

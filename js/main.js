@@ -17,6 +17,8 @@ import { resizeCanvas, canvas } from "./canvas.js";
 import { draw } from "./render.js";
 import { initBossPreviews } from "./previews.js";
 import { initAudio } from "./audio.js";
+import { replayStart, replayWin, replayDiscard } from "./replay.js";
+import { showTutorialPause } from "./ui.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 import { showErrBox } from "./ui.js";
 
@@ -57,7 +59,8 @@ function startGame() {
  // dashX/dashY VORAB init: undefined * dv * dt waere NaN (echter Ursprung des Arena-Teleport/Schwarz-Bugs)
  /* stuckTimer MUSS initialisiert sein (HUGO-BUG #50): ohne das Feld war
     undefined<=0 = false — der Zungen-Fang-Check sprang NIE an! */
- s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0, stuckTimer: 0 };
+ /* moving/walkT: Richtungs-Ansicht + Lauf-Animation (Hugo #57) */
+ s.player = { x: MAP.w/2, y: MAP.h/2+350, r: 17, hp: c.hp, maxHp: c.hp, speed: c.speed, angle: -Math.PI/2, weaponAngle: 0, dashX: 0, dashY: 0, flingX: 0, flingY: 0, flingT: 0, stuckTimer: 0, moving: false, walkT: 0 };
  s.bosses = []; s.projectiles = []; s.enemyProjectiles = []; s.particles = []; s.effects = []; s.companions = []; s.infernoTowers = []; s.fireTrails = []; s.smallSnakes = [];
  s.acidPools = []; s.miniPlants = []; s.shockwaves = []; /* PLANT (Hugo #47) */
  s.vineSweeps = []; s.craters = []; /* HUGO #49: Ranken-Schwaenge + Krater */
@@ -119,6 +122,20 @@ function startGame() {
  requestAnimationFrame(resizeCanvas);
  setTimeout(resizeCanvas, 80);
  setTimeout(resizeCanvas, 400);
+
+ /* REPLAY (Hugo #57): Aufnahme läuft ab Kampfstart — gespeichert wird nur
+    der Sieg (replayWin), alles andere fliegt weg. */
+ replayStart(s.selectedBoss, canvas);
+
+ /* TUTORIAL-PAUSE (Hugo #57): Phase 1 wird direkt am Start erklaert */
+ if (s.selectedBoss === 'shadow') {
+  showTutorialPause('TUTORIAL — PHASE 1', [
+   'DER UNBEKANNTE DES SCHATTENS stalkt dich.',
+   'Weiche seinen Sprints aus — linke Seite: Stick/WASD.',
+   'Greif an, sobald er nah ist: ANGRIFF-Button oder J.',
+   'Tipp: Er braucht 3 Phasen. Bleib beweglich!'
+  ], 'move')
+ }
  s.gameRunning = true; s.last = performance.now();
  requestAnimationFrame(loop)
 }
@@ -146,8 +163,14 @@ function movePlayer(dt) {
  } else {
   const v = getInput();
   s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
-  if (Math.hypot(v.x, v.y) > .1) s.player.angle = Math.atan2(v.y, v.x)
+  /* LAUF-ANIMATION (Hugo #57): moving + walkT speisen Richtungs-Ansicht,
+     Schatten-Mitlauf und Schritte im drawPlayer */
+  s.player.moving = Math.hypot(v.x, v.y) > .1;
+  if (s.player.moving) { s.player.walkT = (s.player.walkT || 0) + dt; s.player.angle = Math.atan2(v.y, v.x) }
  }
+ /* Dash/Flug/Zunge: Figur bewegt sich zwar, aber nicht aus eigener Kraft —
+    moving nur im Normal-Fall setzen, sonst Laufe-Animation einfrieren */
+ if (s.dashDuration > 0 || s.player.flingT > 0 || s.player.stuckTimer > 0) s.player.moving = false;
  s.player.x = Math.max(30, Math.min(s.arena.w-30, s.player.x));
  s.player.y = Math.max(30, Math.min(s.arena.h-30, s.player.y))
 }
@@ -230,7 +253,11 @@ function update(dt) {
 
  if (s.bossRushQueue.length > 0) {
   if (s.bosses.every(b => !b.alive)) spawnNextBossRush()
- } else if (s.bosses.filter(b => b.alive).length === 0) endGame(true)
+ } else if (s.bosses.filter(b => b.alive).length === 0) {
+  /* REPLAY (Hugo #57): Sieg → Aufnahme sichern, DANN endGame */
+  replayWin();
+  endGame(true)
+ }
 }
 
 function loop(now) {
