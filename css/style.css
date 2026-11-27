@@ -78,6 +78,8 @@ button:active{transform:scale(.96)}
 #classScreen.gunballTheme #backLobby{background:#1c1030;border-color:#8e65c5;color:#dfcaff}
 
 .classes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.classGroupHead{grid-column:1/-1;margin-top:4px;font-size:12px;font-weight:bold;letter-spacing:3px;color:#9f9;border-bottom:1px solid #ffffff22;padding-bottom:4px;text-align:left}
+.classGroupHead:first-child{margin-top:0}
 .classCard{padding:15px;border:2px solid #ffffff18;border-radius:14px;background:#181818;cursor:pointer;min-height:135px}
 .classCard.selected{border-color:#aaa;background:#292929}
 .classIcon{font-size:30px}

@@ -1052,3 +1052,31 @@ test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {
   assert.ok(document.getElementById('overlayText').textContent.indexOf('SAUGER') >= 0, 'Sieg-Text nennt SAUGER');
   state.unlocks.sauger = false;
 });
+
+test('KLASSEN-GRUPPEN in der Auswahl: ADMIN oben, dann STARTER, LEVEL 1, LEVEL 2 (Hugo #52)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const seq = [...html.matchAll(/classGroupHead">([A-Z 0-9]+)<|data-class="([a-z]+)"/g)]
+    .map(m => m[1] ? 'HEAD:' + m[1].trim() : 'CARD:' + m[2])
+    .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger'].includes(s.slice(5)));
+  assert.deepEqual(seq, [
+    'HEAD:ADMIN', 'CARD:admin',
+    'HEAD:STARTER', 'CARD:faust', 'CARD:sword', 'CARD:archer', 'CARD:tank', 'CARD:assassin',
+    'HEAD:LEVEL 1', 'CARD:ember', 'CARD:gunner', 'CARD:healer',
+    'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger'
+  ], 'Klassen-Reihenfolge: ADMIN / STARTER / LEVEL 1 / LEVEL 2 (Hugo #52)');
+});
+
+test('PLANT-Cooldowns deutlich groesser (Hugo #52)', async () => {
+  const { createPlant } = await import('../js/bosses/plant.js');
+  createPlant(900, 400);
+  const b = state.bosses[state.bosses.length - 1];
+  assert.ok(b && b.type === 'plant', 'createPlant hat den Boss erzeugt');
+  assert.ok(b.vineTimer >= 3, 'vine Start-CD >= 3');
+  assert.ok(b.acidSpitTimer >= 5.5, 'acid Start-CD >= 5.5');
+  assert.ok(b.seedTimer >= 5.5, 'seed Start-CD >= 5.5');
+  assert.ok(b.tongueTimer >= 9, 'tongue Start-CD >= 9');
+  assert.ok(b.beamTimer >= 12, 'beam Start-CD >= 12');
+  assert.ok(b.burrowTimer >= 18, 'burrow Start-CD >= 18');
+  assert.ok(b.screamTimer >= 12, 'scream Start-CD >= 12');
+});
