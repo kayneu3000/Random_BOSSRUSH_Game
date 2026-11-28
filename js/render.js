@@ -49,9 +49,23 @@ function drawBackground(){
 function drawSlime(b){
  const x=b.x,y=b.y,r=b.r;ctx.save();ctx.translate(x,y);
  ctx.fillStyle='#06131d99';ctx.beginPath();ctx.ellipse(5,r*.55,r*1.02,r*.27,0,0,Math.PI*2);ctx.fill();
+ /* SCHLITTERN & WACKELN (Hugo #60): Rutscht der Slime auf dich zu, hängt sein
+    Unterkörper ECHT nach hinten (Scherung entgegen der Laufrichtung) und der
+    Körper ist gestreckt wie beim Sprinten. Bleibt er stehen, wobbelt der ganze
+    Schleimkörper (gedämpftes Squash&Stretch). */
+ const vx=b.vx||0,vy=b.vy||0,sp=Math.hypot(vx,vy);
+ ctx.save();
+ if(sp>40&&b.dash>0){
+  const ang=Math.atan2(vy,vx);
+  ctx.rotate(ang);ctx.transform(1,0,-.26,1,0,0);ctx.scale(1.16,.86);ctx.rotate(-ang)
+ }else{
+  const w=Math.sin(b.wobble*2.2);
+  ctx.scale(1+w*.06,1-w*.06)
+ }
  const g=ctx.createLinearGradient(-r,-r,r,r);g.addColorStop(0,'#b8ffff');g.addColorStop(.3,'#41d9f4');g.addColorStop(.72,'#087fca');g.addColorStop(1,'#064775');ctx.fillStyle=g;
  ctx.beginPath();ctx.moveTo(-r,r*.42);ctx.bezierCurveTo(-r*1.12,-r*.1,-r*.65,-r*.93,0,-r*.9);ctx.bezierCurveTo(r*.75,-r*.98,r*1.13,-r*.2,r,r*.42);ctx.quadraticCurveTo(r*.7,r*.76,0,r*.67);ctx.quadraticCurveTo(-r*.7,r*.76,-r,r*.42);ctx.fill();
- ctx.fillStyle='#06314d';ctx.beginPath();ctx.ellipse(-r*.3,-r*.05,r*.12,r*.14,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(r*.3,-r*.05,r*.12,r*.14,0,0,Math.PI*2);ctx.fill();ctx.restore();
+ ctx.fillStyle='#06314d';ctx.beginPath();ctx.ellipse(-r*.3,-r*.05,r*.12,r*.14,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(r*.3,-r*.05,r*.12,r*.14,0,0,Math.PI*2);ctx.fill();
+ ctx.restore();ctx.restore();
  if(b.type!=='healerCompanion'){ctx.fillStyle='#071622';ctx.fillRect(x-r*.65,y-r-15,r*1.3,5);ctx.fillStyle='#55eaff';ctx.fillRect(x-r*.65,y-r-15,r*1.3*Math.max(0,b.hp/b.maxHp),5)}
 }
 
@@ -750,8 +764,89 @@ export function facingViewOf(angle){
  return Math.max(-1,Math.min(1,Math.sin(angle)))
 }
 
+/* SNAKE SPIELEN (Hugo #60): Der Spieler IST die Schlange — Kopf + Trail-Koerper
+   im Boss-Snake-Look (dunkelgruen, gelbe Bauchplatten, Augen + Zunge) */
+function drawSnakePlayer(){
+ const s=state,p=s.player;
+ const segs=8,pts=[{x:p.x,y:p.y},...(s.snakeTrail||[])];
+ const pos=[{x:p.x,y:p.y}];
+ let prev=pts[0],walked=0,ci=1;
+ for(let i=1;i<=segs&&ci<pts.length;i++){
+  const need=i*30;
+  while(ci<pts.length){
+   const d=Math.hypot(pts[ci].x-prev.x,pts[ci].y-prev.y);
+   if(d<=0){prev=pts[ci];ci++;continue}
+   if(walked+d>=need){
+    const f=(need-walked)/d;
+    prev={x:prev.x+(pts[ci].x-prev.x)*f,y:prev.y+(pts[ci].y-prev.y)*f};
+    walked=need;pos.push({x:prev.x,y:prev.y});break
+   }
+   walked+=d;prev=pts[ci];ci++
+  }
+ }
+ while(pos.length<=segs)pos.push({...pos[pos.length-1]});
+ ctx.save();
+ if(s.invuln>0&&Math.floor(s.elapsed*18)%2===0)ctx.globalAlpha=.45;
+ ctx.lineCap='round';
+ for(let i=Math.min(pos.length-1,segs);i>=1;i--){
+  const q=pos[i],qn=pos[i-1],ang2=Math.atan2(qn.y-q.y,qn.x-q.x);
+  const sr=Math.max(11,17*(.86-(i-1)/segs*.45));
+  const wob=Math.sin(s.elapsed*7-i*.85)*2.2;
+  ctx.save();ctx.translate(q.x+wob*.2,q.y+wob);ctx.rotate(ang2);
+  ctx.fillStyle='#04100a99';ctx.beginPath();ctx.ellipse(2,sr*.55,sr*1.05,sr*.36,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#4f9c2e';ctx.beginPath();ctx.ellipse(0,0,sr*1.12,sr,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#cfe98a59';ctx.beginPath();ctx.ellipse(-sr*.1,sr*.42,sr*.72,sr*.3,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#123a10aa';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(-sr*.3,0,sr*.5,-.9,.9);ctx.stroke();
+  ctx.beginPath();ctx.arc(sr*.15,0,sr*.5,-.9,.9);ctx.stroke();
+  ctx.restore()
+ }
+ /* Kopf in Blickrichtung */
+ const ang=Number.isFinite(p.angle)?p.angle:-Math.PI/2;
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(ang);
+ ctx.fillStyle='#04100a99';ctx.beginPath();ctx.ellipse(2,11,20,8,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#2e6b21';ctx.beginPath();ctx.ellipse(-4,0,19,15,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#d7a83e';ctx.beginPath();ctx.ellipse(-14,0,4,12,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#57a639';ctx.strokeStyle='#0e2810';ctx.lineWidth=2;
+ ctx.beginPath();ctx.ellipse(4,0,13,11,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+ /* Augen */
+ ctx.fillStyle='#e9f8ff';ctx.beginPath();ctx.arc(9,-5.5,3.6,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(9,5.5,3.6,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#0a1c2e';ctx.beginPath();ctx.arc(10.4,-5.5,1.7,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(10.4,5.5,1.7,0,Math.PI*2);ctx.fill();
+ /* flackernde Zunge */
+ if(Math.floor(s.elapsed*4)%2===0){ctx.strokeStyle='#ff5a76';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(27,0);ctx.stroke();ctx.beginPath();ctx.moveTo(27,0);ctx.lineTo(32,-3.4);ctx.moveTo(27,0);ctx.lineTo(32,3.4);ctx.stroke()}
+ ctx.restore();
+ ctx.restore()
+}
+
+/* Die RUHENDE SCHLANGE (Hugo #60): liegt auf einem Feld, bewegt sich nie —
+   aufgerollt, schnarchfriedlich, Augen zu */
+function drawRestSnake(r){
+ const s=state,x=r.x,y=r.y;
+ ctx.save();ctx.translate(x,y);
+ ctx.fillStyle='#04100a88';ctx.beginPath();ctx.ellipse(4,26,74,22,0,0,Math.PI*2);ctx.fill();
+ /* aufgerollte Ringe, von aussen nach innen */
+ const rings=[[52,15,'#4f9c2e'],[38,12,'#57a639'],[25,10,'#4f9c2e']];
+ for(const [rx,ry,col] of rings){
+  ctx.fillStyle=col;ctx.strokeStyle='#123a10aa';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.stroke()
+ }
+ /* Kopf, friedlich aufs aeusserste Ring gelegt */
+ ctx.fillStyle='#2e6b21';ctx.strokeStyle='#0e2810';ctx.lineWidth=2;
+ ctx.beginPath();ctx.ellipse(-44,-16,21,14,-.35,0,Math.PI*2);ctx.fill();ctx.stroke();
+ /* geschlossene Augen: zwei kleine Bogen */
+ ctx.strokeStyle='#0a2a08';ctx.lineWidth=2.4;
+ ctx.beginPath();ctx.arc(-50,-20,4,.15,Math.PI-.15);ctx.stroke();
+ ctx.beginPath();ctx.arc(-38,-22,4,.15,Math.PI-.15);ctx.stroke();
+ /* Schnarch-Z-Zz */
+ ctx.fillStyle='#cfe98a';ctx.font='bold 13px Arial';
+ ctx.fillText('z',-62,-38-Math.sin(s.elapsed*2)*2);
+ ctx.font='bold 10px Arial';ctx.fillText('Z',-50,-46-Math.sin(s.elapsed*2+1)*2);
+ ctx.restore()
+}
+
 function drawPlayer(){
  const s=state,p=s.player;
+ if(s.selected==='snakePlay'){drawSnakePlayer();return}
  /* BLICKRICHTUNG statt rotate: Figur bleibt rund, Gesicht/Fuesse wandern in
     Laufrichtung — schraeg und nach vorne (oben) sieht endlich richtig aus */
  const ang=Number.isFinite(p.angle)?p.angle:-Math.PI/2;
@@ -867,6 +962,7 @@ export function draw(){
   ctx.fillStyle='#e7ffa8';for(let k=0;k<5;k++){const ba=s.elapsed*2+k*1.3;ctx.beginPath();ctx.arc(a.x+Math.cos(ba)*a.r*.5,a.y+Math.sin(ba)*a.r*.25,2+Math.sin(ba*3)*1,0,Math.PI*2);ctx.fill()}
   ctx.restore()
  }});
+ safeDraw('restSnake',()=>{if(s.restSnake)drawRestSnake(s.restSnake)});
  safeDraw('bosse',()=>{for(const b of s.bosses)if(b.alive){
   /* SAUGER-BOGEN-Flug (Hugo #56): SCHATTEN am Boden (wird groesser und dann
      wieder kleiner), KOERPER steigt im Bogen (arcLift hebt beim Zeichnen an) */

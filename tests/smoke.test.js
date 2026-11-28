@@ -1061,14 +1061,14 @@ test('beating PLANT unlocks the SAUGER class (Hugo #47)', async () => {
 test('KLASSEN-GRUPPEN in der Auswahl: ADMIN oben, dann STARTER, LEVEL 1, LEVEL 2 (Hugo #52)', async () => {
   const { readFileSync } = await import('node:fs');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  const seq = [...html.matchAll(/classGroupHead">([A-Z 0-9]+)<|data-class="([a-z]+)"/g)]
+  const seq = [...html.matchAll(/classGroupHead">([A-Z 0-9]+)<|data-class="([a-zA-Z]+)"/g)]
     .map(m => m[1] ? 'HEAD:' + m[1].trim() : 'CARD:' + m[2])
-    .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger'].includes(s.slice(5)));
+    .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger','snakePlay'].includes(s.slice(5)));
   assert.deepEqual(seq, [
     'HEAD:ADMIN', 'CARD:admin',
     'HEAD:STARTER', 'CARD:faust', 'CARD:archer', 'CARD:sword', 'CARD:tank', 'CARD:assassin',
     'HEAD:LEVEL 1', 'CARD:healer', 'CARD:ember', 'CARD:gunner',
-    'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger'
+    'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger', 'HEAD:SNAKE', 'CARD:snakePlay'
   ], 'Klassen-Reihenfolge in BOSS-Reihenfolge: ADMIN / STARTER (Schlaeger->Bogen->Schwert->Tank->Assassin) / LEVEL 1 (Healer->Ember->Gunner) / LEVEL 2 (Peitsche->Sauger) (Hugo #53)');
 });
 
@@ -1279,4 +1279,156 @@ test('SIEGES-TEXTE IM OVERLAY IN ZEILEN (Hugo #58)', async () => {
   const el = document.getElementById('overlayText');
   assert.ok(el.children.length >= 2, 'langer Sieg-Text als Zeilen-Divs');
   state.finished = false; state.paused = false;
+});
+
+/* ---------- HUGO #60: VIDEO-UI + SNAKE SPIELEN + SLIME-ANIMATION + PARKOUR ---------- */
+
+test('VIDEO-UI (Hugo #60): Aufnahme komponiert HUD-Spiegelung ueber das Spielbild', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/replay.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('startComposite'), 'Recording nutzt Kompositions-Canvas');
+  assert.ok(src.includes('drawImage(srcCanvasRef'), 'Spielbild wird gezeichnet');
+  assert.ok(src.includes('readHud'), 'HUD-Werte werden gespiegelt');
+  assert.ok(src.includes("playerHPFill"), 'Spieler-HP im Video');
+  assert.ok(src.includes("bossBars"), 'Bossleisten im Video');
+  /* Und: wenn keine Aufnahme laeuft, darf nichts komponiert werden */
+  const { replayDiscard } = await import('../js/replay.js');
+  replayDiscard();
+});
+
+test('SNAKE-SPIELEN (Hugo #60): Klasse existiert, 800 HP, Biss, hellgruen', async () => {
+  const { classes } = await import('../js/config.js');
+  assert.ok(classes.snakePlay, 'snakePlay-Klasse vorhanden');
+  assert.equal(classes.snakePlay.hp, 800);
+  assert.equal(classes.snakePlay.damage, 22);
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.ok(css.includes('snakePlayUnlocked'), 'hellgrune Snake-Karte im CSS');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(html.includes('Mit Snake, Snake spielen'), 'Karten-Text wie von Hugo gewuenscht');
+});
+
+test('SNAKE-SPIELEN: Schlangen-Bewegung mit Trail + ruhende Schlange auf einem Feld', () => {
+  state.selected = 'snakePlay';
+  state.selectedBoss = 'slime';
+  startGame();
+  assert.equal(state.player.maxHp, 800);
+  assert.ok(state.restSnake, 'ruhende Schlange liegt auf einem Feld');
+  state.keys = { KeyD: true }; /* frische Keys (keine Pfeiltasten-Reste) */
+  const t0 = state.snakeTrail.length;
+  for (let i = 0; i < 60 && !state.finished; i++) update(1 / 60);
+  assert.ok(state.snakeTrail.length > t0, 'Trail waechst beim Schlaengeln');
+  assert.ok(state.snakeTrail.length <= 30, 'Trail bleibt begrenzt');
+  state.keys = {};
+});
+
+test('RUHENDE SCHLANGE (Hugo #60): bewegt sich nie (kein Update-Pfad)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  const win = src.indexOf('s.restSnake = {');
+  assert.ok(win > 0, 'restSnake wird in startGame gesetzt');
+  /* Der restSnake-x/y wird nach dem Start NIE wieder angetastet */
+  assert.ok(!/restSnake\.(x|y)\s*=/.test(src), 'keine Bewegung der ruhenden Schlange');
+});
+
+test('SLIME-ANIMATION (Hugo #60): Schlitteln-Scherung + Stand-Wackeln', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/render.js', import.meta.url), 'utf8');
+  const ds = src.slice(src.indexOf('function drawSlime'), src.indexOf('function drawSlime') + 1600);
+  assert.ok(ds.includes("ctx.transform(1,0,-.26,1,0,0)"), 'Untenkoerper haengt beim Schlitteln nach hinten');
+  assert.ok(ds.includes('ctx.scale(1.16,.86)'), 'Koerper beim Sprint gestreckt');
+  assert.ok(ds.includes("Math.sin(b.wobble*2.2)"), 'ganzer Koerper wackelt beim Stehen');
+  /* Slime-Boot bleibt stabil */
+  state.selected = 'archer'; state.selectedBoss = 'slime';
+  startGame();
+  const { draw } = await import('../js/render.js');
+  for (let i = 0; i < 40 && !state.finished; i++) update(1 / 60);
+  draw();
+  assert.equal(document.getElementById('canvas').getContext('2d').__stackDepth, 0, 'Canvas-Stack leer');
+});
+
+test('SIEG-UNLOCKS (Hugo #60): Slime -> Parkour, Snake -> Snake spielen', () => {
+  state.unlocks.parkour = false; state.unlocks.snakePlay = false;
+  state.finished = false; state.paused = false;
+  state.selectedBoss = 'slime';
+  endGame(true);
+  assert.equal(state.unlocks.parkour, true, 'Parkour nach Slime-Sieg');
+  state.finished = false; state.paused = false;
+  state.selectedBoss = 'snake';
+  endGame(true);
+  assert.equal(state.unlocks.snakePlay, true, 'Snake spielen nach Snake-Sieg');
+  state.finished = false; state.paused = false;
+});
+
+test('PARKOUR: Slime faellt auf den Boden, laeuft und springt', async () => {
+  const { createParkourRun, parkourStep, parkourDraw } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  for (let i = 0; i < 90; i++) parkourStep(pk, 1 / 60);
+  assert.ok(pk.p.onGround, 'steht auf dem Start-Plateau');
+  const x0 = pk.p.x;
+  pk.keys.right = true;
+  for (let i = 0; i < 30; i++) parkourStep(pk, 1 / 60);
+  pk.keys.right = false;
+  assert.ok(pk.p.x > x0 + 80, 'laeuft nach rechts');
+  pk.keys.jump = true;
+  parkourStep(pk, 1 / 60);
+  pk.keys.jump = false;
+  assert.ok(pk.p.vy < 0 || !pk.p.onGround, 'springt');
+  /* Zeichnen mit dem Proxy-Context darf nicht crashen + Stack sauber */
+  const cv = document.getElementById('canvas');
+  const g = cv.getContext('2d');
+  parkourDraw(g, pk, 800, 600);
+  assert.equal(g.__stackDepth, 0, 'Canvas-Stack nach parkourDraw leer');
+});
+
+test('PARKOUR: Stacheln und Saegeblaetter toeten, Checkpoint respawnt', async () => {
+  const { createParkourRun, parkourStep } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  for (let i = 0; i < 60; i++) parkourStep(pk, 1 / 60);
+  const d0 = pk.deaths;
+  const sp = pk.plats.find(q => q.kind === 'spike');
+  pk.p.x = sp.x + sp.w / 2; pk.p.y = sp.y + 5; pk.p.vy = 0;
+  parkourStep(pk, 1 / 60);
+  assert.equal(pk.deaths, d0 + 1, 'Stachel = Tod');
+  assert.equal(pk.p.x, pk.spawn.x, 'Respawn am Checkpoint');
+  /* Saegeblatt trifft bei direkter Beruehrung */
+  const d1 = pk.deaths;
+  const saw = pk.plats.find(q => q.kind === 'saw');
+  pk.p.x = saw.ax; pk.p.y = (saw.sy !== undefined ? saw.sy : saw.ay); pk.p.vy = 0;
+  parkourStep(pk, 1 / 60);
+  assert.equal(pk.deaths, d1 + 1, 'Saegeblatt = Tod');
+});
+
+test('PARKOUR: Kruemel-Plattform bricht unter dem Slime', async () => {
+  const { createParkourRun, parkourStep } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  const cr = pk.plats.find(q => q.kind === 'crumble');
+  pk.p.x = cr.x + cr.w / 2; pk.p.y = cr.y - pk.p.r - 1; pk.p.vy = 0;
+  for (let i = 0; i < 70; i++) parkourStep(pk, 1 / 60);
+  assert.ok(cr.gone > 0, 'Plattform ist gebrochen');
+});
+
+test('PARKOUR: Ziel beendet den Lauf + Bestzeit wird gespeichert', async () => {
+  const { createParkourRun, parkourStep } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  for (let i = 0; i < 30; i++) parkourStep(pk, 1 / 60);
+  const goal = pk.plats.find(q => q.kind === 'goal');
+  pk.p.x = goal.x + 30; pk.p.y = goal.y + 60; pk.p.vy = 0;
+  parkourStep(pk, 1 / 60);
+  assert.equal(pk.done, true, 'Ziel = fertig');
+  assert.ok(pk.best >= pk.time, 'Bestzeit gesichert');
+  /* done-Lauf updated nur noch doneTime, keine Bewegung mehr */
+  const t = pk.time;
+  parkourStep(pk, 1 / 60);
+  assert.equal(pk.time, t, 'nach dem Ziel passiert nichts mehr');
+});
+
+test('PARKOUR-LOBBY (Hugo #60): Button + Screen vorhanden', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(html.includes('SLIME-PARKOUR SPIELEN'), 'Lobby-Button');
+  assert.ok(html.includes('id="parkourScreen"'), 'Parkour-Screen');
+  assert.ok(html.includes('id="pkJump"') && html.includes('id="pkLeft"') && html.includes('id="pkRight"'), 'Touch-Buttons (iPad!)');
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.ok(css.includes('#pkControls'), 'Parkour-CSS');
 });

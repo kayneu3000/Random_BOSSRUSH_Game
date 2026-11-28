@@ -91,6 +91,8 @@ export function sfx(name){
    case 'scream': tone(t, 880, 170, .7, 'sawtooth', .38); noise(t, .7, 2400, 280, 'bandpass', .45); break;
    case 'burrow': noise(t, .5, 420, 90, 'lowpass', .5); tone(t, 95, 48, .5, 'sine', .3); break;
    case 'seed': tone(t, 620, 990, .16, 'triangle', .28); break;
+   case 'hop': /* SLIME-PARKOUR (Hugo #60): huepfer */
+    tone(t, 340, 760, .12, 'sine', .26); break;
   }
  }catch(e){}
 }
