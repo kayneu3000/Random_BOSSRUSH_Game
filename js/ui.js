@@ -3,6 +3,7 @@ import { ADMIN_UNLOCK_CODE } from "./config.js";
 import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
 import { replayDiscard, refreshReplayUI, replayClose } from "./replay.js";
+import { startParkour, stopParkour, parkourActive } from "./parkour.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
 
@@ -30,7 +31,7 @@ export function applyUnlocksToUI() {
   card.classList.remove('locked');
   card.querySelector('h3').textContent = labels[cls][1]
  }
- const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)], sauger: ['saugerCard', 'Sauger ' + String.fromCodePoint(0x1F331)] };
+ const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)], sauger: ['saugerCard', 'Sauger ' + String.fromCodePoint(0x1F331)], snakePlay: ['snakePlayCard', 'Mit Snake, Snake spielen ' + String.fromCodePoint(0x1F40D)] };
  for (const cls of Object.keys(whipLabels)) {
   if (!state.unlocks[cls]) continue;
   const wcard = $(whipLabels[cls][0]);
@@ -38,6 +39,9 @@ export function applyUnlocksToUI() {
   wcard.querySelector('h3').textContent = whipLabels[cls][1]
  }
  if (state.unlocks.whip) $('whipCard').classList.add('whipUnlocked');
+ if (state.unlocks.snakePlay) $('snakePlayCard').classList.add('snakePlayUnlocked'); /* HELLGRUEN (Hugo #60) */
+ /* SLIME-PARKOUR (Hugo #60): Lobby-Button erst nach dem Slime-Sieg */
+ try { $('pkEnter').style.display = state.unlocks.parkour ? 'block' : 'none' } catch (e) { }
  if (state.unlocks.healer) $('healerCard').classList.add('healerUnlocked'); /* HEALER BLAU (Hugo #57) */
  if (state.unlocks.ember) $('emberCard').classList.add('emberUnlocked');
  if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked');
@@ -189,7 +193,8 @@ export function endGame(win) {
  if (win && state.selectedBoss === 'shadow') { try { localStorage.setItem('bossrushTutorial', 'done') } catch (e) { } setMultiline($('overlayText'), 'Tutorial geschafft! Ab jetzt warten alle Bosse in der Lobby auf dich!') }
  if (win && state.selectedBoss === 'slime') {
   state.unlocks.healer = true;
-  setMultiline($('overlayText'), 'Alle Slime-Formen besiegt! Healer freigeschaltet!');
+  state.unlocks.parkour = true; /* SLIME-PARKOUR (Hugo #60) */
+  setMultiline($('overlayText'), 'Alle Slime-Formen besiegt! Healer + SLIME-PARKOUR freigeschaltet (in der Lobby) — da spielst du den kleinen Slime!');
  } else if (win && state.selectedBoss === 'dragon') {
   state.unlocks.ember = true;
   setMultiline($('overlayText'), 'Der Drache wurde besiegt! EMBER FREIGESCHALTET! Der Drachenkopf als Hand kann einen 5 Sekunden langen Feuerstrahl schießen. Danach lädt er 4 Sekunden auf.');
@@ -198,7 +203,8 @@ export function endGame(win) {
   setMultiline($('overlayText'), 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.');
  } else if (win && state.selectedBoss === 'snake') {
   state.unlocks.whip = true;
-  setMultiline($('overlayText'), 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag!');
+  state.unlocks.snakePlay = true; /* SNAKE SPIELEN (Hugo #60) */
+  setMultiline($('overlayText'), 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag! UND: In der Klassenwahl kannst du jetzt SNAKE SELBST SPIELEN!');
  } else if (win && state.selectedBoss === 'plant') {
   state.unlocks.sauger = true;
   setMultiline($('overlayText'), 'Die Fresspflanze ist besiegt! SAUGER FREIGESCHALTET: 250 HP, grün mit Stacheln und eine Fresspflanze in der Hand, die Gegner anzieht!');
@@ -323,6 +329,7 @@ export function attachUI({ startGame }) {
   if (dc === 'gunner' && !state.unlocks.gunner) return;
   if (dc === 'whip' && !state.unlocks.whip) return;
   if (dc === 'sauger' && !state.unlocks.sauger) return;
+  if (dc === 'snakePlay' && !state.unlocks.snakePlay) return;
   if (dc === 'admin' && !state.unlocks.admin) {
    const code = prompt("ADMIN-CODE EINGEBEN:");
    if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;
@@ -336,6 +343,7 @@ export function attachUI({ startGame }) {
  });
 
  $('startGame').onclick = startGame;
+ $('pkEnter').onclick = () => { try { showScreen('parkourScreen'); startParkour() } catch (e) { } }; /* SLIME-PARKOUR (Hugo #60) */
  $('pauseBtn').onclick = () => setPause(true);
  $('resume').onclick = () => setPause(false);
  $('restart').onclick = startGame;

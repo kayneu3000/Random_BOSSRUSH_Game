@@ -331,3 +331,22 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #classScreen.plantTheme .classCard h3{color:#e8cfa0}
 #classScreen.plantTheme .classCard p{color:#d9c4a0}
 #classScreen.plantTheme .classCard .stats{color:#e8c070}
+
+/* ---------- SNAKE SPIELEN (Hugo #60): Karte HELLGRUEN wie der Snake-Button ---------- */
+.classCard.snakePlayUnlocked{border-color:#8cf838;box-shadow:0 0 14px #8cf83833}
+.classCard.snakePlayUnlocked.selected{border-color:#aaff5e;background:linear-gradient(145deg,#173a12,#0d2409);box-shadow:0 0 20px #8cf83855}
+.classCard.snakePlayUnlocked h3{color:#b6ff6e}
+
+/* ---------- SLIME-PARKOUR (Hugo #60) ---------- */
+#parkourScreen{padding:0;overflow:hidden;justify-content:flex-start}
+#parkourScreen.active{display:block}
+#pkCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation}
+#pkHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;background:#06131dbb;color:#dff3ff;padding:7px 16px;border-radius:12px;font-weight:bold;font-size:15px;pointer-events:none}
+#pkControls{position:absolute;inset:0;pointer-events:none;z-index:6}
+#pkControls button{pointer-events:auto}
+#pkMove{position:absolute;left:14px;bottom:18px;display:flex;gap:12px}
+#pkActions{position:absolute;right:14px;bottom:18px;display:flex;gap:12px;align-items:flex-end}
+.pkBtn{width:84px;height:84px;font-size:34px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233cc;color:#dff3ff;font-weight:bold;touch-action:manipulation}
+.pkBtn:active{background:#1d4f74}
+.pkJump{width:130px;height:130px;font-size:20px;border-radius:50%;background:#0d3a24cc;border-color:#41e07c;color:#c9ffdd}
+.pkSmall{width:76px;height:56px;font-size:14px;border-radius:14px}

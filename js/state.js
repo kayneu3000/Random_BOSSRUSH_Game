@@ -1,7 +1,12 @@
 export const state = {
  selected: 'faust',
  selectedBoss: 'shadow',
- unlocks: { healer: false, ember: false, gunner: false, whip: false },
+ unlocks: { healer: false, ember: false, gunner: false, whip: false, sauger: false, snakePlay: false, parkour: false },
+
+ /* SNAKE SPIELEN (Hugo #60): Schwanz-Trail + ruhende Schlange auf einem Feld */
+ snakeTrail: [],
+ snakeAngle: -Math.PI / 2,
+ restSnake: null,
 
  player: null,
  bosses: [],
