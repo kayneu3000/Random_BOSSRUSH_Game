@@ -1504,3 +1504,25 @@ test('PARKOUR-GEMS (Hugo #61): alle 5 Gems sind sammelbar', async () => {
   }
   assert.equal(pk.gems, 5, 'Gem-Zaehler = 5/5');
 });
+
+test('SAUGER-GRIFF (Hugo #63): Cooldown des gepackten Bosses laeuft WEITER (kein Einfrieren mehr)', async () => {
+  state.unlocks.sauger = true;
+  state.selected = 'sauger'; state.selectedBoss = 'slime';
+  startGame(); state.paused = false; state.finished = false;
+  const b = state.bosses[0];
+  state.player.x = b.x - 150; state.player.y = b.y; state.player.angle = 0;
+  const { attack } = await import('../js/combat.js');
+  attack();
+  assert.ok(b.saugerPull, 'Sauger greift an: Boss wird angezogen');
+  /* Ranziehen bis zum Griff (Kontakt = stunTimer) */
+  for (let i = 0; i < 120 && !state.finished && !b.stunTimer; i++) update(1 / 60);
+  assert.ok(b.stunTimer > 0, 'Boss ist gepackt/betaeubt');
+  /* WAHREND der Betaeubung muessen seine Cooldowns ticken, nicht eingefroren sein */
+  b.attackCooldown = 1;
+  const t0 = b.attackCooldown, st = b.stunTimer;
+  for (let i = 0; i < 30 && !state.finished; i++) update(1 / 60);
+  assert.ok(b.attackCooldown < t0, 'attackCooldown tickt WAHREND des Griffs weiter (war: eingefroren)');
+  assert.ok(b.stunTimer < st, 'stunTimer laeuft runter');
+  assert.ok(b.stunTimer === 0 || b.stunTimer > 0, 'kein NaN im stunTimer');
+  state.finished = false; state.paused = false;
+});

@@ -216,8 +216,15 @@ function update(dt) {
 
  for (const b of s.bosses) {
   if (!b.alive) continue;
-  /* SAUGER-GRIFF (Hugo #47): frisch gegriffene Gegner sind kurz kampfunfaehig */
-  if (b.stunTimer > 0) { b.stunTimer -= dt; continue }
+  /* SAUGER-GRIFF (Hugo #47): frisch gegriffene Gegner sind kurz kampfunfaehig.
+     HUGO-BUG #63: dabei wurde das GESAMTE Boss-Update uebersprungen — auch seine
+     Angriffs-Cooldowns standen still ("der cooldown wird angehalten"). Jetzt
+     pausiert nur seine AKTION, die Cooldowns ticken ganz normal weiter. */
+  if (b.stunTimer > 0) {
+   b.stunTimer -= dt;
+   for (const k in b) if (k !== 'stunTimer' && /^(attackCooldown|.*Cooldown|.*Timer)$/.test(k) && typeof b[k] === 'number' && b[k] > 0) b[k] = Math.max(0, b[k] - dt);
+   continue
+  }
   if (b.type === 'plant') { updatePlant(b, dt); continue }
   if (b.type === 'dragon') { updateDragon(b, dt); continue }
   if (b.type === 'gunball') { updateGunball(b, dt); continue }
