@@ -340,7 +340,7 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #pkHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;background:#06131dbb;color:#dff3ff;padding:7px 16px;border-radius:12px;font-weight:bold;font-size:15px;pointer-events:none}
 #pkControls{position:absolute;inset:0;pointer-events:none;z-index:6}
 #pkControls button{pointer-events:auto}
-#pkStick{position:absolute;left:18px;bottom:24px;width:120px;height:120px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233aa;touch-action:none}
+#pkStick{position:absolute;left:18px;bottom:24px;width:120px;height:120px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233aa;touch-action:none;pointer-events:auto;cursor:pointer}
 #pkStickKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:#1d4f74cc;border:2px solid #7fd4ff}
 #pkActions{position:absolute;right:14px;bottom:18px;display:flex;gap:12px;align-items:flex-end}
 .pkBtn{width:84px;height:84px;font-size:34px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233cc;color:#dff3ff;font-weight:bold;touch-action:manipulation}
