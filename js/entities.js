@@ -45,6 +45,9 @@ let dummyTarget = null;
 export function duelTargetOf(b){
  const t=b.duelTarget;
  if(t&&t.alive)return t;
+ /* VS-TEAMS (Hugo #65): Ziel tot -> das naechste lebende FEIND-Ziel (nie das
+    eigene Team). Sind alle Feinde weg, greift der alte Fallback (Spieler). */
+ if(b.duelEnemies){const e=b.duelEnemies.find(q=>q.alive);if(e){b.duelTarget=e;return e}}
  if(state.notMe){
   if(!dummyTarget)dummyTarget={type:'dummy',r:60,hp:999999,maxHp:999999,alive:true,x:0,y:0};
   dummyTarget.x=state.arena.w/2;dummyTarget.y=state.arena.h/2;

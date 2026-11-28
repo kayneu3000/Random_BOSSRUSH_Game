@@ -30,6 +30,7 @@ export const state = {
  finished: false,
  gameRunning: false,
  loopRaf: 0,
+ timeScale: 1,
 
  attackTimer: 0,
  dashTimer: 0,

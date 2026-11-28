@@ -245,6 +245,7 @@ function update(dt) {
    const A = s.bosses[i], B = s.bosses[j];
    if (!A.alive || !B.alive) continue;
    if (A.type === 'snake' || B.type === 'snake') continue;
+   if (A.duelTeam !== undefined && A.duelTeam === B.duelTeam) continue; /* VS-TEAMS (#65): eigene Teammitglieder verschonen sich */
    if (Math.hypot(A.x-B.x, A.y-B.y) < A.r + B.r*.7 && A.attackCooldown <= 0) {
     damageBoss(A, 20, true); damageBoss(B, 20, true);
     A.attackCooldown = 1; B.attackCooldown = 1
@@ -284,6 +285,7 @@ function loop(now) {
  let dt = (now-s.last)/1000; s.last = now;
  if(!Number.isFinite(dt)||dt<=0)dt=1/60;
  dt=Math.min(dt,.035);
+ dt=Math.min(dt*(s.timeScale||1),.12); /* ZEIT-TEMPO (Hugo #65): time speed <n> */
  if (!s.paused && !s.finished) {
   // KLARBLICK-Nudge: setzt alle ~0,75 s die Canvas-Groesse neu (gleicher Wert).
   // Der Minuten-Beweis (ZEUGE): der Boden kommt an, aber Safari komponiert nur die
