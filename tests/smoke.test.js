@@ -1526,3 +1526,32 @@ test('SAUGER-GRIFF (Hugo #63): Cooldown des gepackten Bosses laeuft WEITER (kein
   assert.ok(b.stunTimer === 0 || b.stunTimer > 0, 'kein NaN im stunTimer');
   state.finished = false; state.paused = false;
 });
+
+test('RESTART-GESCHWINDIGKEIT (Hugo #64a): startGame stapelt keine Loops mehr', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('cancelAnimationFrame(s.loopRaf)'), 'startGame bricht den alten Loop ab');
+  assert.match(src, /s\.loopRaf = requestAnimationFrame\(loop\)/, 'loop merkt sich seine RAF-Id');
+  /* Wirk-Test: zwei startGame hintereinander — der Loop-Handle wird ersetzt, state bleibt konsistent */
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame(); const raf1 = state.loopRaf;
+  startGame(); state.paused = false;
+  assert.notStrictEqual(state.loopRaf, undefined, 'loopRaf gesetzt');
+  state.gameRunning = false; state.finished = false; state.paused = false;
+});
+
+test('HEALER-SLIMES (Hugo #64b): PFLANZE stirbt richtig bei 0 HP (damageBoss statt damageTower)', async () => {
+  state.unlocks.healer = true;
+  state.selected = 'healer'; state.selectedBoss = 'plant';
+  startGame(); state.paused = false; state.finished = false;
+  assert.equal(state.companions.length, 2, '2 Healer-Slimes da');
+  const b = state.bosses[0];
+  const comp = state.companions[0];
+  comp.x = b.x - 40; comp.y = b.y; comp.attackCooldown = 0;
+  b.hp = 8; /* ein Treffer (10) muss reichen — DURCH damageBoss */
+  update(1 / 60);
+  assert.ok(b.hp <= 0, 'Pflanze hat 0/negativ HP nach Treffer');
+  assert.equal(b.alive, false, 'PFLANZE STIRBT (war: alive blieb true)');
+  assert.equal(state.finished, true, 'SIEG wird ausgeloest');
+  state.finished = false; state.paused = false; state.gameRunning = false;
+});

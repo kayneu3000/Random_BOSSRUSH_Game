@@ -29,6 +29,7 @@ export const state = {
  paused: false,
  finished: false,
  gameRunning: false,
+ loopRaf: 0,
 
  attackTimer: 0,
  dashTimer: 0,

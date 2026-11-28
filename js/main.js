@@ -141,7 +141,13 @@ function startGame() {
   ], 'move')
  }
  s.gameRunning = true; s.last = performance.now();
- requestAnimationFrame(loop)
+ /* HUGO-BUG #64a ("falls ich den bosskampf neustarte, wird dee bosskampf schneller"):
+    startGame hat bei JEDEM Aufruf einen NEUEN loop() gestartet, ohne den alten zu
+    stoppen — endGame setzt gameRunning nie false, der alte Loop lief also weiter.
+    Jeder Neustart = +1 Update pro Frame = der ganze Kampf lief doppelt/dreifach
+    schnell (auch alle Boss-Cooldowns). Jetzt wird der alte Loop abgebrochen. */
+ if (s.loopRaf) { try { cancelAnimationFrame(s.loopRaf) } catch (e) { } }
+ s.loopRaf = requestAnimationFrame(loop)
 }
 
 function movePlayer(dt) {
@@ -312,7 +318,7 @@ function loop(now) {
   showGameMessage(m, 99);
   showErrBox(err)
  }
- requestAnimationFrame(loop)
+ s.loopRaf = requestAnimationFrame(loop)
 }
 
 export { startGame, update, loop };

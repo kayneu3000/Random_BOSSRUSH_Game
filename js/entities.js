@@ -22,7 +22,12 @@ export function updateCompanions(dt){
   for(const b of state.bosses){if(!b.alive||(b.type==='dragon'&&b.mode!=='exhausted')||(b.type==='gunball'&&b.mode!=='vulnerable')||(b.type==='shadow'&&(b.mode==='throwing'||b.mode==='guarded'))||b.type==='snake')continue;const td=Math.hypot(b.x-comp.x,b.y-comp.y);if(td<dist){dist=td;target=b}}
   for(const t of state.infernoTowers){if(t.destroyed)continue;const td=Math.hypot(t.x-comp.x,t.y-comp.y);if(td<dist){dist=td;target=t}}
   if(target&&dist<650){
-   if(target.type==='dragon'||target.type==='slime'||target.type==='gunball'||target.type==='shadow')damageBoss(target,10);else damageTower(target,10);
+   /* HUGO-BUG #64b ("healer kann plant nicht killen, 0 HP aber noch am Leben"):
+      PFLANZE + DIE HAUT fielen in damageTower — dort wird hp DIREKT abgezogen,
+      ohne damageBoss: kein alive=false, kein Sieg, Plant stand mit 0 HP weiter
+      da. ALLE Boss-Typen muessen ueber damageBoss laufen. */
+   const bossLike = { dragon:1, slime:1, gunball:1, shadow:1, plant:1, snakeSkin:1 };
+   if(bossLike[target.type])damageBoss(target,10);else damageTower(target,10);
    state.effects.push({type:'companionHit',x:comp.x,y:comp.y,tx:target.x,ty:target.y,life:.22});comp.attackCooldown=2
   }else comp.attackCooldown=.25
  }
