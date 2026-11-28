@@ -1348,6 +1348,7 @@ test('SNAKE-SPIEL-LOBBY + PARKOUR-JOYSTICK (Hugo #61): HTML/CSS vorhanden', asyn
   assert.ok(html.includes('id="pkGems"'), 'Gem-Zaehler im Parkour-HUD');
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.ok(css.includes('#pkStick') && css.includes('#pkStickKnob'), 'Joystick-CSS');
+  assert.match(css, /#pkStick\{[^}]*pointer-events:auto/, 'Joystick MUSS pointer-events:auto haben (#pkControls ist none — sonst tot auf iPad!)');
   assert.ok(css.includes('touch-action:none'), 'Anti-Zoom auf dem Snake-Canvas');
   const sg = readFileSync(new URL('../js/snakegame.js', import.meta.url), 'utf8');
   assert.ok(sg.includes("localStorage.getItem('bossrushSnakeBest')"), 'Rekord via localStorage');
