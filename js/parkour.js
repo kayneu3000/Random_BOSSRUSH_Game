@@ -11,50 +11,61 @@ export const PK_JUMP = 900;
 export const PK_W = 4800;
 export const PK_H = 1600;
 
-/* ---------- LEVEL: EIN spannender Parcours (nicht mehr Stufen — besser!) ---------- */
+/* ---------- LEVEL: EIN spannender Parcours — ALLE Spruenge rechnerisch
+   machbar (Hugo #61: "dort gibt es da spruenge, die nicht mal moeglich sind").
+   Physik: Sprung-Hoehe max 168px, komplette Sprungweite flach ~255px.
+   Regel: Luecken <= 200px, Anstiege <= 135px (Feder/Fahre duerfen mehr). */
 function buildLevel() {
  const P = [];
  const solid = (x, y, w, h) => P.push({ kind: 'solid', x, y, w, h });
  const crumble = (x, y, w) => P.push({ kind: 'crumble', x, y, w, h: 26, crumbleT: 0, gone: 0 });
  const spring = (x, y) => P.push({ kind: 'spring', x, y, w: 64, h: 22 });
  const spike = (x, y, w) => P.push({ kind: 'spike', x, y, w, h: 26 });
- const saw = (x, y, ax, ay, range, spd, dir) => P.push({ kind: 'saw', x, y, r: 34, ax, ay, range, spd, dir: dir || 'v', ph: Math.random() * 6.28 });
+ const saw = (ax, ay, range, spd, dir, ph) => P.push({ kind: 'saw', x: ax, y: ay, r: 34, ax, ay, range, spd, dir: dir || 'v', ph: ph || 0 });
  const check = (x, y) => P.push({ kind: 'check', x, y, w: 30, h: 90, active: false });
+ const gem = (x, y) => P.push({ kind: 'gem', x, y, taken: false });
 
- /* Start-Plateau */
- solid(0, 1240, 460, 360);
- /* Luecke + erste Spruenge */
- solid(560, 1240, 220, 360);
- solid(900, 1130, 180, 470);
- spring(940, 1108); /* Feder auf den hohen Balken */
- solid(1120, 900, 200, 30);
- /* Schwebende Fahre */
- P.push({ kind: 'move', x: 1400, y: 880, w: 150, h: 26, ax: 1400, ay: 880, dx: 330, dy: 0, range: 330, spd: 1.1, ph: 0 });
- /* Kruemel-Bruecke ueber dem Abgrund */
- crumble(1830, 980, 120); crumble(1990, 980, 120); crumble(2150, 980, 120);
- /* CHECKPOINT 1 + fester Boden */
- solid(2340, 1240, 420, 360);
- check(2400, 1150);
- /* Saegeblatt patrouilliert vertikal */
- saw(2860, 1100, 2860, 880, 340, 1.6);
- /* Treppe hoch */
- solid(2560, 1080, 160, 30); solid(2800, 940, 160, 30); solid(3040, 800, 160, 30);
- /* Senkrechte Fahre */
- P.push({ kind: 'move', x: 3280, y: 700, w: 140, h: 26, ax: 3280, ay: 520, dx: 0, dy: 1, range: 380, spd: 1.3, ph: 0 });
- /* Hoher Steg mit Stacheln in der Mitte */
- solid(3560, 660, 420, 30);
- spike(3680, 634, 180);
- /* Feder zur Spitze */
- spring(3920, 638);
- solid(4060, 400, 220, 30);
- /* CHECKPOINT 2 + Finale: zwei Saegeblaetter im Wechsel */
- solid(3560, 1240, 1240, 360);
- check(3640, 1150);
- saw(4100, 1200, 3960, 1140, 280, 2.0, 'h');
- saw(4420, 1200, 4300, 1140, 280, 2.0, 'h');
- solid(4180, 1010, 130, 26); solid(4400, 900, 130, 26);
- /* ZIEL */
- P.push({ kind: 'goal', x: 4600, y: 1240, w: 60, h: 120 });
+ /* Start-Plateau -> p1 (Luecke 140) -> p2 (Luecke 120, Anstieg 70) */
+ solid(0, 1240, 500, 360);
+ gem(700, 1160);
+ solid(640, 1240, 200, 360);
+ solid(960, 1170, 180, 430);
+ /* Feder auf den hohen Balken (Feder darf mehr) */
+ spring(1010, 1148);
+ solid(1180, 930, 220, 30);
+ gem(1270, 860);
+ /* Fahre horizontal (1300..1750) */
+ P.push({ kind: 'move', x: 1450, y: 900, w: 150, h: 26, ax: 1450, ay: 900, dx: 1, dy: 0, range: 150, spd: 1.0, ph: 0 });
+ /* Kruemel-Bridge ueber dem Abgrund (Luecken je 50, gleich hoch) */
+ crumble(1800, 960, 130); crumble(1980, 960, 130); crumble(2160, 960, 130);
+ /* Boden B + CHECKPOINT 1 (Luecke 110, Fall 280 — Fallen ist erlaubt) */
+ solid(2400, 1240, 480, 360);
+ check(2470, 1150);
+ gem(2600, 1160);
+ /* Treppe hoch (Anstieg je 100, Luecken je 90) */
+ solid(2540, 1140, 160, 30);
+ solid(2790, 1040, 160, 30);
+ solid(3040, 940, 160, 30);
+ /* Saegeblatt patrouilliert VOR der Fahre — Timing! */
+ saw(3230, 760, 260, 1.5, 'v', 0);
+ /* Fahre vertikal (y 520..1000) */
+ P.push({ kind: 'move', x: 3300, y: 760, w: 140, h: 26, ax: 3300, ay: 760, dx: 0, dy: 1, range: 240, spd: 1.2, ph: 0 });
+ /* Hoher Steg (von der Fahre oben: Luecke 120, Fall 100) */
+ solid(3560, 600, 380, 30);
+ check(3590, 530); /* CHECKPOINT 2 direkt auf dem Steg */
+ spike(3670, 574, 150); /* Stachel-Feld: 150 breit, Sprungweite ~255 — machbar! */
+ spring(3870, 574);
+ /* GIPFEL */
+ solid(4020, 360, 220, 30);
+ gem(4100, 290);
+ /* Abstieg ueber Steine (Luecken 80) + Saege dazwischen */
+ solid(4330, 700, 150, 28);
+ saw(4500, 780, 200, 2.2, 'v', 1.57); /* Timing zwischen den Steinen */
+ solid(4560, 880, 150, 28);
+ gem(4620, 810);
+ /* Ziel-Boden (Fall vom letzten Stein) + ZIEL */
+ solid(4660, 1240, 140, 360);
+ P.push({ kind: 'goal', x: 4700, y: 1240, w: 60, h: 120 });
  return P;
 }
 
@@ -67,7 +78,7 @@ function saveBest(t) {
 
 export function createParkourRun() {
  return {
-  time: 0, deaths: 0, done: false, doneTime: 0, best: loadBest(),
+  time: 0, deaths: 0, gems: 0, done: false, doneTime: 0, best: loadBest(),
   spawn: { x: 140, y: 1150 },
   p: { x: 140, y: 1150, vx: 0, vy: 0, r: 20, onGround: false, coyote: 0, face: 1, sq: 1, jumpHeld: false, wasAir: false },
   keys: { left: false, right: false, jump: false },
@@ -116,7 +127,7 @@ export function parkourStep(pk, dtRaw) {
  if (dir) { p.vx += dir * 2600 * dt; p.face = dir } else p.vx *= Math.pow(.0008, dt);
  p.vx = Math.max(-PK_MOVE, Math.min(PK_MOVE, p.vx));
 
- p.vy += PK_GRAV * dt;
+ p.vy += PK_GRAV * dt + (p.vy > 0 ? 600 * dt : 0); /* schnelles Fallen = gutes Sprung-Gefuehl */
  if (p.vy > 1500) p.vy = 1500;
  const wasGround = p.onGround;
  p.onGround = false;
@@ -138,6 +149,10 @@ export function parkourStep(pk, dtRaw) {
   }
   if (q.kind === 'spike') {
    if (p.x + p.r * .6 > r.x && p.x - p.r * .6 < r.x + r.w && p.y + p.r > r.y && p.y - p.r < r.y + r.h) die(pk);
+   continue
+  }
+  if (q.kind === 'gem') {
+   if (!q.taken && Math.hypot(p.x - q.x, p.y - q.y) < 44) { q.taken = true; pk.gems++; sfx('seed'); for (let i = 0; i < 8; i++) pk.parts.push({ x: q.x, y: q.y, vx: (Math.random() - .5) * 260, vy: -Math.random() * 200, life: .4 }) }
    continue
   }
   if (q.kind === 'check') {
@@ -163,7 +178,7 @@ export function parkourStep(pk, dtRaw) {
     p.y = top - p.r;
     if (q.kind === 'spring') { p.vy = -1500; p.sq = .6; sfx('hop') }
     else {
-     if (!wasGround && p.vy > 640) p.sq = 1.4; /* Landung squasht */
+     if (!wasGround && p.vy > 640) { p.sq = 1.4; for (let i = 0; i < 6; i++) pk.parts.push({ x: p.x + (Math.random() - .5) * 30, y: p.y + p.r, vx: (Math.random() - .5) * 160, vy: -Math.random() * 90, life: .3 }) } /* Landung squasht + Staub */
      p.vy = 0; p.onGround = true; p.coyote = .12;
      if (q.kind === 'crumble') { q.crumbleT += dt; if (q.crumbleT > .38) { q.gone = 2.6; q.crumbleT = 0 } }
     }
@@ -182,7 +197,7 @@ export function parkourStep(pk, dtRaw) {
  if (p.y > PK_H + 160) die(pk);
 
  /* Kamera folgt weich */
- const tx = Math.max(0, Math.min(PK_W - 1180, p.x - 470));
+ const tx = Math.max(0, Math.min(PK_W - 1180, p.x - 470 + p.face * 70)); /* blickt voraus */
  const ty = Math.max(0, Math.min(PK_H - 720, p.y - 400));
  pk.cam.x += (tx - pk.cam.x) * Math.min(1, dt * 5);
  pk.cam.y += (ty - pk.cam.y) * Math.min(1, dt * 5)
@@ -203,6 +218,15 @@ export function parkourDraw(g, pk, W, H) {
   g.fillRect(sx, sy, step, step)
  }
  g.save(); g.translate(-s.cam.x, -s.cam.y);
+ /* Edelsteine (Hugo #61): drehende Diamanten */
+ for (const q of s.plats) {
+  if (q.kind !== 'gem' || q.taken) continue;
+  const tw = Math.sin(s.time * 4 + q.x) * .5 + .5;
+  g.save(); g.translate(q.x, q.y); g.rotate(s.time * 1.6);
+  g.fillStyle = '#5fe8ff'; g.strokeStyle = '#bff5ff'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(0, -16 * tw - 8); g.lineTo(12, 0); g.lineTo(0, 16 * tw + 8); g.lineTo(-12, 0); g.closePath(); g.fill(); g.stroke();
+  g.restore();
+ }
  /* Plattformen */
  for (const q of s.plats) {
   if (q.kind === 'saw') {
@@ -275,7 +299,7 @@ export function parkourDraw(g, pk, W, H) {
   g.fillStyle = '#8cf838'; g.textAlign = 'center'; g.font = 'bold 54px Arial';
   g.fillText('PARKOUR GESCHAFFT!', W / 2, H / 2 - 30);
   g.fillStyle = '#dff3ff'; g.font = 'bold 26px Arial';
-  g.fillText('Zeit: ' + s.time.toFixed(1) + 's \u00b7 Tode: ' + s.deaths + ' \u00b7 Bestzeit: ' + (s.best ? s.best.toFixed(1) + 's' : '\u2014'), W / 2, H / 2 + 16)
+  g.fillText('Zeit: ' + s.time.toFixed(1) + 's \u00b7 Tode: ' + s.deaths + ' \u00b7 \u00fcber ' + s.plats.filter(q => q.kind === 'gem' && q.taken).length + '/' + s.plats.filter(q => q.kind === 'gem').length + ' \u00b7 Bestzeit: ' + (s.best ? s.best.toFixed(1) + 's' : '\u2014'), W / 2, H / 2 + 16)
  }
 }
 
@@ -300,6 +324,14 @@ function bindOnce() {
  window.addEventListener('keyup', ku)
 }
 
+function btn(id, key) {
+ const el = document.getElementById(id);
+ if (!el) return;
+ el.onpointerdown = e => { e.preventDefault(); run.keys[key] = true; try { el.setPointerCapture(e.pointerId) } catch (err) { } };
+ const off = () => { run.keys[key] = false };
+ el.onpointerup = off; el.onpointercancel = off; el.onpointerleave = off
+}
+
 function frame(now) {
  if (!active) return;
  let dt = (now - last) / 1000; last = now;
@@ -309,10 +341,11 @@ function frame(now) {
  try {
   const W = cv.width, H = cv.height;
   parkourDraw(g, run, W, H);
-  const tEl = document.getElementById('pkTime'), dEl = document.getElementById('pkDeaths'), bEl = document.getElementById('pkBestWrap');
+  const tEl = document.getElementById('pkTime'), dEl = document.getElementById('pkDeaths'), bEl = document.getElementById('pkBestWrap'), gEl = document.getElementById('pkGems');
   if (tEl && tEl.textContent !== run.time.toFixed(1) + 's') tEl.textContent = run.time.toFixed(1) + 's';
   if (dEl && dEl.textContent !== String(run.deaths)) dEl.textContent = String(run.deaths);
-  if (bEl && run.best && bEl.textContent !== run.best.toFixed(1) + 's') bEl.textContent = run.best.toFixed(1) + 's'
+  if (bEl && run.best && bEl.textContent !== run.best.toFixed(1) + 's') bEl.textContent = run.best.toFixed(1) + 's';
+  if (gEl) { const gt = run.gems + '/' + run.plats.filter(q => q.kind === 'gem').length; if (gEl.textContent !== gt) gEl.textContent = gt }
  } catch (e) { /* Zeichnen darf nie den Lauf killen */ }
  raf = requestAnimationFrame(frame)
 }
@@ -327,15 +360,24 @@ export function startParkour() {
   run.cam.x = Math.max(0, Math.min(PK_W - cv.width, run.p.x - 470));
   active = true; last = performance.now();
   bindOnce();
-  /* Touch-Buttons: pointerdown/up (funktioniert auf iPad Safari + Desktop) */
-  const btn = (id, key) => {
-   const el = document.getElementById(id);
-   if (!el) return;
-   el.onpointerdown = e => { e.preventDefault(); run.keys[key] = true; try { el.setPointerCapture(e.pointerId) } catch (err) { } };
-   const off = e => { run.keys[key] = false };
-   el.onpointerup = off; el.onpointercancel = off; el.onpointerleave = off
-  };
-  btn('pkLeft', 'left'); btn('pkRight', 'right'); btn('pkJump', 'jump');
+  /* JOYSTICK (Hugo #61: "mit ein joystick lieber steuern") + Sprung-Button */
+  const stick = document.getElementById('pkStick'), knob = document.getElementById('pkStickKnob');
+  if (stick && knob) {
+   let spid = null;
+   const upd = e => {
+    const r = stick.getBoundingClientRect();
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const max = Math.max(20, r.width / 2 - 12), l = Math.hypot(dx, dy);
+    if (l > max) { dx = dx / l * max; dy = dy / l * max }
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    run.keys.left = dx < -max * .3; run.keys.right = dx > max * .3
+   };
+   stick.onpointerdown = e => { e.preventDefault(); spid = e.pointerId; try { stick.setPointerCapture(e.pointerId) } catch (err) { } upd(e) };
+   stick.onpointermove = e => { if (e.pointerId === spid) upd(e) };
+   const off = e => { if (e.pointerId === spid) { spid = null; run.keys.left = run.keys.right = false; knob.style.transform = 'translate(0px,0px)' } };
+   stick.onpointerup = off; stick.onpointercancel = off
+  }
+  btn('pkJump', 'jump');
   const ex = document.getElementById('pkExit');
   if (ex) ex.onclick = () => stopParkour();
   const r = document.getElementById('pkRestart');

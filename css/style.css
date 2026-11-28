@@ -332,10 +332,6 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #classScreen.plantTheme .classCard p{color:#d9c4a0}
 #classScreen.plantTheme .classCard .stats{color:#e8c070}
 
-/* ---------- SNAKE SPIELEN (Hugo #60): Karte HELLGRUEN wie der Snake-Button ---------- */
-.classCard.snakePlayUnlocked{border-color:#8cf838;box-shadow:0 0 14px #8cf83833}
-.classCard.snakePlayUnlocked.selected{border-color:#aaff5e;background:linear-gradient(145deg,#173a12,#0d2409);box-shadow:0 0 20px #8cf83855}
-.classCard.snakePlayUnlocked h3{color:#b6ff6e}
 
 /* ---------- SLIME-PARKOUR (Hugo #60) ---------- */
 #parkourScreen{padding:0;overflow:hidden;justify-content:flex-start}
@@ -344,9 +340,19 @@ html,body{touch-action:manipulation;overscroll-behavior:none}
 #pkHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;background:#06131dbb;color:#dff3ff;padding:7px 16px;border-radius:12px;font-weight:bold;font-size:15px;pointer-events:none}
 #pkControls{position:absolute;inset:0;pointer-events:none;z-index:6}
 #pkControls button{pointer-events:auto}
-#pkMove{position:absolute;left:14px;bottom:18px;display:flex;gap:12px}
+#pkStick{position:absolute;left:18px;bottom:24px;width:120px;height:120px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233aa;touch-action:none}
+#pkStickKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:#1d4f74cc;border:2px solid #7fd4ff}
 #pkActions{position:absolute;right:14px;bottom:18px;display:flex;gap:12px;align-items:flex-end}
 .pkBtn{width:84px;height:84px;font-size:34px;border-radius:50%;border:3px solid #7fd4ff;background:#0a2233cc;color:#dff3ff;font-weight:bold;touch-action:manipulation}
 .pkBtn:active{background:#1d4f74}
 .pkJump{width:130px;height:130px;font-size:20px;border-radius:50%;background:#0d3a24cc;border-color:#41e07c;color:#c9ffdd}
 .pkSmall{width:76px;height:56px;font-size:14px;border-radius:14px}
+
+/* ---------- SNAKE-SPIEL (Hugo #61): das Original ---------- */
+#snakeGameScreen{padding:0;overflow:hidden;justify-content:flex-start}
+#snakeGameScreen.active{display:block}
+#sgCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;background:#0a1c0d}
+#sgHud{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:5;background:#06130abb;color:#b6ff6e;padding:7px 16px;border-radius:12px;font-weight:bold;font-size:15px;pointer-events:none}
+#sgControls{position:absolute;top:10px;right:12px;display:flex;gap:10px;z-index:6}
+#sgSwipeHint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:#7dff3f88;font-size:13px;font-weight:bold;pointer-events:none;z-index:5}
+#pkGems{color:#5fe8ff}

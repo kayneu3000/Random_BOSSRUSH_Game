@@ -1063,12 +1063,12 @@ test('KLASSEN-GRUPPEN in der Auswahl: ADMIN oben, dann STARTER, LEVEL 1, LEVEL 2
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const seq = [...html.matchAll(/classGroupHead">([A-Z 0-9]+)<|data-class="([a-zA-Z]+)"/g)]
     .map(m => m[1] ? 'HEAD:' + m[1].trim() : 'CARD:' + m[2])
-    .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger','snakePlay'].includes(s.slice(5)));
+    .filter(s => s.startsWith('HEAD:') || ['admin','faust','sword','archer','tank','assassin','ember','gunner','healer','whip','sauger'].includes(s.slice(5)));
   assert.deepEqual(seq, [
     'HEAD:ADMIN', 'CARD:admin',
     'HEAD:STARTER', 'CARD:faust', 'CARD:archer', 'CARD:sword', 'CARD:tank', 'CARD:assassin',
     'HEAD:LEVEL 1', 'CARD:healer', 'CARD:ember', 'CARD:gunner',
-    'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger', 'HEAD:SNAKE', 'CARD:snakePlay'
+    'HEAD:LEVEL 2', 'CARD:whip', 'CARD:sauger'
   ], 'Klassen-Reihenfolge in BOSS-Reihenfolge: ADMIN / STARTER (Schlaeger->Bogen->Schwert->Tank->Assassin) / LEVEL 1 (Healer->Ember->Gunner) / LEVEL 2 (Peitsche->Sauger) (Hugo #53)');
 });
 
@@ -1296,39 +1296,61 @@ test('VIDEO-UI (Hugo #60): Aufnahme komponiert HUD-Spiegelung ueber das Spielbil
   replayDiscard();
 });
 
-test('SNAKE-SPIELEN (Hugo #60): Klasse existiert, 800 HP, Biss, hellgruen', async () => {
-  const { classes } = await import('../js/config.js');
-  assert.ok(classes.snakePlay, 'snakePlay-Klasse vorhanden');
-  assert.equal(classes.snakePlay.hp, 800);
-  assert.equal(classes.snakePlay.damage, 22);
+test('SNAKE-SPIEL (Hugo #61): das Original — Logik, Futter, Wand-Tod, Rekord', async () => {
+  const { createSnakeGame, snakeStep, snakeTurn, snakeDraw, SG_COLS, SG_ROWS, SG_START_LEN, SG_START_SPEED } = await import('../js/snakegame.js');
+  assert.ok(SG_COLS === 28 && SG_ROWS === 18, 'Brett 28x18');
+  const sg = createSnakeGame();
+  assert.equal(sg.snake.length, SG_START_LEN, 'Start-Laenge 3');
+  assert.ok(sg.dir.x === 1 && sg.dir.y === 0, 'startet nach rechts');
+  snakeStep(sg, 1 / SG_START_SPEED + 1e-4); /* erster Tick spawnt das Futter */
+  assert.ok(sg.food && sg.food.x >= 0 && sg.food.x < SG_COLS && sg.food.y >= 0 && sg.food.y < SG_ROWS, 'Futter im Brett');
+  /* 180-Grad-Wende verboten (Klassiker-Regel) */
+  snakeTurn(sg, -1, 0);
+  assert.equal(sg.queue.length, 0, 'kein 180-Grad-Turn');
+  snakeTurn(sg, 0, -1);
+  assert.equal(sg.queue.length, 1, '90-Grad-Turn wird eingereiht');
+  /* Bewegung (snakeStep deckt dt auf 1/15s — also mehrere kleine Steps) */
+  const hy0 = sg.snake[0].y;
+  for (let i = 0; i < 30 && !sg.dead; i++) snakeStep(sg, 1 / 60);
+  assert.ok(sg.snake[0].y < hy0, 'Schlange kriecht in die eingereihte Richtung');
+  assert.ok(!sg.dead, 'lebt noch nach 3 Ticks freiemspazieren');
+  /* Fressen: +10 Punkte, +1 Laenge */
+  const sg2 = createSnakeGame();
+  sg2.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }]; sg2.dir = { x: 1, y: 0 };
+  sg2.food = { x: 6, y: 5, ph: 0 };
+  let n = 0;
+  while (sg2.score === 0 && n++ < 60) snakeStep(sg2, 1 / 60);
+  assert.equal(sg2.score, 10, 'Futter = 10 Punkte');
+  assert.equal(sg2.snake.length, 4, 'Fressen macht laenger');
+  /* Wand = Tod, Rekord bleibt erhalten */
+  const sg3 = createSnakeGame();
+  sg3.snake = [{ x: SG_COLS - 1, y: 9 }, { x: SG_COLS - 2, y: 9 }, { x: SG_COLS - 3, y: 9 }];
+  sg3.dir = { x: 1, y: 0 }; sg3.score = 50; sg3.best = 0;
+  let m = 0;
+  while (!sg3.dead && m++ < 60) snakeStep(sg3, 1 / 60);
+  assert.equal(sg3.dead, true, 'Wand = Game Over');
+  assert.ok(sg3.best >= 50, 'Rekord wird gesichert');
+  /* Zeichnen darf den Canvas-State nicht leaken */
+  const g = document.getElementById('canvas').getContext('2d');
+  snakeDraw(g, sg3, 800, 600);
+  assert.equal(g.__stackDepth, 0, 'Canvas-Stack nach snakeDraw leer');
+  assert.ok(snakeDraw.toString().includes('Zunge'), 'Mini-Schlange als Futter mit Zunge gezeichnet');
+});
+
+test('SNAKE-SPIEL-LOBBY + PARKOUR-JOYSTICK (Hugo #61): HTML/CSS vorhanden', async () => {
   const { readFileSync } = await import('node:fs');
-  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
-  assert.ok(css.includes('snakePlayUnlocked'), 'hellgrune Snake-Karte im CSS');
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.ok(html.includes('Mit Snake, Snake spielen'), 'Karten-Text wie von Hugo gewuenscht');
-});
-
-test('SNAKE-SPIELEN: Schlangen-Bewegung mit Trail + ruhende Schlange auf einem Feld', () => {
-  state.selected = 'snakePlay';
-  state.selectedBoss = 'slime';
-  startGame();
-  assert.equal(state.player.maxHp, 800);
-  assert.ok(state.restSnake, 'ruhende Schlange liegt auf einem Feld');
-  state.keys = { KeyD: true }; /* frische Keys (keine Pfeiltasten-Reste) */
-  const t0 = state.snakeTrail.length;
-  for (let i = 0; i < 60 && !state.finished; i++) update(1 / 60);
-  assert.ok(state.snakeTrail.length > t0, 'Trail waechst beim Schlaengeln');
-  assert.ok(state.snakeTrail.length <= 30, 'Trail bleibt begrenzt');
-  state.keys = {};
-});
-
-test('RUHENDE SCHLANGE (Hugo #60): bewegt sich nie (kein Update-Pfad)', async () => {
-  const { readFileSync } = await import('node:fs');
-  const src = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8');
-  const win = src.indexOf('s.restSnake = {');
-  assert.ok(win > 0, 'restSnake wird in startGame gesetzt');
-  /* Der restSnake-x/y wird nach dem Start NIE wieder angetastet */
-  assert.ok(!/restSnake\.(x|y)\s*=/.test(src), 'keine Bewegung der ruhenden Schlange');
+  assert.ok(html.includes('id="snakeGameScreen"') && html.includes('id="sgCanvas"'), 'Snake-Screen + Canvas');
+  assert.ok(html.includes('id="sgEnter"'), 'Lobby-Button SNAKE SPIELEN');
+  assert.ok(html.includes('Rekord:'), 'sgHud sagt REKORD (nicht Bestzeit) im Snake-Spiel');
+  assert.ok(!html.includes('pkLeft') && !html.includes('pkRight'), 'Links/Rechts-Buttons sind WEG');
+  assert.ok(html.includes('id="pkStick"') && html.includes('id="pkStickKnob"'), 'Joystick-Markup (iPad!)');
+  assert.ok(html.includes('id="pkGems"'), 'Gem-Zaehler im Parkour-HUD');
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.ok(css.includes('#pkStick') && css.includes('#pkStickKnob'), 'Joystick-CSS');
+  assert.ok(css.includes('touch-action:none'), 'Anti-Zoom auf dem Snake-Canvas');
+  const sg = readFileSync(new URL('../js/snakegame.js', import.meta.url), 'utf8');
+  assert.ok(sg.includes("localStorage.getItem('bossrushSnakeBest')"), 'Rekord via localStorage');
 });
 
 test('SLIME-ANIMATION (Hugo #60): Schlitteln-Scherung + Stand-Wackeln', async () => {
@@ -1348,7 +1370,7 @@ test('SLIME-ANIMATION (Hugo #60): Schlitteln-Scherung + Stand-Wackeln', async ()
 });
 
 test('SIEG-UNLOCKS (Hugo #60): Slime -> Parkour, Snake -> Snake spielen', () => {
-  state.unlocks.parkour = false; state.unlocks.snakePlay = false;
+  state.unlocks.parkour = false; state.unlocks.snakeGame = false;
   state.finished = false; state.paused = false;
   state.selectedBoss = 'slime';
   endGame(true);
@@ -1356,7 +1378,7 @@ test('SIEG-UNLOCKS (Hugo #60): Slime -> Parkour, Snake -> Snake spielen', () => 
   state.finished = false; state.paused = false;
   state.selectedBoss = 'snake';
   endGame(true);
-  assert.equal(state.unlocks.snakePlay, true, 'Snake spielen nach Snake-Sieg');
+  assert.equal(state.unlocks.snakeGame, true, 'Snake-Spiel nach Snake-Sieg');
   state.finished = false; state.paused = false;
 });
 
@@ -1428,7 +1450,56 @@ test('PARKOUR-LOBBY (Hugo #60): Button + Screen vorhanden', async () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.includes('SLIME-PARKOUR SPIELEN'), 'Lobby-Button');
   assert.ok(html.includes('id="parkourScreen"'), 'Parkour-Screen');
-  assert.ok(html.includes('id="pkJump"') && html.includes('id="pkLeft"') && html.includes('id="pkRight"'), 'Touch-Buttons (iPad!)');
+  assert.ok(html.includes('id="pkJump"') && html.includes('id="pkStick"'), 'Springen + Joystick (iPad!)');
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.ok(css.includes('#pkControls'), 'Parkour-CSS');
+});
+
+test('PARKOUR-REACHABILITY (Hugo #61): jeder Sprung ist machbar + Start erreicht das Ziel', async () => {
+  const { createParkourRun } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  const walk = pk.plats.filter(q => ['solid', 'crumble', 'move', 'goal'].includes(q.kind));
+  const springs = pk.plats.filter(q => q.kind === 'spring');
+  /* Sprunghoehe max 168px / Weite flach ~255px -> Luecke <= 200 & Anstieg <= 165
+     (Federn duerfen mehr, fahrende Plattformen zaehlen in tiefster/hoechster Lage) */
+  /* Vertikal-Fahren: guenstigster Fall = von der hoechsten Lage aufs niedrigste Ziel */
+  const tops = q => (q.kind === 'move' && q.dy) ? [q.ay, q.ay + q.range * q.dy] : [q.y];
+  const span = q => {
+    if (q.kind === 'move' && q.dx) return [q.ax, q.ax + q.range + q.w];
+    if (q.kind === 'move' && q.dy) return [q.ax, q.ax + q.w];
+    return [q.x, q.x + q.w];
+  };
+  const canJump = (a, b) => {
+    const [a0, a1] = span(a), [b0, b1] = span(b);
+    const gap = Math.max(b0 - a1, a0 - b1, 0);
+    const rise = Math.min(...tops(a)) - Math.max(...tops(b)); /* beste Lage; negativ = Fallen (immer OK) */
+    const near = (sp, ty) => Math.abs(sp.y - ty) < 40;
+    const hasSpring = springs.some(sp => sp.x >= a0 && sp.x <= a1 && tops(a).some(t => near(sp, t)));
+    return gap <= (hasSpring ? 450 : 200) && rise <= (hasSpring ? 450 : 165);
+  };
+  const start = walk.find(q => q.kind === 'solid' && q.x === 0);
+  const goal = pk.plats.find(q => q.kind === 'goal');
+  const seen = new Set([start]);
+  for (const q = null, queue = [start]; queue.length;) {
+    const a = queue.shift();
+    for (const b of walk) {
+      if (seen.has(b) || !canJump(a, b)) continue;
+      seen.add(b); queue.push(b);
+    }
+  }
+  assert.ok(seen.has(goal), 'Ziel vom Start-Plateau erreichbar — KEINE unmoeglichen Spruenge');
+  assert.ok(seen.size >= walk.length - 2, 'praktisch alle Plattformen liegen auf dem Weg');
+});
+
+test('PARKOUR-GEMS (Hugo #61): alle 5 Gems sind sammelbar', async () => {
+  const { createParkourRun, parkourStep } = await import('../js/parkour.js');
+  const pk = createParkourRun();
+  const gems = pk.plats.filter(q => q.kind === 'gem');
+  assert.equal(gems.length, 5, '5 Gems im Level');
+  for (const gm of gems) {
+    pk.p.x = gm.x; pk.p.y = gm.y; pk.p.vy = 0;
+    parkourStep(pk, 1 / 60);
+    assert.equal(gm.taken, true, 'Gem bei ' + gm.x + ' gesammelt');
+  }
+  assert.equal(pk.gems, 5, 'Gem-Zaehler = 5/5');
 });

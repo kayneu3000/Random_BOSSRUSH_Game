@@ -4,6 +4,7 @@ import { toggleMute, sfx } from "./audio.js";
 import { state } from "./state.js";
 import { replayDiscard, refreshReplayUI, replayClose } from "./replay.js";
 import { startParkour, stopParkour, parkourActive } from "./parkour.js";
+import { startSnakeGame, stopSnakeGame } from "./snakegame.js";
 
 const SAVE_KEY = 'bossrushUnlocks';
 
@@ -31,7 +32,7 @@ export function applyUnlocksToUI() {
   card.classList.remove('locked');
   card.querySelector('h3').textContent = labels[cls][1]
  }
- const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)], sauger: ['saugerCard', 'Sauger ' + String.fromCodePoint(0x1F331)], snakePlay: ['snakePlayCard', 'Mit Snake, Snake spielen ' + String.fromCodePoint(0x1F40D)] };
+ const whipLabels = { whip: ['whipCard', 'Peitsche ' + String.fromCodePoint(0x1F512)], sauger: ['saugerCard', 'Sauger ' + String.fromCodePoint(0x1F331)] };
  for (const cls of Object.keys(whipLabels)) {
   if (!state.unlocks[cls]) continue;
   const wcard = $(whipLabels[cls][0]);
@@ -39,9 +40,9 @@ export function applyUnlocksToUI() {
   wcard.querySelector('h3').textContent = whipLabels[cls][1]
  }
  if (state.unlocks.whip) $('whipCard').classList.add('whipUnlocked');
- if (state.unlocks.snakePlay) $('snakePlayCard').classList.add('snakePlayUnlocked'); /* HELLGRUEN (Hugo #60) */
- /* SLIME-PARKOUR (Hugo #60): Lobby-Button erst nach dem Slime-Sieg */
+ /* SLIME-PARKOUR + SNAKE-SPIEL (Hugo #60/#61): Lobby-Buttons erst nach den Siegen */
  try { $('pkEnter').style.display = state.unlocks.parkour ? 'block' : 'none' } catch (e) { }
+ try { $('sgEnter').style.display = state.unlocks.snakeGame ? 'block' : 'none' } catch (e) { }
  if (state.unlocks.healer) $('healerCard').classList.add('healerUnlocked'); /* HEALER BLAU (Hugo #57) */
  if (state.unlocks.ember) $('emberCard').classList.add('emberUnlocked');
  if (state.unlocks.gunner) $('gunnerCard').classList.add('gunnerUnlocked');
@@ -203,8 +204,8 @@ export function endGame(win) {
   setMultiline($('overlayText'), 'Gunball wurde besiegt! GUNNER FREIGESCHALTET! 200 HP, fünf Patronen und 40 Schaden pro Schuss. Nach fünf Schüssen lädt er fünf Sekunden nach.');
  } else if (win && state.selectedBoss === 'snake') {
   state.unlocks.whip = true;
-  state.unlocks.snakePlay = true; /* SNAKE SPIELEN (Hugo #60) */
-  setMultiline($('overlayText'), 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag! UND: In der Klassenwahl kannst du jetzt SNAKE SELBST SPIELEN!');
+  state.unlocks.snakeGame = true; /* SNAKE-SPIEL: das Original (Hugo #61) */
+  setMultiline($('overlayText'), 'SNAKE ist besiegt! Hunger hat ihn erwischt — Level 2 geschafft! PEITSCHE FREIGESCHALTET: 220 HP, 40 Schaden, langer Linien-Peitschenschlag! UND: In der Lobby wartet jetzt das SNAKE-SPIEL (das Original) auf dich!');
  } else if (win && state.selectedBoss === 'plant') {
   state.unlocks.sauger = true;
   setMultiline($('overlayText'), 'Die Fresspflanze ist besiegt! SAUGER FREIGESCHALTET: 250 HP, grün mit Stacheln und eine Fresspflanze in der Hand, die Gegner anzieht!');
@@ -329,7 +330,6 @@ export function attachUI({ startGame }) {
   if (dc === 'gunner' && !state.unlocks.gunner) return;
   if (dc === 'whip' && !state.unlocks.whip) return;
   if (dc === 'sauger' && !state.unlocks.sauger) return;
-  if (dc === 'snakePlay' && !state.unlocks.snakePlay) return;
   if (dc === 'admin' && !state.unlocks.admin) {
    const code = prompt("ADMIN-CODE EINGEBEN:");
    if (!code || code.trim().toUpperCase() !== ADMIN_UNLOCK_CODE) return;
@@ -344,6 +344,7 @@ export function attachUI({ startGame }) {
 
  $('startGame').onclick = startGame;
  $('pkEnter').onclick = () => { try { showScreen('parkourScreen'); startParkour() } catch (e) { } }; /* SLIME-PARKOUR (Hugo #60) */
+ $('sgEnter').onclick = () => { try { showScreen('snakeGameScreen'); startSnakeGame() } catch (e) { } }; /* SNAKE-SPIEL (Hugo #61) */
  $('pauseBtn').onclick = () => setPause(true);
  $('resume').onclick = () => setPause(false);
  $('restart').onclick = startGame;

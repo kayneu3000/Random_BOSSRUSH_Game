@@ -19,6 +19,7 @@ import { initBossPreviews } from "./previews.js";
 import { initAudio } from "./audio.js";
 import { replayStart, replayWin, replayDiscard } from "./replay.js";
 import { stopParkour } from "./parkour.js";
+import { stopSnakeGame } from "./snakegame.js";
 import { showTutorialPause } from "./ui.js";
 import { attachConsole, spawnNextBossRush } from "./console.js";
 import { showErrBox } from "./ui.js";
@@ -54,6 +55,7 @@ initBossPreviews(); /* Lobby: echte Boss-Bilder statt Emojis (Hugo) */
 function startGame() {
  const s = state;
  try { stopParkour() } catch (e) { } /* Sicherheit: Parkour-Lauf sauber beenden */
+ try { stopSnakeGame() } catch (e) { } /* Sicherheit: Snake-Spiel sauber beenden */
  s.isAdmin = s.selected === 'admin' || s.adminMode;
  /* WIE FRUEHER (Hugo #46): classes.admin existiert nicht mehr — Remap auf die Basisklasse */
  if (s.isAdmin && !classes[s.selected]) s.selected = s.adminBaseClass || 'faust';
@@ -73,13 +75,6 @@ function startGame() {
  s.emberBeamTimer = 0; s.emberCooldown = 0; s.emberTick = 0; s.emberBeamAngle = s.player.angle;
  s.healerHealCooldown = 0; s.gunnerAmmo = 5; s.gunnerReload = 0; s.gunnerShotTimer = 0;
  s.message = { text: '', until: Infinity };
- /* SNAKE SPIELEN (Hugo #60): Trail fuer den Schlangenkoerper + die ruhende
-    Schlange, die IMMER auf einem Feld liegt (sie bewegt sich nicht). */
- if (s.selected === 'snakePlay') {
-  s.snakeTrail = [{ x: s.player.x, y: s.player.y }];
-  s.snakeAngle = -Math.PI / 2;
-  s.restSnake = { x: Math.max(220, Math.min(MAP.w - 220, s.player.x + 620)), y: Math.max(260, Math.min(MAP.h - 220, s.player.y - 430)), wobble: 0 }
- } else { s.snakeTrail = []; s.restSnake = null }
 
  $('game').classList.toggle('dragonTheme', s.selectedBoss === 'dragon');
  $('game').classList.toggle('slimeTheme', s.selectedBoss === 'slime');
@@ -118,7 +113,7 @@ function startGame() {
 
  $('className').textContent = (s.isAdmin && s.selected !== 'admin' ? 'ADMIN · ' : '') + c.name;
  $('attackIcon').textContent = s.selected === 'ember' ? '🐲' : s.selected === 'gunner' ? '🔫' : c.icon;
- $('attackLabel').textContent = s.selected === 'ember' ? 'FEUERSTRAHL' : s.selected === 'gunner' ? 'SCHUSS' : s.selected === 'snakePlay' ? 'BISS' : 'ANGRIFF';
+ $('attackLabel').textContent = s.selected === 'ember' ? 'FEUERSTRAHL' : s.selected === 'gunner' ? 'SCHUSS' : 'ANGRIFF';
  $('attackBtn').style.display = s.selected === 'healer' ? 'none' : 'flex';
  $('healBtn').style.display = s.selected === 'healer' ? 'flex' : 'none';
  $('cmdBtn').style.display = s.isAdmin ? 'flex' : 'none';
@@ -169,25 +164,6 @@ function movePlayer(dt) {
   /* ZUNGE (Hugo #47): an der Pflanzenzunge geklebt — keine eigene Bewegung,
      die Zunge schleift dich. Der Timer laeuft runter, falls sie dich loslaesst. */
   s.player.stuckTimer = Math.max(0, s.player.stuckTimer-dt)
- } else if (s.selected === 'snakePlay') {
-  /* SNAKE SPIELEN (Hugo #60): Fortbewegung WIE DIE BOSS-SCHLANGE — weiche
-     Schlaengel-Kurve, der Koerper folgt dem Kopf als Trail, Wenden geht nur
-     allmaehlich (Schlangen koennen nicht auf der Stelle kippen). */
-  const v = getInput(), p = s.player;
-  p.moving = Math.hypot(v.x, v.y) > .1;
-  if (p.moving) {
-   p.walkT = (p.walkT || 0) + dt;
-   const target = Math.atan2(v.y, v.x);
-   const dA = Math.atan2(Math.sin(target - s.snakeAngle), Math.cos(target - s.snakeAngle));
-   s.snakeAngle += Math.max(-4.5 * dt, Math.min(4.5 * dt, dA));
-   const sway = Math.sin(p.walkT * 7) * .38; /* Schlaengel-Schwung */
-   const mv = s.snakeAngle + sway;
-   p.x += Math.cos(mv) * p.speed * dt; p.y += Math.sin(mv) * p.speed * dt;
-   p.angle = Math.atan2(Math.sin(mv), Math.cos(mv));
-   const last = s.snakeTrail[0];
-   if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 20) s.snakeTrail.unshift({ x: p.x, y: p.y });
-   if (s.snakeTrail.length > 30) s.snakeTrail.length = 30
-  }
  } else {
   const v = getInput();
   s.player.x += v.x*s.player.speed*dt; s.player.y += v.y*s.player.speed*dt;
