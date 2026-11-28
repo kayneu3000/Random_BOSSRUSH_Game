@@ -1555,3 +1555,62 @@ test('HEALER-SLIMES (Hugo #64b): PFLANZE stirbt richtig bei 0 HP (damageBoss sta
   assert.equal(state.finished, true, 'SIEG wird ausgeloest');
   state.finished = false; state.paused = false; state.gameRunning = false;
 });
+
+test('ADMIN: time speed (Hugo #65) — plus schneller, minus langsamer, 0 = normal', async () => {
+  const { runCommand } = await import('../js/console.js');
+  const { loop } = await import('../js/main.js');
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame(); state.paused = false; state.finished = false;
+  runCommand('time speed 2');
+  assert.equal(state.timeScale, 2, 'time speed 2 = 2x');
+  state.timeScale = 2;
+  const t0 = state.elapsed;
+  loop(performance.now()); state.last = performance.now() - 1000; /* 1s Frame-Zeit -> gedeckelt */
+  loop(performance.now());
+  const dFast = state.elapsed - t0;
+  runCommand('time speed -3');
+  assert.ok(state.timeScale < 1 && state.timeScale > .1, 'time speed -3 = LANGSAM (' + state.timeScale.toFixed(2) + 'x)');
+  const t1 = state.elapsed;
+  state.last = performance.now() - 1000;
+  loop(performance.now());
+  const dSlow = state.elapsed - t1;
+  assert.ok(dFast > dSlow * 2, 'schnell ist wirklich schneller als langsam: ' + dFast.toFixed(3) + ' vs ' + dSlow.toFixed(3));
+  runCommand('time speed 0');
+  assert.equal(state.timeScale, 1, 'time speed 0 = normal');
+  state.timeScale = 1; state.gameRunning = false; state.finished = false; state.paused = false;
+});
+
+test('ADMIN: vs 3-Wege + TEAMS + me (Hugo #65)', async () => {
+  const { runCommand } = await import('../js/console.js');
+  const { duelTargetOf } = await import('../js/entities.js');
+  /* 3-Wege: alle gegen alle */
+  state.selected = 'faust'; state.selectedBoss = 'slime';
+  startGame(); state.paused = false; state.finished = false;
+  runCommand('slime vs dragon vs gunball', startGame);
+  assert.equal(state.bosses.length, 3, '3 Bosse im 3-Wege-Duell');
+  for (const b of state.bosses) {
+    assert.ok(b.duelTarget, 'Jeder Boss hat ein Ziel');
+    assert.equal(b.duelEnemies.length, 2, 'Jeder Boss bekriegt die BEIDEN anderen');
+  }
+  assert.equal(state.peace, true);
+  /* Teams: slime dragon VS gunball plant */
+  runCommand('slime dragon vs gunball plant', startGame);
+  assert.equal(state.bosses.length, 4, '4 Bosse in 2 Teams');
+  const t0 = state.bosses.filter(b => b.duelTeam === 0), t1 = state.bosses.filter(b => b.duelTeam === 1);
+  assert.equal(t0.length, 2); assert.equal(t1.length, 2);
+  for (const b of t0) {
+    assert.ok(!b.duelEnemies.some(e => e.duelTeam === 0), 'Team 0 bekriegt sich NICHT selbst');
+    assert.equal(b.duelEnemies.length, 2, '2 Feinde');
+  }
+  /* me: DU bist im Team */
+  runCommand('me vs slime dragon', startGame);
+  assert.equal(state.bosses.length, 2, '2 Gegner-Bosse');
+  for (const b of state.bosses) assert.ok(b.duelEnemies.includes(state.player), 'Bosse zielen auf DU (me im Team)');
+  /* Ziel tot -> naechstes lebendes Feind-Ziel */
+  runCommand('slime vs dragon vs gunball', startGame);
+  const a = state.bosses[0], targets = a.duelEnemies.slice();
+  targets[0].alive = false;
+  const next = duelTargetOf(a);
+  assert.ok(next && next.alive && next !== targets[0], 'Nach dem Tod waehlt der Boss das naechste Feind-Ziel');
+  state.gameRunning = false; state.finished = false; state.paused = false; state.peace = false; state.friendlyFire = false;
+});
