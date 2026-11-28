@@ -34,7 +34,7 @@
   <button class="mainButton" id="selectGunball">GUNBALL AUSWÄHLEN →</button>
 
   <div class="levelDivider">level 2</div>
- <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 60 · VIDEO-UI + SNAKE + PARKOUR</div>
+ <div class="levelDivider" style="letter-spacing:2px;color:#5fae37;font-size:10px">BUILD: SNAKE-EDITON 61 · SNAKE-SPIEL + JOYSTICK</div>
 
  <div class="bossCard snakeCard">
    <div class="snakePreview"></div>
@@ -54,17 +54,28 @@
  <div class="levelDivider" style="margin-top:26px">SLIME-PARKOUR — FÜR LANGWEILE-ZEITEN</div>
  <p style="text-align:center;color:#bcd6e8;margin:6px 0 10px">Nach dem Slime-Sieg: hüpfe als kleiner Slime über Federn, krummelnde Plattformen und an Sägeblättern vorbei!</p>
  <button class="mainButton" id="pkEnter" style="display:none">SLIME-PARKOUR SPIELEN ▶</button>
+
+ <div class="levelDivider" style="margin-top:26px">SNAKE-SPIEL — DAS ORIGINAL</div>
+ <p style="text-align:center;color:#bcd6e8;margin:6px 0 10px">Nach dem Snake-Sieg: das berühte SNAKE — friss die kleinen Schlangen, wachse, stoß nicht an!</p>
+ <button class="mainButton" id="sgEnter" style="display:none">SNAKE SPIELEN 🐍 ▶</button>
  </div>
 </div>
 
+<div id="snakeGameScreen" class="screen">
+ <div id="sgHud"><span id="sgScore">0</span> Punkte · Rekord: <span id="sgBest">0</span> · Länge: <span id="sgLen">3</span></div>
+ <canvas id="sgCanvas"></canvas>
+ <div id="sgControls">
+  <button id="sgExit" class="pkBtn pkSmall">ZURÜCK</button>
+  <button id="sgRestart" class="pkBtn pkSmall">NEU</button>
+ </div>
+ <div id="sgSwipeHint">WISCHEN = RICHTUNG · PFEILTASTEN/WASD GEHEN AUCH</div>
+</div>
+
 <div id="parkourScreen" class="screen">
- <div id="pkHud"><span id="pkTime">0.0s</span> · <span id="pkDeaths">0</span> Tode · Bestzeit: <span id="pkBestWrap">—</span></div>
+ <div id="pkHud"><span id="pkTime">0.0s</span> · <span id="pkDeaths">0</span> Tode · Bestzeit: <span id="pkBestWrap">—</span> · 💎 <span id="pkGems">0/5</span></div>
  <canvas id="pkCanvas"></canvas>
  <div id="pkControls">
-  <div id="pkMove">
-   <button id="pkLeft" class="pkBtn">◀</button>
-   <button id="pkRight" class="pkBtn">▶</button>
-  </div>
+  <div id="pkStick"><div id="pkStickKnob"></div></div>
   <div id="pkActions">
    <button id="pkRestart" class="pkBtn pkSmall">NEU</button>
    <button id="pkExit" class="pkBtn pkSmall">ZURÜCK</button>
@@ -92,8 +103,6 @@
    <div class="classGroupHead">LEVEL 2</div>
    <div class="classCard locked" data-class="whip" id="whipCard"><div class="classIcon"><svg class="whipSvg" viewBox="0 0 44 44" width="36" height="36" aria-hidden="true"><rect x="6" y="30" width="17" height="7.5" rx="3.5" transform="rotate(-42 14 34)" fill="#5a3413" stroke="#241105" stroke-width="1.5"/><rect x="8" y="31.5" width="4" height="4.5" rx="1.5" transform="rotate(-42 10 34)" fill="#8a5a26"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#a86f2e" stroke-width="5" stroke-linecap="round"/><path d="M16 27 C 24 25, 31 18, 36.5 7" fill="none" stroke="#e6b877" stroke-width="2.2" stroke-linecap="round"/><circle cx="37" cy="6" r="3.4" fill="#ffe14d" stroke="#a86f12" stroke-width="1.2"/></svg></div><h3>Peitsche 🔒</h3><p class="stats">220 HP · 40 Schaden</p><p>Peitscht in einer langen Linie. 0,5 Sekunden Cooldown. Sehr weiter Dash. Besiege SNAKE zum Freischalten!</p></div>
    <div class="classCard locked" data-class="sauger" id="saugerCard"><div class="classIcon">🌱</div><h3>Sauger 🔒</h3><p class="stats">250 HP · 45 + 30 Schaden</p><p>Fresspflanze in der Hand: zieht Gegner mit sichtbaren Windwellen zu dir. Bei Berührung sind sie kurz kampfunfähig und nehmen Schaden, dann wirfst du ihn HINTER DICH — er fliegt mit voller Wucht davon und schlägt beim Aufprall einen KRATER in den Boden! 2 Sekunden Cooldown. Besiege PLANT!</p></div>
-   <div class="classGroupHead">SNAKE</div>
-   <div class="classCard locked" data-class="snakePlay" id="snakePlayCard"><div class="classIcon">🐍</div><h3>Mit Snake, Snake spielen 🔒</h3><p class="stats">800 HP · Biss 22 Schaden</p><p>Du bist die Schlange: Du bewegst dich wie Snake — schlängel dich in weichen Kurven über die Arena und beiß zu. Auf einem Feld liegt immer eine ruhende Schlange (die bewegt sich nicht). Besiege SNAKE zum Freischalten!</p></div>
   </div>
   <button class="mainButton" id="startGame">KAMPF BEGINNEN ⚔</button>
   <button style="width:100%;margin-top:9px" id="backLobby">← ZURÜCK</button>
